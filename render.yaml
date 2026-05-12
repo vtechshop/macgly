@@ -2,7 +2,7 @@ services:
   - type: web
     name: macgly
     runtime: node
-    buildCommand: cd apps/web && npm install && npm run build && cd ../api && npm install
+    buildCommand: cd apps/web && npm install --include=dev && npm run build && cd ../api && npm install
     startCommand: node apps/api/src/server.js
     plan: free
     envVars:
