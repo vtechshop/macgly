@@ -82,7 +82,17 @@ app.use('/api/affiliates', require('./routes/affiliates'));
 app.use('/api/tickets', require('./routes/tickets'));
 app.use('/api/contact', require('./routes/contact'));
 
-// 404
+// Serve React app in production (Vite handles it in dev)
+if (isProd()) {
+  const DIST = path.join(__dirname, '../../web/dist');
+  app.use(express.static(DIST, { index: false }));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(DIST, 'index.html'));
+  });
+}
+
+// 404 for unmatched API routes (and all routes in dev)
 app.all('*', (req, res, next) => {
   next(new AppError(`Route ${req.originalUrl} not found`, 404, 'NOT_FOUND'));
 });

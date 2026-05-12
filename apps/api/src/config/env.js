@@ -4,7 +4,7 @@ const isProd = () => process.env.NODE_ENV === 'production';
 
 // Crash fast in production if critical secrets are missing
 if (isProd()) {
-  const required = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'FRONTEND_URL'];
+  const required = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
   const missing = required.filter((k) => !process.env[k]);
   if (missing.length) {
     console.error('FATAL: Missing required environment variables:', missing.join(', '));
