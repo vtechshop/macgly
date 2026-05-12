@@ -1,6 +1,10 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-mongoose.connect('mongodb://localhost:27017/shop').then(async () => {
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/shop';
+
+mongoose.connect(MONGO_URI).then(async () => {
   const db = mongoose.connection.db;
   const now = new Date();
 
@@ -60,5 +64,16 @@ mongoose.connect('mongodb://localhost:27017/shop').then(async () => {
 
   await db.collection('products').insertMany(products);
   console.log('Products inserted:', products.length);
+
+  // Upsert admin user
+  const adminEmail = 'admin@macgly.com';
+  const adminPassword = await bcrypt.hash('Admin@1234', 12);
+  await db.collection('users').updateOne(
+    { email: adminEmail },
+    { $set: { name: 'Admin', email: adminEmail, password: adminPassword, role: 'admin', isActive: true, emailVerified: true, createdAt: now, updatedAt: now } },
+    { upsert: true }
+  );
+  console.log('Admin user: admin@macgly.com / Admin@1234');
+
   process.exit(0);
 }).catch(e => { console.error(e.message); process.exit(1); });
