@@ -16,8 +16,17 @@ const app = express();
 app.use(helmet());
 
 // CORS
+const allowedOrigins = [
+  FRONTEND_URL,
+  'https://macgly.vercel.app',
+  'https://macgly.com',
+  'https://www.macgly.com',
+].filter(Boolean);
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.some(o => origin.startsWith(o))) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 
