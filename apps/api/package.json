@@ -1,0 +1,49 @@
+{
+  "name": "@shop/api",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "test": "jest --runInBand --forceExit",
+    "test:unit": "jest src/tests/unit --runInBand --forceExit",
+    "test:integration": "jest src/tests/integration --runInBand --forceExit",
+    "test:watch": "jest --watch --runInBand"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000,
+    "globalSetup": "./src/tests/setup.js",
+    "globalTeardown": "./src/tests/teardown.js",
+    "testMatch": ["**/tests/**/*.test.js"]
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "csurf": "^1.11.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "mailersend": "^2.2.0",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "razorpay": "^2.9.2",
+    "slugify": "^1.6.6",
+    "uuid": "^9.0.1",
+    "xss-clean": "^0.1.4"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "mongodb-memory-server": "^8.16.1",
+    "nodemon": "^3.0.2",
+    "supertest": "^7.2.2"
+  }
+}

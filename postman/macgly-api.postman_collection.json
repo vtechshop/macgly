@@ -1,0 +1,519 @@
+{
+  "info": {
+    "name": "Macgly API",
+    "description": "Complete API collection for Macgly e-commerce platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api", "type": "string" },
+    { "key": "productId", "value": "", "type": "string" },
+    { "key": "orderId", "value": "", "type": "string" },
+    { "key": "reviewId", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Customer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Customer\",\n  \"email\": \"customer@test.com\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register Vendor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Vendor\",\n  \"email\": \"vendor@test.com\",\n  \"password\": \"password123\",\n  \"role\": \"vendor\",\n  \"vendorProfile\": { \"businessName\": \"My Shop\", \"gstin\": \"29ABCDE1234F1Z5\" }\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has user', () => { const b = pm.response.json(); pm.expect(b.user).to.be.an('object'); pm.collectionVariables.set('userId', b.user._id); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@test.com\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (Wrong Password)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"customer@test.com\",\n  \"password\": \"wrongpassword\"\n}" }
+          }
+        },
+        {
+          "name": "Get Current User (/me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));", "pm.test('Has user object', () => pm.expect(pm.response.json().user).to.be.an('object'));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Always 200', () => pm.response.to.have.status(200));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"customer@test.com\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "Get Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has products array', () => pm.expect(pm.response.json().products).to.be.an('array'));",
+                  "const prods = pm.response.json().products; if (prods.length) pm.collectionVariables.set('productId', prods[0]._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/catalog/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"], "path": ["catalog", "products"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/catalog/products?search=phone&limit=5",
+              "host": ["{{baseUrl}}"], "path": ["catalog", "products"],
+              "query": [{ "key": "search", "value": "phone" }, { "key": "limit", "value": "5" }]
+            }
+          }
+        },
+        {
+          "name": "Get Product by Slug",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/catalog/products/sample-product-slug", "host": ["{{baseUrl}}"], "path": ["catalog", "products", "sample-product-slug"] }
+          }
+        },
+        {
+          "name": "Get Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/catalog/categories", "host": ["{{baseUrl}}"], "path": ["catalog", "categories"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "Get Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/cart", "host": ["{{baseUrl}}"], "path": ["cart"] }
+          }
+        },
+        {
+          "name": "Add Item to Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));", "pm.test('Has cart', () => pm.expect(pm.response.json().cart).to.be.an('object'));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/cart/add", "host": ["{{baseUrl}}"], "path": ["cart", "add"] },
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1\n}" }
+          }
+        },
+        {
+          "name": "Remove Item from Cart",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/cart/item/{{productId}}", "host": ["{{baseUrl}}"], "path": ["cart", "item", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/cart", "host": ["{{baseUrl}}"], "path": ["cart"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Get My Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has orders array', () => pm.expect(pm.response.json().orders).to.be.an('array'));",
+                  "const orders = pm.response.json().orders; if (orders.length) pm.collectionVariables.set('orderId', orders[0]._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/orders?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["orders"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }] }
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/orders/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["orders", "{{orderId}}"] }
+          }
+        },
+        {
+          "name": "Place Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 201 or 400', () => pm.expect([201, 400]).to.include(pm.response.code));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/orders", "host": ["{{baseUrl}}"], "path": ["orders"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shippingAddress\": {\n    \"name\": \"Test User\",\n    \"phone\": \"9876543210\",\n    \"addressLine1\": \"123 Test Street\",\n    \"city\": \"Bangalore\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\",\n    \"country\": \"India\"\n  },\n  \"paymentMethod\": \"cod\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Get Reviews for Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));", "pm.test('Has reviews', () => pm.expect(pm.response.json().reviews).to.be.an('array'));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/reviews/product/{{productId}}", "host": ["{{baseUrl}}"], "path": ["reviews", "product", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Submit Review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 or 403 or 409', () => pm.expect([201, 403, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set('reviewId', pm.response.json().review._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/reviews", "host": ["{{baseUrl}}"], "path": ["reviews"] },
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"rating\": 5,\n  \"title\": \"Great product!\",\n  \"body\": \"Really happy with this purchase.\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Review",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"] }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/reviews/{{reviewId}}", "host": ["{{baseUrl}}"], "path": ["reviews", "{{reviewId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/profile", "host": ["{{baseUrl}}"], "path": ["users", "profile"] }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/users/profile", "host": ["{{baseUrl}}"], "path": ["users", "profile"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"9876543210\"\n}" }
+          }
+        },
+        {
+          "name": "Change Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200 or 400 or 401', () => pm.expect([200, 400, 401]).to.include(pm.response.code));"] }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/users/password", "host": ["{{baseUrl}}"], "path": ["users", "password"] },
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword456\"\n}" }
+          }
+        },
+        {
+          "name": "Get Addresses",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/addresses", "host": ["{{baseUrl}}"], "path": ["users", "addresses"] }
+          }
+        },
+        {
+          "name": "Add Address",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/users/addresses", "host": ["{{baseUrl}}"], "path": ["users", "addresses"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Home\",\n  \"phone\": \"9876543210\",\n  \"addressLine1\": \"123 Main St\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"pincode\": \"560001\",\n  \"country\": \"India\",\n  \"isDefault\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin — Dashboard",
+      "item": [
+        {
+          "name": "Get Stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 200 or 403', () => pm.expect([200, 403]).to.include(pm.response.code));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/stats", "host": ["{{baseUrl}}"], "path": ["admin", "stats"] }
+          }
+        },
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/orders?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["admin", "orders"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }] }
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/users?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["admin", "users"] }
+          }
+        },
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/products?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["admin", "products"] }
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/admin/products", "host": ["{{baseUrl}}"], "path": ["admin", "products"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Product\",\n  \"price\": 999,\n  \"mrp\": 1299,\n  \"stock\": 50,\n  \"category\": \"<category_id>\",\n  \"description\": \"A great product\",\n  \"warranty\": { \"duration\": 12, \"durationType\": \"months\", \"description\": \"Manufacturer Warranty\" }\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Payments",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/payments?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["admin", "payments"] }
+          }
+        },
+        {
+          "name": "Get KYC Reviews",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/kyc", "host": ["{{baseUrl}}"], "path": ["admin", "kyc"] }
+          }
+        },
+        {
+          "name": "Get Reviews (Admin)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/reviews?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["admin", "reviews"] }
+          }
+        },
+        {
+          "name": "Get Warranty Records",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/warranty?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["admin", "warranty"] }
+          }
+        },
+        {
+          "name": "Approve Vendor KYC",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/admin/kyc/vendor/{{userId}}/approve", "host": ["{{baseUrl}}"], "path": ["admin", "kyc", "vendor", "{{userId}}", "approve"] }
+          }
+        },
+        {
+          "name": "Suspend / Unsuspend User",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/admin/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{userId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Support Tickets",
+      "item": [
+        {
+          "name": "Create Ticket",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/tickets", "host": ["{{baseUrl}}"], "path": ["tickets"] },
+            "body": { "mode": "raw", "raw": "{\n  \"subject\": \"Issue with my order\",\n  \"message\": \"My order hasn't arrived yet.\",\n  \"category\": \"order\"\n}" }
+          }
+        },
+        {
+          "name": "Get My Tickets",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/tickets", "host": ["{{baseUrl}}"], "path": ["tickets"] }
+          }
+        }
+      ]
+    }
+  ]
+}

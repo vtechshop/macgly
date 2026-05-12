@@ -1,0 +1,128 @@
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const mongoSanitize = require('express-mongo-sanitize');
+const morgan = require('morgan');
+const path = require('path');
+
+const { FRONTEND_URL, NODE_ENV, CSRF_SECRET, isProd } = require('./config/env');
+const AppError = require('./utils/AppError');
+const { apiLimiter } = require('./middleware/rateLimiter');
+
+const app = express();
+
+// Security headers
+app.use(helmet());
+
+// CORS
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true,
+}));
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// Sanitize MongoDB operators from req.body/params/query
+app.use(mongoSanitize());
+
+// Logging
+if (NODE_ENV !== 'test') app.use(morgan('dev'));
+
+// Rate limiting
+app.use('/api', apiLimiter);
+
+// CSRF — skip for GET/HEAD/OPTIONS and for non-browser API calls
+if (isProd()) {
+  const csrf = require('csurf');
+  const csrfProtection = csrf({
+    cookie: { httpOnly: true, sameSite: 'strict', secure: true },
+  });
+  app.use((req, res, next) => {
+    const skip = ['GET', 'HEAD', 'OPTIONS'].includes(req.method) ||
+      req.path.startsWith('/api/auth/refresh') ||
+      req.path.startsWith('/api/payments/webhook');
+    if (skip) return next();
+    csrfProtection(req, res, next);
+  });
+
+  app.get('/api/csrf-token', csrf({ cookie: true }), (req, res) => {
+    res.json({ csrfToken: req.csrfToken() });
+  });
+} else {
+  // In dev, expose a no-op endpoint so frontend code works unchanged
+  app.get('/api/csrf-token', (req, res) => res.json({ csrfToken: 'dev-csrf-token' }));
+}
+
+// Static uploads in dev
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Bot/crawler detection for SSR
+app.use((req, res, next) => {
+  const ua = req.headers['user-agent'] || '';
+  const bots = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot/i;
+  req.isBot = bots.test(ua);
+  next();
+});
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/catalog', require('./routes/catalog'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/vendors', require('./routes/vendors'));
+app.use('/api/orders', require('./routes/orders'));
+app.use('/api/cart', require('./routes/cart'));
+app.use('/api/payments', require('./routes/payments'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/affiliates', require('./routes/affiliates'));
+app.use('/api/tickets', require('./routes/tickets'));
+app.use('/api/contact', require('./routes/contact'));
+
+// 404
+app.all('*', (req, res, next) => {
+  next(new AppError(`Route ${req.originalUrl} not found`, 404, 'NOT_FOUND'));
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  // Mongoose validation error
+  if (err.name === 'ValidationError') {
+    const fields = {};
+    Object.values(err.errors).forEach((e) => { fields[e.path] = e.message; });
+    return res.status(400).json({ error: { code: 'VALIDATION_ERROR', fields } });
+  }
+
+  // Mongoose duplicate key
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue || {})[0] || 'field';
+    return res.status(409).json({ error: { code: 'DUPLICATE_KEY', message: `${field} already exists` } });
+  }
+
+  // JWT errors
+  if (err.name === 'JsonWebTokenError') {
+    return res.status(401).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid token' } });
+  }
+  if (err.name === 'TokenExpiredError') {
+    return res.status(401).json({ error: { code: 'TOKEN_EXPIRED', message: 'Token expired' } });
+  }
+
+  // CSRF error
+  if (err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).json({ error: { code: 'INVALID_CSRF', message: 'Invalid CSRF token' } });
+  }
+
+  // Operational AppError
+  if (err.isOperational) {
+    return res.status(err.statusCode).json({ error: { code: err.code, message: err.message } });
+  }
+
+  // Unhandled / programming error
+  console.error('UNHANDLED ERROR:', err);
+  res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Something went wrong' } });
+});
+
+module.exports = app;
