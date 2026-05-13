@@ -93,7 +93,7 @@ app.use('/api/contact', require('./routes/contact'));
 
 // Serve React app in production (Vite handles it in dev)
 if (isProd()) {
-  const DIST = path.join(__dirname, '../../web/dist');
+  const DIST = path.join(process.cwd(), 'apps/web/dist');
   app.use(express.static(DIST, { index: false }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
