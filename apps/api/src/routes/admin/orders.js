@@ -34,7 +34,19 @@ router.put('/:id', async (req, res, next) => {
       update.deliveredAt = new Date();
     }
 
-    const order = await Order.findByIdAndUpdate(req.params.id, update, { new: true });
+    // Append status change to tracking history
+    const historyEntry = update.status && update.status !== prev.status
+      ? { status: update.status, timestamp: new Date(), description: req.body.note || '' }
+      : null;
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...update,
+        ...(historyEntry && { $push: { 'tracking.history': historyEntry } }),
+      },
+      { new: true }
+    );
 
     if (update.status) {
       const wasDelivered = prev.status === 'delivered';

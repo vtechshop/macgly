@@ -82,6 +82,36 @@ function OrderCard({ order, onCancelled }) {
               </div>
             </div>
           )}
+
+          {/* Tracking info */}
+          {order.tracking?.trackingId && (
+            <div className="p-2.5 bg-blue-50 rounded-lg text-xs flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-blue-700">{order.tracking.carrier || 'Courier'}:</span>
+              {order.tracking.url
+                ? <a href={order.tracking.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-mono">{order.tracking.trackingId}</a>
+                : <span className="font-mono text-blue-700">{order.tracking.trackingId}</span>
+              }
+            </div>
+          )}
+
+          {/* Status history */}
+          {order.tracking?.history?.length > 0 && (
+            <div className="space-y-2">
+              {[...order.tracking.history].reverse().map((h, i) => (
+                <div key={i} className="flex gap-2.5 text-xs">
+                  <div className="flex flex-col items-center">
+                    <div className="w-2 h-2 rounded-full bg-primary-500 mt-0.5 shrink-0" />
+                    {i < order.tracking.history.length - 1 && <div className="w-px flex-1 bg-secondary-200 mt-1" />}
+                  </div>
+                  <div className="pb-2">
+                    <p className="font-semibold text-secondary-700 capitalize">{h.status}</p>
+                    {h.description && <p className="text-secondary-500">{h.description}</p>}
+                    <p className="text-secondary-400">{new Date(h.timestamp).toLocaleString('en-IN')}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Product rows */}

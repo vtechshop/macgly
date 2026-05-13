@@ -65,6 +65,43 @@ function AffiliateAttribution({ order, onDone }) {
   );
 }
 
+function TrackingPanel({ order, onSave }) {
+  const [form, setForm] = useState({
+    carrier: order.tracking?.carrier || '',
+    trackingId: order.tracking?.trackingId || '',
+    url: order.tracking?.url || '',
+  });
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  return (
+    <div className="mt-4 border-t border-secondary-200 pt-4">
+      <p className="text-xs font-bold text-secondary-500 uppercase mb-2">Tracking Info</p>
+      {order.tracking?.history?.length > 0 && (
+        <div className="mb-3 space-y-1">
+          {[...order.tracking.history].reverse().map((h, i) => (
+            <div key={i} className="flex gap-2 text-xs text-secondary-600">
+              <span className="font-semibold capitalize w-24 shrink-0">{h.status}</span>
+              <span className="text-secondary-400">{new Date(h.timestamp).toLocaleString('en-IN')}</span>
+              {h.description && <span>— {h.description}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="grid grid-cols-3 gap-2">
+        <input className="input text-xs py-1" placeholder="Carrier (e.g. Delhivery)" value={form.carrier} onChange={set('carrier')} />
+        <input className="input text-xs py-1" placeholder="Tracking ID" value={form.trackingId} onChange={set('trackingId')} />
+        <input className="input text-xs py-1" placeholder="Tracking URL" value={form.url} onChange={set('url')} />
+      </div>
+      <button
+        onClick={() => onSave({ carrier: form.carrier, trackingId: form.trackingId, url: form.url })}
+        className="mt-2 text-xs px-3 py-1.5 bg-primary-600 text-white rounded hover:bg-primary-700 font-medium"
+      >
+        Save Tracking
+      </button>
+    </div>
+  );
+}
+
 const STATUS_COLORS = {
   pending:    'bg-yellow-100 text-yellow-700',
   confirmed:  'bg-blue-100 text-blue-700',
@@ -88,11 +125,21 @@ export default function AdminOrders() {
     () => api.get('/admin/orders', { params: { page, limit: 20, status: statusFilter || undefined } }).then((r) => r.data)
   );
 
+  const [statusNote, setStatusNote] = useState({});
+
   const { mutate: updateStatus } = useAction(
-    ({ id, status }) => api.put(`/admin/orders/${id}`, { status }),
+    ({ id, status }) => api.put(`/admin/orders/${id}`, { status, note: statusNote[id] || '' }),
     {
-      onSuccess: () => { setRev((r) => r + 1); toast.success('Status updated'); },
+      onSuccess: (_, { id }) => { setRev((r) => r + 1); setStatusNote((n) => ({ ...n, [id]: '' })); toast.success('Status updated'); },
       onError: () => toast.error('Failed to update'),
+    }
+  );
+
+  const { mutate: updateTracking } = useAction(
+    ({ id, tracking }) => api.put(`/admin/orders/${id}`, { tracking }),
+    {
+      onSuccess: () => { setRev((r) => r + 1); toast.success('Tracking updated'); },
+      onError: () => toast.error('Failed to update tracking'),
     }
   );
 
@@ -144,13 +191,22 @@ export default function AdminOrders() {
                     </span>
                   </td>
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    <select
-                      className={`text-xs rounded px-2 py-1.5 border font-semibold cursor-pointer ${STATUS_COLORS[o.status] || ''}`}
-                      value={o.status}
-                      onChange={(e) => updateStatus({ id: o._id, status: e.target.value })}
-                    >
-                      {STATUSES.map((s) => <option key={s} value={s} className="bg-white text-secondary-900 capitalize">{s}</option>)}
-                    </select>
+                    <div className="space-y-1">
+                      <select
+                        className={`text-xs rounded px-2 py-1.5 border font-semibold cursor-pointer w-full ${STATUS_COLORS[o.status] || ''}`}
+                        value={o.status}
+                        onChange={(e) => updateStatus({ id: o._id, status: e.target.value })}
+                      >
+                        {STATUSES.map((s) => <option key={s} value={s} className="bg-white text-secondary-900 capitalize">{s}</option>)}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Note (optional)"
+                        className="input text-xs py-1 w-full"
+                        value={statusNote[o._id] || ''}
+                        onChange={(e) => setStatusNote((n) => ({ ...n, [o._id]: e.target.value }))}
+                      />
+                    </div>
                   </td>
                 </tr>
                 {expanded === o._id && (
@@ -184,6 +240,7 @@ export default function AdminOrders() {
                           <AffiliateAttribution order={o} onDone={() => setRev((r) => r + 1)} />
                         </div>
                       </div>
+                      <TrackingPanel order={o} onSave={(tracking) => updateTracking({ id: o._id, tracking })} />
                     </td>
                   </tr>
                 )}
