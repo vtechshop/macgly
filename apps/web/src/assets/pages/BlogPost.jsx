@@ -1,8 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Tag } from 'lucide-react';
-import api from '../utils/api';
-import { useFetch } from '../hooks';
-import Spinner from './components/common/Spinner';
+import api from '../../utils/api';
+import { useFetch } from '../../hooks';
+import Spinner from '../components/common/Spinner';
 
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : ''; }
 

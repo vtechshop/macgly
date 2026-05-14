@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, ChevronDown, ChevronUp, X } from 'lucide-react';
-import api from '../utils/api';
-import { useFetch } from '../hooks';
-import Spinner from './components/common/Spinner';
-import ProductCard from './components/ProductCard';
+import api from '../../utils/api';
+import { useFetch } from '../../hooks';
+import Spinner from '../components/common/Spinner';
+import ProductCard from '../components/product/ProductCard';
 
 function FilterPanel({ filters, onChange, onClear }) {
   const [priceOpen, setPriceOpen] = useState(true);

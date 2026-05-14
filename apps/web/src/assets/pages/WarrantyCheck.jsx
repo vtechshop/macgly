@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Shield, Search, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
-import api from '../utils/api';
-import Spinner from './components/common/Spinner';
+import api from '../../utils/api';
+import Spinner from '../components/common/Spinner';
 
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'; }
 

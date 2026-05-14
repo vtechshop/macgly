@@ -1,9 +1,9 @@
 import { useParams, Link } from 'react-router-dom';
 import { Store, Star, Package } from 'lucide-react';
-import api from '../utils/api';
-import { useFetch } from '../hooks';
-import Spinner from './components/common/Spinner';
-import ProductCard from './components/ProductCard';
+import api from '../../utils/api';
+import { useFetch } from '../../hooks';
+import Spinner from '../components/common/Spinner';
+import ProductCard from '../components/product/ProductCard';
 
 export default function VendorStore() {
   const { id } = useParams();
