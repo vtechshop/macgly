@@ -48,5 +48,15 @@ router.use('/communications', require('./admin/communications'));
 router.use('/inventory', require('./admin/inventory'));
 // Share catalog
 router.use('/share-catalog', require('./admin/share-catalog'));
+// Commissions (vendor + affiliate)
+router.use('/commissions', require('./admin/commissions'));
+// Flash sales
+router.use('/flash-sales', require('./admin/flash-sales'));
+// Warranty claims
+router.use('/warranties', require('./admin/warranties'));
+// Returns / refunds
+router.use('/returns', require('./admin/returns'));
+// Newsletter subscribers
+router.use('/newsletter', require('./admin/newsletter'));
 
 module.exports = router;

@@ -90,6 +90,14 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/affiliates', require('./routes/affiliates'));
 app.use('/api/tickets', require('./routes/tickets'));
 app.use('/api/contact', require('./routes/contact'));
+app.use('/api/warranties', require('./routes/warranties'));
+app.use('/api/loyalty', require('./routes/loyalty'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/flash-sales', require('./routes/flash-sales'));
+app.use('/api/newsletter', require('./routes/newsletter'));
+app.use('/api/recommendations', require('./routes/recommendations'));
+app.use('/api/blog', require('./routes/blog'));
+app.use('/api/returns', require('./routes/returns'));
 
 // Serve React app in production (Vite handles it in dev)
 if (isProd()) {
