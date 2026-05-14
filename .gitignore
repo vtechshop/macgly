@@ -31,3 +31,5 @@ junit.xml
 uploads/
 apps/api/uploads/
 
+
+*.lnk

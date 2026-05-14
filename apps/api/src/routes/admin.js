@@ -58,5 +58,7 @@ router.use('/warranties', require('./admin/warranties'));
 router.use('/returns', require('./admin/returns'));
 // Newsletter subscribers
 router.use('/newsletter', require('./admin/newsletter'));
+// Ads management
+router.use('/ads', require('./admin/ads'));
 
 module.exports = router;

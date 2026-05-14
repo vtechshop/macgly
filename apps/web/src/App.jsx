@@ -43,6 +43,11 @@ import AdminBlog from './assets/pages/dashboard/admin/AdminBlog';
 import AdminCMS from './assets/pages/dashboard/admin/AdminCMS';
 import AdminSettings from './assets/pages/dashboard/admin/AdminSettings';
 import AdminShareCatalog from './assets/pages/dashboard/admin/AdminShareCatalog';
+import AdminCommissions from './assets/pages/dashboard/admin/AdminCommissions';
+import AdminFlashSales from './assets/pages/dashboard/admin/AdminFlashSales';
+import AdminReturns from './assets/pages/dashboard/admin/AdminReturns';
+import AdminNewsletter from './assets/pages/dashboard/admin/AdminNewsletter';
+import AdminAdsManagement from './assets/pages/dashboard/admin/AdminAdsManagement';
 
 import CustomerWishlist from './assets/pages/dashboard/customer/CustomerWishlist';
 import CustomerAddresses from './assets/pages/dashboard/customer/CustomerAddresses';
@@ -50,6 +55,12 @@ import VendorDashboard from './assets/pages/dashboard/vendor/VendorDashboard';
 import VendorProducts from './assets/pages/dashboard/vendor/VendorProducts';
 import VendorOrders from './assets/pages/dashboard/vendor/VendorOrders';
 import VendorSupport from './assets/pages/dashboard/vendor/VendorSupport';
+import VendorInventory from './assets/pages/dashboard/vendor/VendorInventory';
+import VendorSettlements from './assets/pages/dashboard/vendor/VendorSettlements';
+import VendorAds from './assets/pages/dashboard/vendor/VendorAds';
+import VendorCategories from './assets/pages/dashboard/vendor/VendorCategories';
+import VendorManualOrders from './assets/pages/dashboard/vendor/VendorManualOrders';
+import VendorSettings from './assets/pages/dashboard/vendor/VendorSettings';
 
 import CustomerDashboard from './assets/pages/dashboard/customer/CustomerDashboard';
 import CustomerOrders from './assets/pages/dashboard/customer/CustomerOrders';
@@ -65,6 +76,11 @@ import AffiliateSupport from './assets/pages/dashboard/affiliate/AffiliateSuppor
 
 import VendorRegister from './assets/pages/VendorRegister';
 import AffiliateRegister from './assets/pages/AffiliateRegister';
+import VendorStore from './assets/pages/VendorStore';
+import Blog from './assets/pages/Blog';
+import BlogPost from './assets/pages/BlogPost';
+import TrackOrder from './assets/pages/TrackOrder';
+import WarrantyCheck from './assets/pages/WarrantyCheck';
 
 // Info pages
 import About from './assets/pages/info/About';
@@ -131,6 +147,11 @@ export default function App() {
             <Route path="/info/contact" element={<Contact />} />
             <Route path="/info/privacy" element={<Privacy />} />
             <Route path="/info/terms" element={<Terms />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/track-order" element={<TrackOrder />} />
+            <Route path="/warranty-check" element={<WarrantyCheck />} />
+            <Route path="/store/:id" element={<VendorStore />} />
           </Route>
 
           {/* Checkout — protected */}
@@ -166,6 +187,11 @@ export default function App() {
             <Route path="cms" element={<AdminCMS />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="share-catalog" element={<AdminShareCatalog />} />
+            <Route path="commissions" element={<AdminCommissions />} />
+            <Route path="flash-sales" element={<AdminFlashSales />} />
+            <Route path="returns" element={<AdminReturns />} />
+            <Route path="newsletter" element={<AdminNewsletter />} />
+            <Route path="ads" element={<AdminAdsManagement />} />
           </Route>
 
           {/* Vendor dashboard */}
@@ -174,6 +200,12 @@ export default function App() {
             <Route path="products" element={<VendorProducts />} />
             <Route path="orders" element={<VendorOrders />} />
             <Route path="support" element={<VendorSupport />} />
+            <Route path="inventory" element={<VendorInventory />} />
+            <Route path="settlements" element={<VendorSettlements />} />
+            <Route path="ads" element={<VendorAds />} />
+            <Route path="categories" element={<VendorCategories />} />
+            <Route path="manual-orders" element={<VendorManualOrders />} />
+            <Route path="settings" element={<VendorSettings />} />
           </Route>
 
           {/* Customer dashboard */}

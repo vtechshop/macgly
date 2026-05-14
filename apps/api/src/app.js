@@ -98,6 +98,10 @@ app.use('/api/newsletter', require('./routes/newsletter'));
 app.use('/api/recommendations', require('./routes/recommendations'));
 app.use('/api/blog', require('./routes/blog'));
 app.use('/api/returns', require('./routes/returns'));
+app.use('/api/invoices', require('./routes/invoices'));
+app.use('/api/gdpr', require('./routes/gdpr'));
+app.use('/api/config', require('./routes/config'));
+app.use('/api/chatbot', require('./routes/chatbot'));
 
 // Serve React app in production (Vite handles it in dev)
 if (isProd()) {

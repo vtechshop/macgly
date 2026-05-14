@@ -6,7 +6,11 @@ const { PORT } = require('./config/env');
 async function start() {
   await connectDB();
   await connectRedis();
-  app.listen(PORT, () => console.log(`API running on port ${PORT}`));
+  app.listen(PORT, () => {
+    console.log(`API running on port ${PORT}`);
+    const { startJobs } = require('./jobs/scheduler');
+    startJobs();
+  });
 }
 
 start().catch((err) => {
