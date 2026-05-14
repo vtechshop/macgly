@@ -1,0 +1,27 @@
+{
+  "customer": {
+    "_id": "cust001",
+    "name": "Rajan Kumar",
+    "email": "rajan@test.com",
+    "role": "customer",
+    "phone": "9876543210"
+  },
+  "vendor": {
+    "_id": "vend001",
+    "name": "Tools & Co",
+    "email": "vendor@test.com",
+    "role": "vendor",
+    "vendorProfile": {
+      "storeName": "Tools & Co",
+      "approved": true,
+      "onboardingComplete": true,
+      "kycStatus": "approved"
+    }
+  },
+  "admin": {
+    "_id": "adm001",
+    "name": "Admin User",
+    "email": "admin@test.com",
+    "role": "admin"
+  }
+}

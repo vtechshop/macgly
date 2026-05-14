@@ -1,0 +1,8 @@
+{
+  "list": [
+    { "_id": "cat001", "name": "Power Tools", "slug": "power-tools", "isActive": true },
+    { "_id": "cat002", "name": "Safety Equipment", "slug": "safety-equipment", "isActive": true },
+    { "_id": "cat003", "name": "Hand Tools", "slug": "hand-tools", "isActive": true },
+    { "_id": "cat004", "name": "Electrical", "slug": "electrical", "isActive": true }
+  ]
+}

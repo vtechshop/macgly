@@ -26,6 +26,8 @@ Thumbs.db
 coverage/
 .nyc_output/
 junit.xml
+apps/web/cypress/screenshots
+apps/web/cypress/videos
 
 # Uploads (use cloud storage)
 uploads/

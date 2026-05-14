@@ -1,0 +1,39 @@
+{
+  "list": [
+    {
+      "_id": "ord001",
+      "orderId": "ORD-1234567890",
+      "status": "shipped",
+      "paymentStatus": "paid",
+      "paymentMethod": "razorpay",
+      "totalAmount": 9000,
+      "discount": 0,
+      "createdAt": "2024-12-01T10:00:00Z",
+      "items": [
+        {
+          "title": "Heavy Duty Drill Machine",
+          "quantity": 2,
+          "price": 4500,
+          "image": "https://placehold.co/400x400?text=Drill"
+        }
+      ],
+      "shippingAddress": {
+        "name": "Rajan Kumar",
+        "line1": "12 Anna Nagar",
+        "city": "Chennai",
+        "state": "Tamil Nadu",
+        "pincode": "600040",
+        "phone": "9876543210"
+      },
+      "tracking": {
+        "carrier": "Delhivery",
+        "trackingId": "DEL123456",
+        "history": [
+          { "status": "shipped", "timestamp": "2024-12-02T08:00:00Z", "description": "Package picked up" },
+          { "status": "in_transit", "timestamp": "2024-12-03T14:00:00Z", "description": "In transit to Chennai" }
+        ]
+      }
+    }
+  ],
+  "pagination": { "total": 1, "page": 1 }
+}

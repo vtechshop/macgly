@@ -1,0 +1,47 @@
+{
+  "list": [
+    {
+      "_id": "prod001",
+      "title": "Heavy Duty Drill Machine",
+      "slug": "heavy-duty-drill-machine",
+      "price": 4500,
+      "mrp": 5500,
+      "images": ["https://placehold.co/400x400?text=Drill"],
+      "category": { "_id": "cat001", "name": "Power Tools", "slug": "power-tools" },
+      "vendorId": "vend001",
+      "status": "approved",
+      "stock": 20,
+      "averageRating": 4.3,
+      "reviewCount": 12
+    },
+    {
+      "_id": "prod002",
+      "title": "Angle Grinder 750W",
+      "slug": "angle-grinder-750w",
+      "price": 2800,
+      "mrp": 3200,
+      "images": ["https://placehold.co/400x400?text=Grinder"],
+      "category": { "_id": "cat001", "name": "Power Tools", "slug": "power-tools" },
+      "vendorId": "vend001",
+      "status": "approved",
+      "stock": 15,
+      "averageRating": 4.1,
+      "reviewCount": 8
+    },
+    {
+      "_id": "prod003",
+      "title": "Safety Helmet IS:2925",
+      "slug": "safety-helmet",
+      "price": 350,
+      "mrp": 450,
+      "images": ["https://placehold.co/400x400?text=Helmet"],
+      "category": { "_id": "cat002", "name": "Safety Equipment", "slug": "safety-equipment" },
+      "vendorId": "vend001",
+      "status": "approved",
+      "stock": 100,
+      "averageRating": 4.6,
+      "reviewCount": 45
+    }
+  ],
+  "pagination": { "total": 3, "page": 1, "pages": 1 }
+}
