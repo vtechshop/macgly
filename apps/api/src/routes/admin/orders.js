@@ -4,6 +4,50 @@ const User = require('../../models/User');
 const Product = require('../../models/Product');
 const AppError = require('../../utils/AppError');
 
+// Individual order detail
+router.get('/:id', async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id).populate('user', 'name email phone');
+    if (!order) return next(new AppError('Order not found', 404));
+    res.json({ order });
+  } catch (err) { next(err); }
+});
+
+// Quick status update
+router.patch('/:id/status', async (req, res, next) => {
+  try {
+    const { status, note } = req.body;
+    if (!status) return next(new AppError('status is required', 400));
+    const prev = await Order.findById(req.params.id);
+    if (!prev) return next(new AppError('Order not found', 404));
+    const update = { status };
+    if (status === 'delivered' && prev.status !== 'delivered') {
+      if (prev.paymentMethod === 'cod') update.paymentStatus = 'paid';
+      update.deliveredAt = new Date();
+    }
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { ...update, $push: { 'tracking.history': { status, timestamp: new Date(), description: note || '' } } },
+      { new: true }
+    );
+    res.json({ order });
+  } catch (err) { next(err); }
+});
+
+// Update tracking info
+router.patch('/:id/tracking', async (req, res, next) => {
+  try {
+    const { carrier, trackingId, url } = req.body;
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { $set: { 'tracking.carrier': carrier, 'tracking.trackingId': trackingId, 'tracking.url': url } },
+      { new: true }
+    );
+    if (!order) return next(new AppError('Order not found', 404));
+    res.json({ order });
+  } catch (err) { next(err); }
+});
+
 router.get('/', async (req, res, next) => {
   try {
     const { page = 1, limit = 20, status } = req.query;

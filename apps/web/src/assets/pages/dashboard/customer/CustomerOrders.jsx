@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, XCircle, Truck, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Package, XCircle, Truck, CheckCircle, Clock, AlertCircle, ExternalLink } from 'lucide-react';
 import api from '../../../../utils/api';
 import { formatCurrency, formatDate, normalizeImageUrl } from '../../../../utils/format';
 import { useFetch } from '../../../../hooks';
@@ -152,6 +152,12 @@ function OrderCard({ order, onCancelled }) {
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-2">
+            <Link
+              to={`/dashboard/customer/orders/${order._id}`}
+              className="flex items-center gap-1.5 text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 px-3 py-1.5 rounded transition-colors"
+            >
+              <ExternalLink size={12} /> View Details
+            </Link>
             {canCancel && (
               <button
                 onClick={handleCancel}

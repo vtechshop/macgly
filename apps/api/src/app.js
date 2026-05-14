@@ -102,6 +102,10 @@ app.use('/api/invoices', require('./routes/invoices'));
 app.use('/api/gdpr', require('./routes/gdpr'));
 app.use('/api/config', require('./routes/config'));
 app.use('/api/chatbot', require('./routes/chatbot'));
+app.use('/api/upload', require('./routes/upload'));
+app.use('/api/gamification', require('./routes/gamification'));
+app.use('/api/referrals', require('./routes/referrals'));
+app.get('/sitemap.xml', require('./routes/sitemap'));
 
 // Serve React app in production (Vite handles it in dev)
 if (isProd()) {

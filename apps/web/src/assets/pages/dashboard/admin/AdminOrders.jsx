@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../../../utils/api';
 import { formatCurrency, formatDate } from '../../../../utils/format';
 import { useFetch, useAction } from '../../../../hooks';
@@ -178,7 +179,7 @@ export default function AdminOrders() {
             ) : orders.map((o) => (
               <React.Fragment key={o._id}>
                 <tr className="hover:bg-secondary-50 cursor-pointer" onClick={() => setExpanded(expanded === o._id ? null : o._id)}>
-                  <td className="px-4 py-3 font-medium text-primary-600">{o.orderId}</td>
+                  <td className="px-4 py-3"><Link to={`/dashboard/admin/orders/${o._id}`} className="font-medium text-primary-600 hover:underline" onClick={(e) => e.stopPropagation()}>{o.orderId}</Link></td>
                   <td className="px-4 py-3">
                     <p className="font-medium">{o.user?.name || 'Guest'}</p>
                     <p className="text-xs text-secondary-400">{o.user?.email}</p>

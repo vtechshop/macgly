@@ -60,5 +60,9 @@ router.use('/returns', require('./admin/returns'));
 router.use('/newsletter', require('./admin/newsletter'));
 // Ads management
 router.use('/ads', require('./admin/ads'));
+// Carousel slides
+router.use('/carousel', require('./admin/carousel'));
+// Gamification (spin, quiz, loyalty config)
+router.use('/gamification', require('./admin/gamification'));
 
 module.exports = router;

@@ -305,4 +305,44 @@ router.post('/manual-orders', requireApproved, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// KYC document submission
+router.patch('/kyc', requireApproved ? (req, res, next) => next() : (req, res, next) => next(), async (req, res, next) => {
+  try {
+    const { docs } = req.body;
+    if (!docs || typeof docs !== 'object') return next(new AppError('docs object required', 400));
+
+    const allowedDocs = ['gstCertificate', 'panCard', 'bankStatement', 'addressProof'];
+    const kycDocs = {};
+    allowedDocs.forEach((key) => { if (docs[key]) kycDocs[`vendorProfile.kycDocs.${key}`] = docs[key]; });
+
+    await require('../models/User').findByIdAndUpdate(req.user._id, {
+      $set: { ...kycDocs, 'vendorProfile.kycStatus': 'submitted' },
+    });
+
+    res.json({ message: 'KYC documents submitted for review' });
+  } catch (err) { next(err); }
+});
+
+// Public vendor store info
+router.get('/:id/public', async (req, res, next) => {
+  try {
+    const User = require('../models/User');
+    const vendor = await User.findById(req.params.id).select('name vendorProfile');
+    if (!vendor || vendor.role !== 'vendor') return next(new AppError('Vendor not found', 404));
+    const productCount = await Product.countDocuments({ vendorId: req.params.id, status: 'approved' });
+    res.json({
+      vendor: {
+        _id: vendor._id,
+        name: vendor.name,
+        storeName: vendor.vendorProfile?.storeName || vendor.name,
+        storeDescription: vendor.vendorProfile?.storeDescription,
+        logo: vendor.vendorProfile?.logo,
+        rating: vendor.vendorProfile?.rating || 0,
+        location: vendor.vendorProfile?.location,
+        productCount,
+      },
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

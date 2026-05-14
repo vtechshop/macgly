@@ -43,18 +43,23 @@ import AdminBlog from './assets/pages/dashboard/admin/AdminBlog';
 import AdminCMS from './assets/pages/dashboard/admin/AdminCMS';
 import AdminSettings from './assets/pages/dashboard/admin/AdminSettings';
 import AdminShareCatalog from './assets/pages/dashboard/admin/AdminShareCatalog';
+import AdminOrderDetail from './assets/pages/dashboard/admin/AdminOrderDetail';
+import AdminCarousel from './assets/pages/dashboard/admin/AdminCarousel';
+import AdminGamification from './assets/pages/dashboard/admin/AdminGamification';
 import AdminCommissions from './assets/pages/dashboard/admin/AdminCommissions';
 import AdminFlashSales from './assets/pages/dashboard/admin/AdminFlashSales';
 import AdminReturns from './assets/pages/dashboard/admin/AdminReturns';
 import AdminNewsletter from './assets/pages/dashboard/admin/AdminNewsletter';
 import AdminAdsManagement from './assets/pages/dashboard/admin/AdminAdsManagement';
 
+import CustomerOrderDetail from './assets/pages/dashboard/customer/CustomerOrderDetail';
 import CustomerWishlist from './assets/pages/dashboard/customer/CustomerWishlist';
 import CustomerAddresses from './assets/pages/dashboard/customer/CustomerAddresses';
 import VendorDashboard from './assets/pages/dashboard/vendor/VendorDashboard';
 import VendorProducts from './assets/pages/dashboard/vendor/VendorProducts';
 import VendorOrders from './assets/pages/dashboard/vendor/VendorOrders';
 import VendorSupport from './assets/pages/dashboard/vendor/VendorSupport';
+import VendorKYC from './assets/pages/dashboard/vendor/VendorKYC';
 import VendorInventory from './assets/pages/dashboard/vendor/VendorInventory';
 import VendorSettlements from './assets/pages/dashboard/vendor/VendorSettlements';
 import VendorAds from './assets/pages/dashboard/vendor/VendorAds';
@@ -76,6 +81,7 @@ import AffiliateSupport from './assets/pages/dashboard/affiliate/AffiliateSuppor
 
 import VendorRegister from './assets/pages/VendorRegister';
 import AffiliateRegister from './assets/pages/AffiliateRegister';
+import Category from './assets/pages/Category';
 import VendorStore from './assets/pages/VendorStore';
 import Blog from './assets/pages/Blog';
 import BlogPost from './assets/pages/BlogPost';
@@ -152,6 +158,7 @@ export default function App() {
             <Route path="/track-order" element={<TrackOrder />} />
             <Route path="/warranty-check" element={<WarrantyCheck />} />
             <Route path="/store/:id" element={<VendorStore />} />
+            <Route path="/category/:slug" element={<Category />} />
           </Route>
 
           {/* Checkout — protected */}
@@ -187,6 +194,9 @@ export default function App() {
             <Route path="cms" element={<AdminCMS />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="share-catalog" element={<AdminShareCatalog />} />
+            <Route path="orders/:id" element={<AdminOrderDetail />} />
+            <Route path="carousel" element={<AdminCarousel />} />
+            <Route path="gamification" element={<AdminGamification />} />
             <Route path="commissions" element={<AdminCommissions />} />
             <Route path="flash-sales" element={<AdminFlashSales />} />
             <Route path="returns" element={<AdminReturns />} />
@@ -206,12 +216,14 @@ export default function App() {
             <Route path="categories" element={<VendorCategories />} />
             <Route path="manual-orders" element={<VendorManualOrders />} />
             <Route path="settings" element={<VendorSettings />} />
+            <Route path="kyc" element={<VendorKYC />} />
           </Route>
 
           {/* Customer dashboard */}
           <Route path="/dashboard/customer" element={<DashboardLayout requiredRole="customer" />}>
             <Route index element={<CustomerDashboard />} />
             <Route path="orders" element={<CustomerOrders />} />
+            <Route path="orders/:id" element={<CustomerOrderDetail />} />
             <Route path="addresses" element={<CustomerAddresses />} />
             <Route path="wishlist" element={<CustomerWishlist />} />
             <Route path="settings" element={<CustomerSettings />} />
