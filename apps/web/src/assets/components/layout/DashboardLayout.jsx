@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users,
   Tag, Image, Settings, LogOut, Ticket, MapPin, Heart,
   Store, UserCheck, IndianRupee, Link2, ShieldCheck, HelpCircle, Clock, CreditCard, Star, Menu, X,
+  FileText, Inbox, Sliders, LayoutTemplate, ClipboardList, BookOpen, Share2, Mail, Warehouse,
 } from 'lucide-react';
 import VendorOnboarding from '../../pages/dashboard/vendor/VendorOnboarding';
 import api from '../../../utils/api';
@@ -34,6 +35,18 @@ const navsByRole = {
     { type: 'item', to: '/dashboard/admin/warranty', label: 'Warranty', icon: ShieldCheck },
     { type: 'section', label: 'Support' },
     { type: 'item', to: '/dashboard/admin/tickets', label: 'Support Tickets', icon: HelpCircle },
+    { type: 'item', to: '/dashboard/admin/contact-submissions', label: 'Contact Messages', icon: Inbox },
+    { type: 'section', label: 'Operations' },
+    { type: 'item', to: '/dashboard/admin/inventory', label: 'Inventory', icon: Warehouse },
+    { type: 'item', to: '/dashboard/admin/manual-orders', label: 'Manual Orders', icon: ClipboardList },
+    { type: 'item', to: '/dashboard/admin/crm', label: 'CRM', icon: Users },
+    { type: 'item', to: '/dashboard/admin/communications', label: 'Communications', icon: Mail },
+    { type: 'item', to: '/dashboard/admin/share-catalog', label: 'Share Catalog', icon: Share2 },
+    { type: 'section', label: 'Content' },
+    { type: 'item', to: '/dashboard/admin/blog', label: 'Blog', icon: BookOpen },
+    { type: 'item', to: '/dashboard/admin/cms', label: 'CMS Pages', icon: LayoutTemplate },
+    { type: 'section', label: 'Config' },
+    { type: 'item', to: '/dashboard/admin/settings', label: 'App Settings', icon: Sliders },
   ],
   vendor: [
     { type: 'item', to: '/dashboard/vendor', label: 'Overview', icon: LayoutDashboard, end: true },

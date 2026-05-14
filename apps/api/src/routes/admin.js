@@ -30,5 +30,23 @@ router.use('/kyc', require('./admin/kyc'));
 router.use('/reviews', require('./admin/reviews'));
 // Warranty
 router.use('/warranty', require('./admin/warranty'));
+// Blog
+router.use('/blog', require('./admin/blog'));
+// Contact submissions
+router.use('/contact-submissions', require('./admin/contact-submissions'));
+// App settings
+router.use('/settings', require('./admin/settings'));
+// CMS pages
+router.use('/cms', require('./admin/cms'));
+// Manual orders
+router.use('/manual-orders', require('./admin/manual-orders'));
+// CRM
+router.use('/crm', require('./admin/crm'));
+// Bulk communications
+router.use('/communications', require('./admin/communications'));
+// Inventory
+router.use('/inventory', require('./admin/inventory'));
+// Share catalog
+router.use('/share-catalog', require('./admin/share-catalog'));
 
 module.exports = router;

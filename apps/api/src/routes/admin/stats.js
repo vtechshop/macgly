@@ -8,7 +8,9 @@ router.get('/', async (req, res, next) => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
 
     const revenueFilter = { $or: [{ paymentStatus: 'paid' }, { status: 'delivered' }] };
     const activeStatuses = ['pending', 'confirmed', 'processing', 'shipped'];
@@ -23,6 +25,8 @@ router.get('/', async (req, res, next) => {
       vendorCommissionPaid, vendorCommissionPending,
       affiliateCommissionPaid, affiliateCommissionPending,
       pendingActions,
+      revenueLastWeek, ordersLastWeek, revenueLastMonth,
+      pendingTickets,
     ] = await Promise.all([
       Product.countDocuments(),
       Order.countDocuments(),
@@ -74,6 +78,13 @@ router.get('/', async (req, res, next) => {
       ]),
       // Pending actions = orders needing attention
       Order.countDocuments({ status: { $in: ['pending', 'confirmed', 'processing'] } }),
+      // Last week revenue + orders (for trend %)
+      Order.aggregate([{ $match: { ...revenueFilter, createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } } }, { $group: { _id: null, t: { $sum: '$totalAmount' } } }]),
+      Order.countDocuments({ createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } }),
+      // Last month revenue (30-60 days ago)
+      Order.aggregate([{ $match: { ...revenueFilter, createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } }, { $group: { _id: null, t: { $sum: '$totalAmount' } } }]),
+      // Pending support tickets
+      (async () => { try { const Ticket = require('../../models/Ticket'); return Ticket.countDocuments({ status: 'open' }); } catch { return 0; } })(),
     ]);
 
     // Fill last 7 days with 0s for missing dates
@@ -103,6 +114,11 @@ router.get('/', async (req, res, next) => {
         affiliateCommissionPaid: affiliateCommissionPaid[0]?.t || 0,
         affiliateCommissionPending: affiliateCommissionPending[0]?.t || 0,
         pendingActions,
+        revenueLastWeek: revenueLastWeek[0]?.t || 0,
+        ordersLastWeek,
+        revenueLastMonth: revenueLastMonth[0]?.t || 0,
+        pendingTickets,
+        avgOrderValue: orders > 0 ? Math.round((revenueAll[0]?.t || 0) / orders) : 0,
       },
       recentOrders,
       lowStock,

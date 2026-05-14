@@ -34,6 +34,15 @@ import AdminPayments from './assets/pages/dashboard/admin/AdminPayments';
 import AdminKYC from './assets/pages/dashboard/admin/AdminKYC';
 import AdminReviews from './assets/pages/dashboard/admin/AdminReviews';
 import AdminWarranty from './assets/pages/dashboard/admin/AdminWarranty';
+import AdminInventory from './assets/pages/dashboard/admin/AdminInventory';
+import AdminCRM from './assets/pages/dashboard/admin/AdminCRM';
+import AdminCommunications from './assets/pages/dashboard/admin/AdminCommunications';
+import AdminContactSubmissions from './assets/pages/dashboard/admin/AdminContactSubmissions';
+import AdminManualOrders from './assets/pages/dashboard/admin/AdminManualOrders';
+import AdminBlog from './assets/pages/dashboard/admin/AdminBlog';
+import AdminCMS from './assets/pages/dashboard/admin/AdminCMS';
+import AdminSettings from './assets/pages/dashboard/admin/AdminSettings';
+import AdminShareCatalog from './assets/pages/dashboard/admin/AdminShareCatalog';
 
 import CustomerWishlist from './assets/pages/dashboard/customer/CustomerWishlist';
 import CustomerAddresses from './assets/pages/dashboard/customer/CustomerAddresses';
@@ -148,6 +157,15 @@ export default function App() {
             <Route path="kyc" element={<AdminKYC />} />
             <Route path="reviews" element={<AdminReviews />} />
             <Route path="warranty" element={<AdminWarranty />} />
+            <Route path="inventory" element={<AdminInventory />} />
+            <Route path="crm" element={<AdminCRM />} />
+            <Route path="communications" element={<AdminCommunications />} />
+            <Route path="contact-submissions" element={<AdminContactSubmissions />} />
+            <Route path="manual-orders" element={<AdminManualOrders />} />
+            <Route path="blog" element={<AdminBlog />} />
+            <Route path="cms" element={<AdminCMS />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="share-catalog" element={<AdminShareCatalog />} />
           </Route>
 
           {/* Vendor dashboard */}
