@@ -6,11 +6,7 @@
     },
     {
       "source": "/sitemap.xml",
-      "destination": "https://macgly.onrender.com/sitemap.xml"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "https://macgly.onrender.com/robots.txt"
+      "destination": "/api/sitemap"
     },
     {
       "source": "/(.*)",
