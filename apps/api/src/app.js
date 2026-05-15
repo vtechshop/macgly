@@ -33,7 +33,7 @@ app.use(helmet({
         "'self'",
         'https://api.razorpay.com',
         'https://checkout.razorpay.com',
-        'https://macgly-api.onrender.com',
+        'https://macgly.onrender.com',
         'https://api.macgly.com',
       ],
       frameSrc: ["'self'", 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
