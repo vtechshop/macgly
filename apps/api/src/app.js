@@ -132,6 +132,10 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/referrals', require('./routes/referrals'));
 app.get('/sitemap.xml', require('./routes/sitemap'));
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send(`User-agent: *\nAllow: /\nDisallow: /dashboard/\nDisallow: /api/\nSitemap: https://macgly.com/sitemap.xml`);
+});
 
 // Serve React app in production (Vite handles it in dev)
 if (isProd()) {
