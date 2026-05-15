@@ -13,7 +13,27 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 const app = express();
 
 // Security headers
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: [
+        "'self'",
+        'data:',
+        'blob:',
+        'https://res.cloudinary.com',
+        'https://images.unsplash.com',
+        'https://*.googleusercontent.com',
+        'https://*.amazonaws.com',
+      ],
+      connectSrc: ["'self'", 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
+      frameSrc: ["'self'", 'https://api.razorpay.com', 'https://checkout.razorpay.com'],
+    },
+  },
+}));
 
 // CORS
 const allowedOrigins = [
