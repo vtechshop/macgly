@@ -93,7 +93,7 @@ export default function Header() {
           <div className="flex items-center gap-4 h-16">
             {/* Logo */}
             <Link to="/" className="shrink-0">
-              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-10 w-auto" />
+              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-14 w-auto" />
             </Link>
 
             {/* Search */}
