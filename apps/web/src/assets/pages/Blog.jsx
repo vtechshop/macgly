@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, BookOpen } from 'lucide-react';
 import api from '../../utils/api';
 import { useFetch } from '../../hooks';
+import { setMeta } from '../../utils/seo';
 import Spinner from '../components/common/Spinner';
 
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : ''; }
@@ -10,6 +11,14 @@ function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-IN', {
 export default function Blog() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setMeta({
+      title: 'Blog — Tools, Tips & Industry News | Macgly',
+      description: 'Expert guides, tool reviews and industry news from Macgly. Learn about power tools, machines, spare parts and more.',
+      canonical: 'https://macgly.com/blog',
+    });
+  }, []);
 
   const { data, isLoading } = useFetch(
     ['blog', search, page],

@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, Mail, Phone, MapPin } from 'lucide-react';
 import api from '../../../utils/api';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import { setMeta } from '../../../utils/seo';
 import toast from 'react-hot-toast';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    setMeta({
+      title: 'Contact Us | Macgly',
+      description: 'Get in touch with Macgly for support, vendor inquiries, or partnership opportunities. We\'re here to help.',
+      canonical: 'https://macgly.com/info/contact',
+    });
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();

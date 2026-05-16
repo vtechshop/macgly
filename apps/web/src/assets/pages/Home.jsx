@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
 import { ArrowRight, Shield, Truck, Headphones, RotateCcw, Zap, Settings, Hammer, Package, HardHat, Wrench, ChevronRight } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import api from '../../utils/api';
@@ -6,6 +7,7 @@ import ProductGrid from '../components/product/ProductGrid';
 import { setCart } from '../../store/slices/cartSlice';
 import { useFetch } from '../../hooks';
 import { normalizeImageUrl } from '../../utils/format';
+import { setMeta } from '../../utils/seo';
 import toast from 'react-hot-toast';
 
 const TRUST_BADGES = [
@@ -65,6 +67,14 @@ function HeroSection({ banners }) {
 
 export default function Home() {
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    setMeta({
+      title: 'Macgly — Professional Tools & Machinery in India',
+      description: 'Buy genuine power tools, hand tools, machines, spare parts and safety equipment from trusted vendors. Pan India delivery. Trusted by 50,000+ engineers & workshops.',
+      canonical: 'https://macgly.com/',
+    });
+  }, []);
 
   const { data: bannersData } = useFetch(['banners'], () => api.get('/catalog/banners').then((r) => r.data));
   const { data: featuredData, isLoading } = useFetch(['featured'], () => api.get('/catalog/featured').then((r) => r.data));

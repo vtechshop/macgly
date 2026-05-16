@@ -1,11 +1,12 @@
 import { useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { SlidersHorizontal, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import ProductGrid from '../components/product/ProductGrid';
 import { setCart } from '../../store/slices/cartSlice';
 import { useFetch } from '../../hooks';
+import { setMeta } from '../../utils/seo';
 import toast from 'react-hot-toast';
 
 export default function Search() {
@@ -20,6 +21,13 @@ export default function Search() {
   const sort = params.get('sort') || 'displayOrder';
   const minPrice = params.get('minPrice') || '';
   const maxPrice = params.get('maxPrice') || '';
+
+  useEffect(() => {
+    const title = search
+      ? `"${search}" — Search Results | Macgly`
+      : 'All Products — Tools & Machinery | Macgly';
+    setMeta({ title, description: 'Browse genuine tools, machines, spare parts and safety equipment on Macgly. Pan India delivery.' });
+  }, [search]);
 
   const { data, isLoading } = useFetch(
     ['products', { page, search, category, featured, sort, minPrice, maxPrice }],

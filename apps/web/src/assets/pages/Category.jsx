@@ -5,6 +5,7 @@ import api from '../../utils/api';
 import { useFetch } from '../../hooks';
 import Spinner from '../components/common/Spinner';
 import ProductCard from '../components/product/ProductCard';
+import { setMeta } from '../../utils/seo';
 
 function FilterPanel({ filters, onChange, onClear }) {
   const [priceOpen, setPriceOpen] = useState(true);
@@ -97,6 +98,16 @@ export default function Category() {
 
   const category = catData?.category;
   const products = data?.products || [];
+
+  useEffect(() => {
+    if (category) {
+      setMeta({
+        title: `${category.name} — Buy Online | Macgly`,
+        description: category.description || `Shop ${category.name} from trusted vendors on Macgly. Genuine products, fast delivery across India.`,
+        canonical: `https://macgly.com/category/${slug}`,
+      });
+    }
+  }, [category, slug]);
   const pagination = data?.pagination || {};
 
   const SORT_OPTIONS = [

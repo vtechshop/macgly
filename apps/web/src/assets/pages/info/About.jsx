@@ -1,7 +1,17 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Truck, Headphones, RotateCcw, Store, UserCheck } from 'lucide-react';
+import { setMeta } from '../../../utils/seo';
 
 export default function About() {
+  useEffect(() => {
+    setMeta({
+      title: 'About Macgly — India\'s Tools & Machinery Marketplace',
+      description: 'Macgly is India\'s dedicated marketplace for professional tools, machinery and spare parts. Trusted by 50,000+ engineers, contractors and workshops.',
+      canonical: 'https://macgly.com/info/about',
+    });
+  }, []);
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-12 space-y-10">
       {/* Hero */}
