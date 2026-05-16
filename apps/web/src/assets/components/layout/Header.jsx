@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { ShoppingCart, Search, Menu, X, Phone, ChevronDown, Wrench } from 'lucide-react';
+import { ShoppingCart, Search, Menu, X, Phone, ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { clearUser } from '../../../store/slices/authSlice';
 import { clearCart, openCartDrawer } from '../../../store/slices/cartSlice';
@@ -92,14 +92,8 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 shrink-0">
-              <div className="bg-primary-600 text-white p-1.5 rounded">
-                <Wrench size={18} />
-              </div>
-              <div className="leading-none">
-                <span className="text-xl font-black text-secondary-900 tracking-tight">MACGLY</span>
-                <p className="text-[9px] text-primary-600 font-semibold uppercase tracking-widest">Tools & Machinery</p>
-              </div>
+            <Link to="/" className="shrink-0">
+              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-10 w-auto" />
             </Link>
 
             {/* Search */}
