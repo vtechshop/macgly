@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://macgly.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://macgly.com/products</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/blog</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/track-order</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://macgly.com/warranty-check</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://macgly.com/sell</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://macgly.com/info/about</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://macgly.com/info/contact</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://macgly.com/category/power-tools</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/hand-tools</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/spare-parts</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/machines</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/safety</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/measuring-tools</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/welding</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/cutting-tools</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+</urlset>
