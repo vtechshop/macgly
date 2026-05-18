@@ -85,7 +85,7 @@ export default function Home() {
   const categories = categoriesData?.categories || [];
 
   return (
-    <div className="max-w-7xl mx-auto flex">
+    <div className="flex w-full">
 
       {/* Sticky left category nav — desktop only */}
       {categories.length > 0 && (
@@ -95,7 +95,7 @@ export default function Home() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-6 py-4 space-y-8">
+      <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4 space-y-8 max-w-7xl">
 
         {/* Hero */}
         <HeroSection banners={bannersData?.banners} />
