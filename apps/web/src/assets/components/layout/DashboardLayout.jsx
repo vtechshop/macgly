@@ -104,7 +104,7 @@ function SidebarContent({ navItems, user, activeOrderCount, onNav, onLogout }) {
   return (
     <>
       <div className="px-4 py-3 border-b border-white/10 flex justify-center shrink-0 bg-white">
-        <NavLink to="/"><img src="/logo.png" alt="Macgly" className="h-14 w-auto" /></NavLink>
+        <NavLink to="/"><img src="/logo.png" alt="Macgly" className="h-20 w-auto" /></NavLink>
       </div>
 
       <nav className="flex-1 py-3 overflow-y-auto">
