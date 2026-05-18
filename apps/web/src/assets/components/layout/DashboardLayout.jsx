@@ -103,8 +103,8 @@ const navsByRole = {
 function SidebarContent({ navItems, user, activeOrderCount, onNav, onLogout }) {
   return (
     <>
-      <div className="px-4 py-3 border-b border-white/10 flex justify-center shrink-0">
-        <NavLink to="/"><img src="/logo.png" alt="Macgly" className="h-12 w-auto" /></NavLink>
+      <div className="px-4 py-3 border-b border-white/10 flex justify-center shrink-0 bg-white/5">
+        <NavLink to="/"><img src="/logo.png" alt="Macgly" className="h-16 w-auto" /></NavLink>
       </div>
 
       <nav className="flex-1 py-3 overflow-y-auto">
@@ -121,7 +121,7 @@ function SidebarContent({ navItems, user, activeOrderCount, onNav, onLogout }) {
               onClick={onNav}
               className={({ isActive }) =>
                 `flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
+                  isActive ? 'bg-orange-500 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
