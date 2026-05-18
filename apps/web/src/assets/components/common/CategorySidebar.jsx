@@ -15,15 +15,65 @@ const CATEGORY_ICONS = {
   default: Package,
 };
 
-function CatIcon({ cat, size = 16, className = '' }) {
+function CatIcon({ cat, size = 16 }) {
   const Icon = CATEGORY_ICONS[cat.slug] || CATEGORY_ICONS.default;
   if (cat.image) {
-    return <img src={normalizeImageUrl(cat.image)} alt="" className={`object-contain ${className}`} style={{ width: size, height: size }} onError={(e) => { e.target.style.display = 'none'; }} />;
+    return <img src={normalizeImageUrl(cat.image)} alt="" className="object-contain" style={{ width: size, height: size }} onError={(e) => { e.target.style.display = 'none'; }} />;
   }
   return <Icon size={size} />;
 }
 
-export default function CategorySidebar({ categories }) {
+/* ── Sticky left-nav mode (used on homepage) ─────────────────────────── */
+function StickyNav({ parents, childrenMap }) {
+  return (
+    <nav className="bg-secondary-50 border-r border-secondary-200 w-full">
+      {parents.map(cat => {
+        const children = childrenMap[cat._id] || [];
+        return (
+          <div key={cat._id} className="relative group">
+            <Link
+              to={`/category/${cat.slug}`}
+              className="flex items-center gap-2 px-3 py-2.5 text-secondary-700 hover:bg-white hover:text-primary-600 transition-colors"
+            >
+              <div className="w-7 h-7 rounded bg-secondary-200 group-hover:bg-primary-50 flex items-center justify-center shrink-0 text-secondary-500 group-hover:text-primary-500 transition-colors">
+                <CatIcon cat={cat} size={14} />
+              </div>
+              <span className="text-xs font-medium flex-1 leading-tight">{cat.name}</span>
+              {children.length > 0 && <ChevronRight size={11} className="opacity-40 shrink-0" />}
+            </Link>
+
+            {/* Flyout panel */}
+            {children.length > 0 && (
+              <div className="absolute left-full top-0 z-50 w-56 bg-white border border-secondary-200 shadow-xl rounded-r-lg hidden group-hover:block">
+                <div className="px-3 py-2 border-b border-secondary-100">
+                  <span className="text-xs font-bold text-secondary-700">{cat.name}</span>
+                </div>
+                {children.map(sub => (
+                  <Link
+                    key={sub._id}
+                    to={`/category/${sub.slug}`}
+                    className="flex items-center gap-2 px-3 py-2 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                  >
+                    <div className="w-6 h-6 rounded bg-secondary-100 flex items-center justify-center shrink-0 text-secondary-500">
+                      <CatIcon cat={sub} size={12} />
+                    </div>
+                    <span className="text-xs text-secondary-700">{sub.name}</span>
+                  </Link>
+                ))}
+                <Link to={`/category/${cat.slug}`} className="block px-3 py-2 text-xs text-primary-600 font-semibold border-t border-secondary-100 hover:bg-primary-50">
+                  View all {cat.name} →
+                </Link>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
+/* ── Default export ───────────────────────────────────────────────────── */
+export default function CategorySidebar({ categories, sticky = false }) {
   const parents = categories.filter(c => !c.parentId);
 
   const childrenMap = {};
@@ -42,12 +92,15 @@ export default function CategorySidebar({ categories }) {
   const activeCat = parents.find(p => p._id === activeId);
   const activeChildren = childrenMap[activeId] || [];
 
+  if (sticky) {
+    return <StickyNav parents={parents} childrenMap={childrenMap} />;
+  }
+
   return (
     <>
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex" style={{ minHeight: 340 }}>
-        {/* Left: parent categories */}
-        <div className="w-44 bg-secondary-50 border-r border-secondary-200 shrink-0 overflow-y-auto">
+      {/* Desktop: left + right panel */}
+      <div className="hidden md:flex" style={{ minHeight: 300 }}>
+        <div className="w-44 bg-secondary-50 border-r border-secondary-200 shrink-0">
           {parents.map(cat => {
             const isActive = cat._id === activeId;
             const hasChildren = !!(childrenMap[cat._id]?.length);
@@ -55,10 +108,8 @@ export default function CategorySidebar({ categories }) {
               <div
                 key={cat._id}
                 onMouseEnter={() => setHoveredId(cat._id)}
-                className={`flex items-center gap-2.5 px-0 py-2.5 cursor-pointer select-none transition-colors ${
-                  isActive
-                    ? 'bg-white border-r-2 border-primary-500 text-primary-600'
-                    : 'text-secondary-700 hover:bg-white'
+                className={`flex items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none transition-colors ${
+                  isActive ? 'bg-white border-r-2 border-primary-500 text-primary-600' : 'text-secondary-700 hover:bg-white'
                 }`}
               >
                 <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${isActive ? 'bg-primary-50 text-primary-600' : 'bg-secondary-200 text-secondary-500'}`}>
@@ -71,25 +122,19 @@ export default function CategorySidebar({ categories }) {
           })}
         </div>
 
-        {/* Right: subcategories panel */}
-        <div className="flex-1 px-3 py-3 bg-white">
+        <div className="flex-1 px-4 py-3 bg-white">
           {activeCat && (
             <>
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-secondary-100">
                 <h3 className="text-sm font-bold text-secondary-800">{activeCat.name}</h3>
-                <Link to={`/category/${activeCat.slug}`} className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-0.5">
+                <Link to={`/category/${activeCat.slug}`} className="text-xs text-primary-600 font-semibold flex items-center gap-0.5 hover:text-primary-700">
                   View all <ChevronRight size={11} />
                 </Link>
               </div>
-
               {activeChildren.length > 0 ? (
                 <div className="grid grid-cols-3 gap-2">
                   {activeChildren.map(sub => (
-                    <Link
-                      key={sub._id}
-                      to={`/category/${sub.slug}`}
-                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-primary-50 group transition-colors"
-                    >
+                    <Link key={sub._id} to={`/category/${sub.slug}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-primary-50 group transition-colors">
                       <div className="w-8 h-8 rounded bg-secondary-100 group-hover:bg-primary-100 flex items-center justify-center shrink-0 text-secondary-500 group-hover:text-primary-500 transition-colors">
                         <CatIcon cat={sub} size={15} />
                       </div>
@@ -98,10 +143,7 @@ export default function CategorySidebar({ categories }) {
                   ))}
                 </div>
               ) : (
-                <Link
-                  to={`/category/${activeCat.slug}`}
-                  className="inline-flex items-center gap-1 text-sm text-primary-600 font-semibold hover:underline mt-2"
-                >
+                <Link to={`/category/${activeCat.slug}`} className="inline-flex items-center gap-1 text-sm text-primary-600 font-semibold hover:underline mt-2">
                   Shop {activeCat.name} <ChevronRight size={14} />
                 </Link>
               )}
@@ -115,7 +157,6 @@ export default function CategorySidebar({ categories }) {
         {parents.map(cat => {
           const isOpen = openId === cat._id;
           const children = childrenMap[cat._id] || [];
-
           const inner = (
             <>
               <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${isOpen ? 'bg-primary-50 text-primary-500' : 'bg-secondary-100 text-secondary-500'}`}>
@@ -124,18 +165,13 @@ export default function CategorySidebar({ categories }) {
               <span className="flex-1 text-sm font-medium text-secondary-800 text-left">{cat.name}</span>
               {children.length > 0
                 ? isOpen ? <ChevronUp size={15} className="text-secondary-400 shrink-0" /> : <ChevronDown size={15} className="text-secondary-400 shrink-0" />
-                : <ChevronRight size={15} className="text-secondary-400 shrink-0" />
-              }
+                : <ChevronRight size={15} className="text-secondary-400 shrink-0" />}
             </>
           );
-
           return (
             <div key={cat._id}>
               {children.length > 0 ? (
-                <button
-                  onClick={() => setOpenId(isOpen ? null : cat._id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-secondary-50 transition-colors"
-                >
+                <button onClick={() => setOpenId(isOpen ? null : cat._id)} className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-secondary-50 transition-colors">
                   {inner}
                 </button>
               ) : (
@@ -143,15 +179,10 @@ export default function CategorySidebar({ categories }) {
                   {inner}
                 </Link>
               )}
-
               {isOpen && children.length > 0 && (
                 <div className="bg-secondary-50 px-4 py-3 grid grid-cols-2 gap-2">
                   {children.map(sub => (
-                    <Link
-                      key={sub._id}
-                      to={`/category/${sub.slug}`}
-                      className="flex items-center gap-2 p-2 rounded bg-white hover:bg-primary-50 transition-colors group"
-                    >
+                    <Link key={sub._id} to={`/category/${sub.slug}`} className="flex items-center gap-2 p-2 rounded bg-white hover:bg-primary-50 transition-colors group">
                       <div className="w-6 h-6 rounded bg-secondary-100 group-hover:bg-primary-100 flex items-center justify-center shrink-0 text-secondary-500">
                         <CatIcon cat={sub} size={12} />
                       </div>

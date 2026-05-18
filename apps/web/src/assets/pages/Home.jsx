@@ -85,71 +85,82 @@ export default function Home() {
   const categories = categoriesData?.categories || [];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-8">
+    <div className="max-w-7xl mx-auto flex">
 
-      {/* Hero */}
-      <HeroSection banners={bannersData?.banners} />
-
-      {/* Trust badges */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {TRUST_BADGES.map(({ icon: Icon, title, desc }) => (
-          <div key={title} className="card flex items-center gap-3 px-4 py-3">
-            <div className="bg-primary-50 text-primary-600 p-2 rounded shrink-0">
-              <Icon size={18} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-secondary-900">{title}</p>
-              <p className="text-[11px] text-secondary-400">{desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Categories */}
+      {/* Sticky left category nav — desktop only */}
       {categories.length > 0 && (
-        <section className="-mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden">
-          <div className="flex items-center justify-between mb-4 px-4 sm:px-6 lg:px-8">
-            <h2 className="section-title">Shop by Category</h2>
-            <Link to="/products" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
-              All Categories <ChevronRight size={14} />
-            </Link>
-          </div>
-          <CategorySidebar categories={categories} />
-        </section>
+        <aside className="hidden lg:block w-48 shrink-0 self-start sticky border-r border-secondary-200" style={{ top: '200px' }}>
+          <CategorySidebar categories={categories} sticky />
+        </aside>
       )}
 
-      {/* Promo strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {PROMO_BANNERS.map((b) => (
-          <Link key={b.label} to={b.to}
-            className={`relative overflow-hidden rounded-lg bg-gradient-to-r ${b.color} p-5 text-white hover:opacity-90 transition-opacity`}>
-            <p className="text-xs font-semibold opacity-80 uppercase tracking-wider">{b.sub}</p>
-            <p className="text-lg font-black mt-0.5">{b.label}</p>
-            <ArrowRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-70" />
-          </Link>
-        ))}
-      </div>
+      {/* Main content */}
+      <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-6 py-4 space-y-8">
 
-      {/* Featured Products */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="section-title">Featured Products</h2>
-          <Link to="/products?featured=true" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
-            View All <ChevronRight size={14} />
+        {/* Hero */}
+        <HeroSection banners={bannersData?.banners} />
+
+        {/* Trust badges */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {TRUST_BADGES.map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="card flex items-center gap-3 px-4 py-3">
+              <div className="bg-primary-50 text-primary-600 p-2 rounded shrink-0">
+                <Icon size={18} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-secondary-900">{title}</p>
+                <p className="text-[11px] text-secondary-400">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile categories accordion */}
+        {categories.length > 0 && (
+          <section className="lg:hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="section-title">Shop by Category</h2>
+              <Link to="/products" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
+                All Categories <ChevronRight size={14} />
+              </Link>
+            </div>
+            <CategorySidebar categories={categories} />
+          </section>
+        )}
+
+        {/* Promo strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {PROMO_BANNERS.map((b) => (
+            <Link key={b.label} to={b.to}
+              className={`relative overflow-hidden rounded-lg bg-gradient-to-r ${b.color} p-5 text-white hover:opacity-90 transition-opacity`}>
+              <p className="text-xs font-semibold opacity-80 uppercase tracking-wider">{b.sub}</p>
+              <p className="text-lg font-black mt-0.5">{b.label}</p>
+              <ArrowRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-70" />
+            </Link>
+          ))}
+        </div>
+
+        {/* Featured Products */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-title">Featured Products</h2>
+            <Link to="/products?featured=true" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
+              View All <ChevronRight size={14} />
+            </Link>
+          </div>
+          <ProductGrid products={featuredData?.products} loading={isLoading} onAddToCart={handleAddToCart} />
+        </section>
+
+        {/* Bottom CTA strip */}
+        <div className="bg-secondary-900 rounded-lg p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <p className="text-white font-bold text-lg">Need bulk orders or custom parts?</p>
+            <p className="text-secondary-400 text-sm mt-0.5">Get special pricing for B2B orders and workshop requirements</p>
+          </div>
+          <Link to="/info/contact" className="btn-primary shrink-0">
+            Contact Us <ArrowRight size={16} />
           </Link>
         </div>
-        <ProductGrid products={featuredData?.products} loading={isLoading} onAddToCart={handleAddToCart} />
-      </section>
-
-      {/* Bottom CTA strip */}
-      <div className="bg-secondary-900 rounded-lg p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-          <p className="text-white font-bold text-lg">Need bulk orders or custom parts?</p>
-          <p className="text-secondary-400 text-sm mt-0.5">Get special pricing for B2B orders and workshop requirements</p>
-        </div>
-        <Link to="/info/contact" className="btn-primary shrink-0">
-          Contact Us <ArrowRight size={16} />
-        </Link>
       </div>
     </div>
   );
