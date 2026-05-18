@@ -95,7 +95,7 @@ export default function Home() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4 space-y-8 max-w-7xl">
+      <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4 space-y-8">
 
         {/* Hero */}
         <HeroSection banners={bannersData?.banners} />
