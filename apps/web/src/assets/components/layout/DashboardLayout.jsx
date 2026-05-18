@@ -103,8 +103,8 @@ const navsByRole = {
 function SidebarContent({ navItems, user, activeOrderCount, onNav, onLogout }) {
   return (
     <>
-      <div className="px-4 py-5 border-b border-white/10 text-center shrink-0">
-        <NavLink to="/" className="text-xl font-bold text-blue-400">Macgly</NavLink>
+      <div className="px-4 py-3 border-b border-white/10 flex justify-center shrink-0">
+        <NavLink to="/"><img src="/logo.png" alt="Macgly" className="h-12 w-auto" /></NavLink>
       </div>
 
       <nav className="flex-1 py-3 overflow-y-auto">
