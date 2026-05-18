@@ -20,7 +20,7 @@ export default function Footer() {
             </p>
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex items-center gap-2"><Phone size={13} /><span>+91 98765 43210</span></div>
-              <div className="flex items-center gap-2"><Mail size={13} /><span>support@macgly.com</span></div>
+              <div className="flex items-center gap-2"><Mail size={13} /><span>macglyshop@gmail.com</span></div>
               <div className="flex items-center gap-2 text-secondary-500"><MapPin size={13} /><span>Chennai, Tamil Nadu, India</span></div>
             </div>
             <div className="flex gap-3 mt-4">

@@ -47,7 +47,7 @@ export default function Contact() {
             <h2 className="font-bold text-secondary-800 mb-4">Get in Touch</h2>
             <div className="space-y-4">
               {[
-                { icon: Mail, label: 'Email', value: 'support@macgly.com' },
+                { icon: Mail, label: 'Email', value: 'macglyshop@gmail.com' },
                 { icon: Phone, label: 'Phone', value: '+91 98765 43210' },
                 { icon: MapPin, label: 'Address', value: 'Tirupur, Tamil Nadu, India' },
               ].map(({ icon: Icon, label, value }) => (
