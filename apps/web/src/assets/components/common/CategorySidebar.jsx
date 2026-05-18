@@ -47,7 +47,7 @@ export default function CategorySidebar({ categories }) {
       {/* Desktop sidebar */}
       <div className="hidden md:flex" style={{ minHeight: 340 }}>
         {/* Left: parent categories */}
-        <div className="w-52 bg-secondary-50 border-r border-secondary-200 shrink-0 overflow-y-auto">
+        <div className="w-44 bg-secondary-50 border-r border-secondary-200 shrink-0 overflow-y-auto">
           {parents.map(cat => {
             const isActive = cat._id === activeId;
             const hasChildren = !!(childrenMap[cat._id]?.length);
@@ -55,7 +55,7 @@ export default function CategorySidebar({ categories }) {
               <div
                 key={cat._id}
                 onMouseEnter={() => setHoveredId(cat._id)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 cursor-pointer select-none transition-colors ${
+                className={`flex items-center gap-2.5 px-2 py-2.5 cursor-pointer select-none transition-colors ${
                   isActive
                     ? 'bg-white border-r-2 border-primary-500 text-primary-600'
                     : 'text-secondary-700 hover:bg-white'
@@ -72,7 +72,7 @@ export default function CategorySidebar({ categories }) {
         </div>
 
         {/* Right: subcategories panel */}
-        <div className="flex-1 p-4 bg-white">
+        <div className="flex-1 px-4 py-3 bg-white">
           {activeCat && (
             <>
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-secondary-100">
