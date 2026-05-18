@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { ArrowRight, Shield, Truck, Headphones, RotateCcw, Zap, Settings, Hammer, Package, HardHat, Wrench, ChevronRight } from 'lucide-react';
+import { ArrowRight, Shield, Truck, Headphones, RotateCcw, ChevronRight } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import api from '../../utils/api';
 import ProductGrid from '../components/product/ProductGrid';
+import CategorySidebar from '../components/common/CategorySidebar';
 import { setCart } from '../../store/slices/cartSlice';
 import { useFetch } from '../../hooks';
 import { normalizeImageUrl } from '../../utils/format';
@@ -16,15 +17,6 @@ const TRUST_BADGES = [
   { icon: Headphones, title: 'Expert Support', desc: 'Technical assistance' },
   { icon: RotateCcw, title: 'Easy Returns', desc: '7-day return policy' },
 ];
-
-const CATEGORY_ICONS = {
-  'power-tools': Zap,
-  'hand-tools': Wrench,
-  'spare-parts': Settings,
-  machines: Hammer,
-  safety: HardHat,
-  default: Package,
-};
 
 const PROMO_BANNERS = [
   { label: 'POWER TOOLS', sub: 'Up to 40% Off', color: 'from-orange-600 to-orange-400', to: '/products?category=power-tools' },
@@ -122,32 +114,7 @@ export default function Home() {
               All Categories <ChevronRight size={14} />
             </Link>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-            {categories.slice(0, 8).map((cat) => {
-              const Icon = CATEGORY_ICONS[cat.slug] || CATEGORY_ICONS.default;
-              return (
-                <Link
-                  key={cat._id}
-                  to={`/products?category=${cat.slug}`}
-                  className="card flex flex-col items-center gap-2 p-3 hover:border-primary-400 hover:shadow-md transition-all text-center group"
-                >
-                  {cat.image ? (
-                    <img
-                      src={normalizeImageUrl(cat.image)}
-                      alt={cat.name}
-                      className="w-10 h-10 object-contain"
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                  ) : (
-                    <div className="w-10 h-10 flex items-center justify-center text-primary-500 bg-primary-50 rounded-lg group-hover:bg-primary-100 transition-colors">
-                      <Icon size={20} />
-                    </div>
-                  )}
-                  <span className="text-[11px] font-semibold text-secondary-700 leading-tight">{cat.name}</span>
-                </Link>
-              );
-            })}
-          </div>
+          <CategorySidebar categories={categories} />
         </section>
       )}
 

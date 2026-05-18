@@ -11,7 +11,7 @@ export default function AdminCategories() {
   const [rev, setRev] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', slug: '', description: '', displayOrder: 0 });
+  const [form, setForm] = useState({ name: '', slug: '', description: '', displayOrder: 0, parentId: '' });
 
   const { data } = useFetch(
     ['admin-categories', rev],
@@ -31,8 +31,8 @@ export default function AdminCategories() {
     { onSuccess: () => { setRev((r) => r + 1); toast.success('Deleted'); } }
   );
 
-  function openEdit(c) { setEditing(c); setForm(c); setModalOpen(true); }
-  function openNew() { setEditing(null); setForm({ name: '', slug: '', description: '', displayOrder: 0 }); setModalOpen(true); }
+  function openEdit(c) { setEditing(c); setForm({ ...c, parentId: c.parentId || '' }); setModalOpen(true); }
+  function openNew() { setEditing(null); setForm({ name: '', slug: '', description: '', displayOrder: 0, parentId: '' }); setModalOpen(true); }
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   return (
@@ -46,15 +46,19 @@ export default function AdminCategories() {
           <thead className="bg-secondary-50 border-b border-secondary-200">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-secondary-600">Name</th>
+              <th className="text-left px-4 py-3 font-medium text-secondary-600">Parent</th>
               <th className="text-left px-4 py-3 font-medium text-secondary-600">Slug</th>
               <th className="text-left px-4 py-3 font-medium text-secondary-600">Order</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-secondary-100">
-            {data?.categories?.map((c) => (
+            {data?.categories?.map((c) => {
+              const parent = data.categories.find(p => p._id === (c.parentId?._id || c.parentId));
+              return (
               <tr key={c._id} className="hover:bg-secondary-50">
                 <td className="px-4 py-3 font-medium">{c.name}</td>
+                <td className="px-4 py-3 text-secondary-400 text-xs">{parent ? parent.name : <span className="text-secondary-300">—</span>}</td>
                 <td className="px-4 py-3 text-secondary-400">{c.slug}</td>
                 <td className="px-4 py-3">{c.displayOrder}</td>
                 <td className="px-4 py-3">
@@ -64,14 +68,28 @@ export default function AdminCategories() {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Category' : 'New Category'}>
-        <form onSubmit={(e) => { e.preventDefault(); save(form); }} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); save({ ...form, parentId: form.parentId || null }); }} className="space-y-4">
           <Input label="Name" value={form.name} onChange={set('name')} required />
           <Input label="Slug (auto if blank)" value={form.slug} onChange={set('slug')} />
+          <div>
+            <label className="block text-sm font-medium text-secondary-700 mb-1">Parent Category (leave blank for top-level)</label>
+            <select
+              value={form.parentId || ''}
+              onChange={set('parentId')}
+              className="input w-full"
+            >
+              <option value="">— Top-level category —</option>
+              {data?.categories?.filter(c => !c.parentId && c._id !== editing?._id).map(c => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
           <Input label="Description" value={form.description} onChange={set('description')} />
           <Input label="Display Order" type="number" value={form.displayOrder} onChange={set('displayOrder')} />
           <div className="flex justify-end gap-3">
