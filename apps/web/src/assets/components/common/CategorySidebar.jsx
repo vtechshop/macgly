@@ -55,7 +55,7 @@ export default function CategorySidebar({ categories }) {
               <div
                 key={cat._id}
                 onMouseEnter={() => setHoveredId(cat._id)}
-                className={`flex items-center gap-2.5 px-2 py-2.5 cursor-pointer select-none transition-colors ${
+                className={`flex items-center gap-2.5 px-0 py-2.5 cursor-pointer select-none transition-colors ${
                   isActive
                     ? 'bg-white border-r-2 border-primary-500 text-primary-600'
                     : 'text-secondary-700 hover:bg-white'
@@ -72,7 +72,7 @@ export default function CategorySidebar({ categories }) {
         </div>
 
         {/* Right: subcategories panel */}
-        <div className="flex-1 px-4 py-3 bg-white">
+        <div className="flex-1 px-3 py-3 bg-white">
           {activeCat && (
             <>
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-secondary-100">

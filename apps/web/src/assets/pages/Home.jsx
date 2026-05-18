@@ -107,7 +107,7 @@ export default function Home() {
 
       {/* Categories */}
       {categories.length > 0 && (
-        <section className="-mx-4 sm:-mx-6 lg:-mx-8">
+        <section className="-mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden">
           <div className="flex items-center justify-between mb-4 px-4 sm:px-6 lg:px-8">
             <h2 className="section-title">Shop by Category</h2>
             <Link to="/products" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
