@@ -90,9 +90,9 @@ export default function Header() {
       {/* Main bar */}
       <div className="bg-white border-b border-secondary-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 py-2">
+          <div className="flex items-center gap-4 h-16">
             {/* Logo */}
-            <Link to="/" className="shrink-0">
+            <Link to="/" className="shrink-0 -my-6">
               <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-28 w-auto" />
             </Link>
 
