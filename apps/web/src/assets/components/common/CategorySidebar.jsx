@@ -45,7 +45,7 @@ export default function CategorySidebar({ categories }) {
   return (
     <>
       {/* Desktop sidebar */}
-      <div className="hidden md:flex border border-secondary-200 rounded-lg overflow-hidden shadow-sm" style={{ minHeight: 340 }}>
+      <div className="hidden md:flex" style={{ minHeight: 340 }}>
         {/* Left: parent categories */}
         <div className="w-52 bg-secondary-50 border-r border-secondary-200 shrink-0 overflow-y-auto">
           {parents.map(cat => {
@@ -111,7 +111,7 @@ export default function CategorySidebar({ categories }) {
       </div>
 
       {/* Mobile: accordion */}
-      <div className="md:hidden border border-secondary-200 rounded-lg overflow-hidden divide-y divide-secondary-100">
+      <div className="md:hidden divide-y divide-secondary-100">
         {parents.map(cat => {
           const isOpen = openId === cat._id;
           const children = childrenMap[cat._id] || [];
