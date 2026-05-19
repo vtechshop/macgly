@@ -12,10 +12,10 @@ import { setMeta } from '../../utils/seo';
 import toast from 'react-hot-toast';
 
 const TRUST_BADGES = [
-  { icon: Shield,     title: '100% Genuine',    desc: 'Authenticated products only', bg: 'bg-blue-50',    fg: 'text-blue-600' },
-  { icon: Truck,      title: 'Fast Delivery',    desc: 'Pan India shipping',          bg: 'bg-emerald-50', fg: 'text-emerald-600' },
-  { icon: Headphones, title: 'Expert Support',   desc: 'Technical assistance',        bg: 'bg-violet-50',  fg: 'text-violet-600' },
-  { icon: RotateCcw,  title: 'Easy Returns',     desc: '7-day return policy',         bg: 'bg-orange-50',  fg: 'text-orange-600' },
+  { icon: Shield,     title: '100% Genuine',    desc: 'Authenticated products only', bg: 'bg-primary-50',   fg: 'text-primary-600' },
+  { icon: Truck,      title: 'Fast Delivery',    desc: 'Pan India shipping',          bg: 'bg-primary-100',  fg: 'text-primary-700' },
+  { icon: Headphones, title: 'Expert Support',   desc: 'Technical assistance',        bg: 'bg-secondary-100',fg: 'text-secondary-600' },
+  { icon: RotateCcw,  title: 'Easy Returns',     desc: '7-day return policy',         bg: 'bg-primary-50',   fg: 'text-primary-600' },
 ];
 
 const STATS = [

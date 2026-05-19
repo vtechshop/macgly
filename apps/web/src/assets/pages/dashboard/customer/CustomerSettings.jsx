@@ -157,7 +157,7 @@ export default function CustomerSettings() {
               </div>
               <div className="flex justify-end">
                 <button type="submit" disabled={savingProfile}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
+                  className="px-5 py-2.5 bg-primary-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
                   {savingProfile ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
@@ -190,7 +190,7 @@ export default function CustomerSettings() {
               </div>
               <div className="flex justify-end">
                 <button type="submit" disabled={savingPw}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
+                  className="px-5 py-2.5 bg-primary-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
                   {savingPw ? 'Updating…' : 'Update Password'}
                 </button>
               </div>
@@ -247,7 +247,7 @@ export default function CustomerSettings() {
               <button
                 type="button"
                 onClick={() => toggleSound(!soundNotif)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${soundNotif ? 'bg-blue-600' : 'bg-secondary-200'}`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${soundNotif ? 'bg-primary-600' : 'bg-secondary-200'}`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${soundNotif ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>

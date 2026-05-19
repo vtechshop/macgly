@@ -12,7 +12,7 @@ import Spinner from '../../../components/common/Spinner';
 
 const STATUS_COLORS = {
   pending:    { bg: 'bg-amber-50',   text: 'text-amber-700',   dot: 'bg-amber-400'   },
-  confirmed:  { bg: 'bg-blue-50',    text: 'text-blue-700',    dot: 'bg-blue-400'    },
+  confirmed:  { bg: 'bg-blue-50',    text: 'text-blue-700',    dot: 'bg-primary-400'    },
   processing: { bg: 'bg-indigo-50',  text: 'text-indigo-700',  dot: 'bg-indigo-400'  },
   shipped:    { bg: 'bg-violet-50',  text: 'text-violet-700',  dot: 'bg-violet-400'  },
   delivered:  { bg: 'bg-green-50',   text: 'text-green-700',   dot: 'bg-green-400'   },
@@ -90,9 +90,9 @@ function RevenueChart({ data }) {
 function StatusPipeline({ statusMap, total }) {
   const PIPELINE = [
     { key: 'pending',    label: 'Pending',    color: 'bg-amber-400'  },
-    { key: 'confirmed',  label: 'Confirmed',  color: 'bg-blue-400'   },
+    { key: 'confirmed',  label: 'Confirmed',  color: 'bg-primary-400'   },
     { key: 'processing', label: 'Processing', color: 'bg-indigo-400' },
-    { key: 'shipped',    label: 'Shipped',    color: 'bg-violet-500' },
+    { key: 'shipped',    label: 'Shipped',    color: 'bg-secondary-600' },
     { key: 'delivered',  label: 'Delivered',  color: 'bg-green-500'  },
     { key: 'cancelled',  label: 'Cancelled',  color: 'bg-red-400'    },
   ];
@@ -179,7 +179,7 @@ export default function AdminDashboard() {
           )}
           {(s.pendingVendors || 0) > 0 && (
             <Link to="/dashboard/admin/vendors" className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 hover:bg-blue-100 transition-colors">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center shrink-0">
                 <Store size={15} className="text-white" />
               </div>
               <div>
@@ -207,8 +207,8 @@ export default function AdminDashboard() {
       {/* ── Revenue KPIs ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard label="Today's Revenue" value={formatCurrency(s.revenueToday || 0)} icon={IndianRupee} color="bg-emerald-500" sub="Paid orders" />
-        <KpiCard label="This Week" value={formatCurrency(s.revenueWeek || 0)} previous={s.revenueLastWeek} icon={TrendingUp} color="bg-blue-500" sub="vs last week" />
-        <KpiCard label="This Month" value={formatCurrency(s.revenueMonth || 0)} previous={s.revenueLastMonth} icon={BarChart3} color="bg-violet-500" sub="vs last month" />
+        <KpiCard label="This Week" value={formatCurrency(s.revenueWeek || 0)} previous={s.revenueLastWeek} icon={TrendingUp} color="bg-primary-500" sub="vs last week" />
+        <KpiCard label="This Month" value={formatCurrency(s.revenueMonth || 0)} previous={s.revenueLastMonth} icon={BarChart3} color="bg-secondary-600" sub="vs last month" />
         <KpiCard label="Avg Order Value" value={formatCurrency(s.avgOrderValue || 0)} icon={Zap} color="bg-orange-500" sub="All time" />
       </div>
 
@@ -216,10 +216,10 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <KpiCard label="Total Orders" value={s.orders ?? 0} previous={s.ordersLastWeek ? (s.orders - s.ordersThisWeek) : null} icon={ShoppingBag} color="bg-green-500" to="/dashboard/admin/orders" sub={`+${s.ordersThisWeek || 0} this week`} />
         <KpiCard label="Pending" value={orderStatus.pending || 0} icon={Clock} color="bg-amber-500" to="/dashboard/admin/orders" />
-        <KpiCard label="Products" value={s.products ?? 0} icon={Package} color="bg-cyan-500" to="/dashboard/admin/products" />
-        <KpiCard label="Customers" value={s.customers ?? 0} icon={Users} color="bg-purple-500" to="/dashboard/admin/users" sub={`+${s.newUsersThisWeek || 0} this week`} />
+        <KpiCard label="Products" value={s.products ?? 0} icon={Package} color="bg-primary-400" to="/dashboard/admin/products" />
+        <KpiCard label="Customers" value={s.customers ?? 0} icon={Users} color="bg-secondary-600" to="/dashboard/admin/users" sub={`+${s.newUsersThisWeek || 0} this week`} />
         <KpiCard label="Vendors" value={s.vendorCount ?? 0} icon={Store} color="bg-orange-500" to="/dashboard/admin/vendors" sub={s.pendingVendors ? `${s.pendingVendors} pending` : undefined} />
-        <KpiCard label="Affiliates" value={s.affiliateCount ?? 0} icon={UserCheck} color="bg-pink-500" to="/dashboard/admin/affiliates" />
+        <KpiCard label="Affiliates" value={s.affiliateCount ?? 0} icon={UserCheck} color="bg-primary-400" to="/dashboard/admin/affiliates" />
       </div>
 
       {/* ── Commission Cards ─────────────────────────────────── */}

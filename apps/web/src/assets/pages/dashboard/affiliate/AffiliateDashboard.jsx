@@ -204,12 +204,12 @@ export default function AffiliateDashboard() {
           {
             id: 'clicks', label: 'Total Clicks', sub: 'Referral link visits',
             value: stats?.totalClicks ?? 0,
-            icon: MousePointerClick, color: 'bg-blue-500',
+            icon: MousePointerClick, color: 'bg-primary-500',
           },
           {
             id: 'sales', label: 'Total Sales', sub: 'Orders from referrals',
             value: stats?.totalSales ?? 0,
-            icon: ShoppingBag, color: 'bg-purple-500',
+            icon: ShoppingBag, color: 'bg-secondary-600',
           },
           {
             id: 'cvr', label: 'Conversion Rate', sub: 'Clicks → orders',

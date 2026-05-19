@@ -192,7 +192,7 @@ export default function Product() {
           )}
 
           {/* Price card */}
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-1">
+          <div className="bg-primary-50 border border-primary-100 rounded-xl p-4 space-y-1">
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-black text-secondary-900">{formatCurrency(product.price)}</span>
               {product.compareAt > product.price && (
@@ -244,7 +244,7 @@ export default function Product() {
                   Add to Cart
                 </button>
                 <button
-                  className="flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors disabled:opacity-60 text-sm shadow"
+                  className="flex items-center justify-center gap-2 py-3 bg-secondary-800 hover:bg-secondary-900 text-white font-bold rounded-xl transition-colors disabled:opacity-60 text-sm shadow"
                   onClick={buyNow} disabled={adding}
                 >
                   <Zap size={16} />

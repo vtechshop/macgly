@@ -143,7 +143,7 @@ function WriteReviewModal({ onClose, onSuccess }) {
           <div className="flex gap-3 pt-1">
             <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-secondary-200 rounded-xl text-sm font-semibold hover:bg-secondary-50">Cancel</button>
             {!alreadyReviewed && (
-              <button onClick={handleSubmit} disabled={submitting} className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
+              <button onClick={handleSubmit} disabled={submitting} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
                 {submitting ? 'Submitting…' : 'Submit Review'}
               </button>
             )}
@@ -243,7 +243,7 @@ export default function AdminReviews() {
           <button onClick={() => setShowWriteModal(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-secondary-200 rounded-lg hover:bg-secondary-50">
             <PenLine size={14} /> Write Review
           </button>
-          <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-primary-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
             <Download size={14} /> Export CSV
           </button>
         </div>

@@ -58,7 +58,7 @@ export default function CartDrawer() {
           <div className="flex items-center gap-2.5">
             <ShoppingCart size={20} className="text-secondary-700" />
             <span className="font-bold text-secondary-800 text-lg">Shopping Cart</span>
-            <span className="bg-blue-600 text-white text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center">
+            <span className="bg-primary-600 text-white text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center">
               {count}
             </span>
           </div>
@@ -192,7 +192,7 @@ export default function CartDrawer() {
 
             <button
               onClick={() => { close(); navigate('/checkout'); }}
-              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 rounded-xl transition-colors text-sm"
+              className="w-full bg-primary-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 rounded-xl transition-colors text-sm"
             >
               Proceed to Checkout
             </button>

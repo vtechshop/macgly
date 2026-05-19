@@ -31,13 +31,13 @@ function StepIndicator({ current }) {
           <div key={step.num} className="flex items-center">
             <div className="flex flex-col items-center gap-1">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-colors
-                ${done ? 'bg-blue-600 text-white' : active ? 'bg-blue-600 text-white ring-4 ring-blue-100' : 'bg-secondary-200 text-secondary-500'}`}>
+                ${done ? 'bg-primary-600 text-white' : active ? 'bg-primary-600 text-white ring-4 ring-blue-100' : 'bg-secondary-200 text-secondary-500'}`}>
                 {done ? <Check size={16} /> : step.num}
               </div>
               <span className={`text-xs font-medium ${active ? 'text-blue-600' : done ? 'text-secondary-600' : 'text-secondary-400'}`}>{step.label}</span>
             </div>
             {idx < STEPS.length - 1 && (
-              <div className={`h-0.5 w-16 sm:w-24 mx-2 mb-5 transition-colors ${current > step.num ? 'bg-blue-600' : 'bg-secondary-200'}`} />
+              <div className={`h-0.5 w-16 sm:w-24 mx-2 mb-5 transition-colors ${current > step.num ? 'bg-primary-600' : 'bg-secondary-200'}`} />
             )}
           </div>
         );
@@ -365,7 +365,7 @@ export default function Checkout() {
                         <p className={`font-bold text-base ${selected ? 'text-blue-600' : 'text-secondary-700'}`}>{formatCurrency(opt.charge)}</p>
                       </div>
                       {selected && (
-                        <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                        <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shrink-0">
                           <Check size={12} className="text-white" />
                         </div>
                       )}
@@ -411,7 +411,7 @@ export default function Checkout() {
                     </div>
                   </div>
                   {paymentMethod === 'razorpay' && (
-                    <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shrink-0 mt-0.5">
                       <Check size={12} className="text-white" />
                     </div>
                   )}
@@ -428,7 +428,7 @@ export default function Checkout() {
                     <p className="text-sm text-secondary-500">Pay in cash when your order arrives</p>
                   </div>
                   {paymentMethod === 'cod' && (
-                    <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shrink-0">
                       <Check size={12} className="text-white" />
                     </div>
                   )}

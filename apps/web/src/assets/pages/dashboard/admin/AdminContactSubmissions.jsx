@@ -82,7 +82,7 @@ export default function AdminContactSubmissions() {
                       <p className="text-xs text-secondary-500 line-clamp-1 mt-0.5">{s.subject || '(no subject)'}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {!s.isRead && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />}
+                      {!s.isRead && <span className="w-2 h-2 rounded-full bg-primary-500 shrink-0" />}
                       <span className="text-xs text-secondary-400">{new Date(s.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
                     </div>
                   </div>

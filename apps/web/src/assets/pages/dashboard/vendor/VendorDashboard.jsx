@@ -76,7 +76,7 @@ export default function VendorDashboard() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Products', value: totalProducts, icon: Package, color: 'bg-blue-500', sub: `${publishedProducts} live · ${draftProducts} draft` },
+          { label: 'Total Products', value: totalProducts, icon: Package, color: 'bg-primary-500', sub: `${publishedProducts} live · ${draftProducts} draft` },
           { label: 'Total Orders', value: totalOrders, icon: ShoppingBag, color: 'bg-orange-500', sub: `${pendingOrders} pending` },
           { label: 'Confirmed Earnings', value: formatCurrency(confirmedEarnings), icon: IndianRupee, color: 'bg-green-500', sub: `After ${commissionRate}% platform fee` },
           { label: 'Pending Earnings', value: formatCurrency(pendingEarnings), icon: TrendingUp, color: 'bg-yellow-500', sub: 'Awaiting delivery' },

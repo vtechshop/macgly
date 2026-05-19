@@ -32,7 +32,7 @@ function timeAgo(date) {
 
 function Avatar({ name }) {
   const initial = (name || '?')[0].toUpperCase();
-  const colors = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500'];
+  const colors = ['bg-primary-500', 'bg-secondary-600', 'bg-green-500', 'bg-orange-500', 'bg-primary-400', 'bg-primary-500'];
   const color = colors[initial.charCodeAt(0) % colors.length];
   return (
     <div className={`w-9 h-9 rounded-full ${color} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
@@ -349,7 +349,7 @@ export default function AdminUsers() {
                 <button
                   onClick={() => doReset({ id: resetTarget._id, password: newPass })}
                   disabled={resetting || newPass.length < 8 || newPass !== confirmPass}
-                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-40"
+                  className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-40"
                 >
                   {resetting ? 'Resetting…' : 'Reset Password'}
                 </button>

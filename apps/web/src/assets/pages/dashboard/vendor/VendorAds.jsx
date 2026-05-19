@@ -159,7 +159,7 @@ export default function VendorAds() {
                       <span>Budget used</span><span>{progress.toFixed(0)}%</span>
                     </div>
                     <div className="h-1.5 bg-secondary-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${progress}%` }} />
+                      <div className="h-full bg-primary-500 rounded-full" style={{ width: `${progress}%` }} />
                     </div>
                   </div>
                 )}

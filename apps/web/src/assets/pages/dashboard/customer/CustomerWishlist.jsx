@@ -82,7 +82,7 @@ function WishlistCard({ product, onRemoved }) {
           <button
             onClick={addToCart}
             disabled={adding || product.stock <= 0}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold py-2 rounded-lg transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-primary-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold py-2 rounded-lg transition-colors"
           >
             {adding ? <Spinner size="sm" /> : <ShoppingCart size={14} />}
             {product.stock <= 0 ? 'Out of stock' : 'Add to Cart'}

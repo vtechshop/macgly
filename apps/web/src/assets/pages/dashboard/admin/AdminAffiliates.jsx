@@ -301,7 +301,7 @@ export default function AdminAffiliates() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="card p-4 flex items-center gap-4">
-          <div className="w-10 h-10 bg-pink-500 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-primary-400 rounded-lg flex items-center justify-center">
             <UserCheck size={18} className="text-white" />
           </div>
           <div>
@@ -319,7 +319,7 @@ export default function AdminAffiliates() {
           </div>
         </div>
         <div className="card p-4 flex items-center gap-4">
-          <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
             <Users size={18} className="text-white" />
           </div>
           <div>
