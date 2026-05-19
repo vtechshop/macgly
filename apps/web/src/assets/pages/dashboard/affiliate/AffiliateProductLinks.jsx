@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Copy, Check, Search, Package } from 'lucide-react';
+import { Copy, Check, Search, Package, ShieldX } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
 import { normalizeImageUrl } from '../../../../utils/format';
@@ -12,6 +13,8 @@ export default function AffiliateProductLinks() {
   const [query, setQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
 
+  const kycStatus = user?.affiliateProfile?.kycStatus;
+  const kycVerified = kycStatus === 'verified';
   const referralCode = user?.affiliateProfile?.referralCode || null;
   const origin = window.location.origin;
 
@@ -40,7 +43,29 @@ export default function AffiliateProductLinks() {
         <p className="text-secondary-500 text-sm mt-0.5">Generate affiliate links for any product in the catalog</p>
       </div>
 
-      {!referralCode ? (
+      {!kycVerified ? (
+        <div className="card p-10 flex flex-col items-center text-center gap-4">
+          <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center">
+            <ShieldX size={32} className="text-yellow-500" />
+          </div>
+          <div>
+            <p className="text-lg font-bold text-secondary-900">KYC Verification Required</p>
+            <p className="text-sm text-secondary-500 mt-1 max-w-sm">
+              You need to complete KYC verification before you can generate affiliate product links.
+              {kycStatus === 'pending' ? ' Your KYC is currently under review.' : ''}
+            </p>
+          </div>
+          {kycStatus === 'pending' ? (
+            <span className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-800 text-sm font-semibold px-4 py-2 rounded-full">
+              ⏳ KYC Under Review — we'll notify you once approved
+            </span>
+          ) : (
+            <Link to="/dashboard/affiliate/kyc" className="btn-primary px-6">
+              Complete KYC Now
+            </Link>
+          )}
+        </div>
+      ) : !referralCode ? (
         <div className="card p-8 text-center">
           <Package size={36} className="mx-auto text-secondary-300 mb-3" />
           <p className="font-medium text-secondary-600">You need a referral code to generate product links.</p>

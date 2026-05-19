@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Copy, Check, RefreshCw, Home, Search, Tag, Package, Link2 } from 'lucide-react';
+import { Copy, Check, RefreshCw, Home, Search, Tag, Package, Link2, ShieldX } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../../../../utils/api';
 import { setUser } from '../../../../store/slices/authSlice';
 import { useFetch } from '../../../../hooks';
@@ -52,7 +53,40 @@ export default function AffiliateLinks() {
     }
   }
 
+  const kycStatus = user?.affiliateProfile?.kycStatus;
+  const kycVerified = kycStatus === 'verified';
+
   if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+
+  if (!kycVerified) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">My Links</h1>
+          <p className="text-secondary-500 text-sm mt-0.5">Share these links to earn commission on every referred sale</p>
+        </div>
+        <div className="card p-10 flex flex-col items-center text-center gap-4">
+          <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center">
+            <ShieldX size={32} className="text-yellow-500" />
+          </div>
+          <div>
+            <p className="text-lg font-bold text-secondary-900">KYC Verification Required</p>
+            <p className="text-sm text-secondary-500 mt-1 max-w-sm">
+              Complete your KYC verification to unlock your affiliate links and start earning commissions.
+              {kycStatus === 'pending' ? ' Your KYC is currently under review.' : ''}
+            </p>
+          </div>
+          {kycStatus === 'pending' ? (
+            <span className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-800 text-sm font-semibold px-4 py-2 rounded-full">
+              ⏳ KYC Under Review — we'll notify you once approved
+            </span>
+          ) : (
+            <Link to="/dashboard/affiliate/kyc" className="btn-primary px-6">Complete KYC Now</Link>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
