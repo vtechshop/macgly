@@ -3,8 +3,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   Copy, Check, RefreshCw,
   MousePointerClick, ShoppingBag, TrendingUp, IndianRupee,
-  Home, Search, Tag, Package, Lightbulb,
+  Home, Search, Tag, Package, Lightbulb, ShieldCheck,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../../../../utils/api';
 import { setUser } from '../../../../store/slices/authSlice';
 import { useFetch } from '../../../../hooks';
@@ -114,6 +115,7 @@ export default function AffiliateDashboard() {
     () => api.get('/affiliates/stats').then((r) => r.data)
   );
 
+  const kycVerified = user?.affiliateProfile?.kycStatus === 'verified';
   const referralCode = stats?.referralCode || user?.affiliateProfile?.referralCode || null;
   const trackBase = referralCode
     ? `${window.location.origin}/api/affiliates/track?ref=${referralCode}`
@@ -286,8 +288,21 @@ export default function AffiliateDashboard() {
         </div>
       </div>
 
-      {/* Affiliate link templates */}
-      {referralCode ? (
+      {/* Affiliate link templates — only after KYC verified */}
+      {!kycVerified ? (
+        <div className="card p-6 flex items-center gap-4 border-yellow-200 bg-yellow-50">
+          <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center shrink-0">
+            <ShieldCheck size={20} className="text-yellow-600" />
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-yellow-800">Complete KYC to unlock your affiliate links</p>
+            <p className="text-sm text-yellow-700 mt-0.5">Affiliate links and referral codes are available only after KYC verification.</p>
+          </div>
+          <Link to="/dashboard/affiliate/kyc" className="btn-primary shrink-0 text-sm px-4">
+            Complete KYC
+          </Link>
+        </div>
+      ) : referralCode ? (
         <div className="card p-5">
           <h2 className="font-bold mb-1">Affiliate Links</h2>
           <p className="text-xs text-secondary-500 mb-4">Share these links — every click is tracked automatically</p>
