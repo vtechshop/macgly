@@ -2,7 +2,7 @@ const router = require('express').Router();
 const User = require('../../models/User');
 const AppError = require('../../utils/AppError');
 
-// GET all pending KYC — vendors awaiting approval + affiliates with pending KYC
+// GET all pending KYC — vendors awaiting approval + affiliates with pending/verified/rejected KYC
 router.get('/', async (req, res, next) => {
   try {
     const [vendors, affiliates] = await Promise.all([
