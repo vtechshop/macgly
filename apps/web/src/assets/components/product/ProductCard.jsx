@@ -48,9 +48,9 @@ export default function ProductCard({ product, onAddToCart }) {
   }
 
   return (
-    <div className="card group hover:border-primary-400 hover:shadow-md transition-all duration-200 flex flex-col">
+    <div className="card group hover:border-primary-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
       {/* Image */}
-      <Link to={`/product/${product.slug}`} className="block overflow-hidden bg-white border-b border-secondary-100 relative" style={{ aspectRatio: '4/3' }}>
+      <Link to={`/product/${product.slug}`} className="block overflow-hidden bg-secondary-50 rounded-t-xl border-b border-secondary-100 relative" style={{ aspectRatio: '4/3' }}>
         {discount >= 10 && (
           <span className="absolute top-2 left-2 z-10 bg-primary-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
             {discount}% OFF

@@ -16,10 +16,10 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md;
   }
   .btn-secondary {
     @apply btn bg-secondary-100 text-secondary-700 hover:bg-secondary-200 focus:ring-secondary-400;
@@ -28,12 +28,12 @@
     @apply btn border border-secondary-300 text-secondary-700 hover:bg-secondary-50 focus:ring-secondary-400;
   }
   .input {
-    @apply block w-full rounded border border-secondary-300 bg-white px-3 py-2 text-sm placeholder-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
+    @apply block w-full rounded-lg border border-secondary-300 bg-white px-3 py-2 text-sm placeholder-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors;
   }
   .card {
-    @apply bg-white rounded border border-secondary-200 shadow-sm;
+    @apply bg-white rounded-xl border border-secondary-200 shadow-sm transition-shadow duration-200;
   }
   .section-title {
-    @apply text-lg font-bold text-secondary-900 uppercase tracking-wide border-l-4 border-primary-500 pl-3;
+    @apply text-xl font-black text-secondary-900 border-l-4 border-primary-500 pl-3;
   }
 }

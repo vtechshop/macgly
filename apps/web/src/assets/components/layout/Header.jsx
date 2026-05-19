@@ -88,7 +88,7 @@ export default function Header() {
       </div>
 
       {/* Main bar */}
-      <div className="bg-white border-b border-secondary-200 shadow-sm">
+      <div className="bg-white border-b border-secondary-200 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 h-16">
             {/* Logo */}
@@ -186,20 +186,20 @@ export default function Header() {
       </div>
 
       {/* Category nav bar */}
-      <div className="bg-secondary-800 hidden md:block">
+      <div className="bg-gradient-to-r from-secondary-900 via-secondary-800 to-secondary-900 hidden md:block border-b border-secondary-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-xs font-medium text-secondary-200 hover:text-primary-400 hover:bg-secondary-700 px-3 py-2.5 transition-colors whitespace-nowrap"
+                className="text-xs font-semibold text-secondary-300 hover:text-white hover:bg-white/10 px-4 py-2.5 transition-colors whitespace-nowrap rounded-sm"
               >
                 {link.label}
               </Link>
             ))}
-            <Link to="/products?featured=true" className="ml-auto text-xs font-bold text-primary-400 hover:text-primary-300 px-3 py-2.5 flex items-center gap-1">
-              🔥 Deals
+            <Link to="/products?featured=true" className="ml-auto text-xs font-bold text-primary-400 hover:text-primary-300 hover:bg-primary-900/30 px-4 py-2.5 flex items-center gap-1.5 transition-colors">
+              🔥 Hot Deals
             </Link>
           </div>
         </div>

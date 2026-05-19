@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Wrench, Phone, Mail, MapPin, Facebook, Youtube, Instagram } from 'lucide-react';
+import { Phone, Mail, MapPin, Facebook, Youtube, Instagram } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -9,11 +9,8 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-2">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="bg-primary-600 text-white p-1.5 rounded">
-                <Wrench size={16} />
-              </div>
-              <span className="text-white font-black text-lg tracking-tight">MACGLY</span>
+            <Link to="/" className="inline-block bg-white rounded-xl px-4 py-2">
+              <img src="/logo.png" alt="Macgly" className="h-10 w-auto" />
             </Link>
             <p className="mt-3 text-sm text-secondary-400 leading-relaxed">
               India's trusted marketplace for professional tools, industrial machines and genuine spare parts.
