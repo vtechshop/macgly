@@ -1,23 +1,42 @@
 import { useState, useEffect, useRef } from 'react';
 
+const cache = new Map();
+const CACHE_TTL = 30_000; // 30 seconds
+
+function getCached(key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL) { cache.delete(key); return null; }
+  return entry.data;
+}
+
 /**
- * Simple data-fetching hook. Re-runs when queryKey changes.
- * keepPrevious: show stale data while new data loads (avoids empty flash).
+ * Simple data-fetching hook with 30s in-memory cache.
+ * Re-runs when queryKey changes. keepPrevious shows stale data while loading.
  */
 export function useFetch(queryKey, fetcher, { keepPrevious = false } = {}) {
   const keyStr = JSON.stringify(queryKey);
-  const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cached = getCached(keyStr);
+  const [data, setData] = useState(cached);
+  const [isLoading, setIsLoading] = useState(!cached);
   const [error, setError] = useState(null);
-  const prevRef = useRef(null);
+  const prevRef = useRef(cached);
 
   useEffect(() => {
     let cancelled = false;
+    const hit = getCached(keyStr);
+    if (hit) {
+      setData(hit);
+      prevRef.current = hit;
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     fetcher()
       .then((d) => {
         if (cancelled) return;
+        cache.set(keyStr, { data: d, ts: Date.now() });
         prevRef.current = d;
         setData(d);
         setIsLoading(false);
@@ -38,10 +57,14 @@ export function useFetch(queryKey, fetcher, { keepPrevious = false } = {}) {
   };
 }
 
+export function invalidateCache(keyPrefix) {
+  for (const k of cache.keys()) {
+    if (k.includes(keyPrefix)) cache.delete(k);
+  }
+}
+
 /**
  * Simple mutation hook.
- * Returns { mutate, isPending }.
- * mutate() returns the result so callers can await it.
  */
 export function useAction(fn, { onSuccess, onError } = {}) {
   const [isPending, setIsPending] = useState(false);

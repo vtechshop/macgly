@@ -1,98 +1,108 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUser, clearUser } from './store/slices/authSlice';
 import { setCart } from './store/slices/cartSlice';
 import api from './utils/api';
+import Spinner from './assets/components/common/Spinner';
 
 import PublicLayout from './assets/components/layout/PublicLayout';
 import DashboardLayout from './assets/components/layout/DashboardLayout';
 
-import Home from './assets/pages/Home';
-import Search from './assets/pages/Search';
-import Product from './assets/pages/Product';
-import Login from './assets/pages/Login';
-import Register from './assets/pages/Register';
-import ForgotPassword from './assets/pages/ForgotPassword';
-import ResetPassword from './assets/pages/ResetPassword';
-import Cart from './assets/pages/Cart';
-import Checkout from './assets/pages/Checkout';
-import OrderConfirmation from './assets/pages/OrderConfirmation';
+// Public pages — lazy loaded
+const Home                  = lazy(() => import('./assets/pages/Home'));
+const Search                = lazy(() => import('./assets/pages/Search'));
+const Product               = lazy(() => import('./assets/pages/Product'));
+const Login                 = lazy(() => import('./assets/pages/Login'));
+const Register              = lazy(() => import('./assets/pages/Register'));
+const ForgotPassword        = lazy(() => import('./assets/pages/ForgotPassword'));
+const ResetPassword         = lazy(() => import('./assets/pages/ResetPassword'));
+const Cart                  = lazy(() => import('./assets/pages/Cart'));
+const Checkout              = lazy(() => import('./assets/pages/Checkout'));
+const OrderConfirmation     = lazy(() => import('./assets/pages/OrderConfirmation'));
+const VendorRegister        = lazy(() => import('./assets/pages/VendorRegister'));
+const AffiliateRegister     = lazy(() => import('./assets/pages/AffiliateRegister'));
+const Category              = lazy(() => import('./assets/pages/Category'));
+const VendorStore           = lazy(() => import('./assets/pages/VendorStore'));
+const Blog                  = lazy(() => import('./assets/pages/Blog'));
+const BlogPost              = lazy(() => import('./assets/pages/BlogPost'));
+const TrackOrder            = lazy(() => import('./assets/pages/TrackOrder'));
+const WarrantyCheck         = lazy(() => import('./assets/pages/WarrantyCheck'));
+const About                 = lazy(() => import('./assets/pages/info/About'));
+const Contact               = lazy(() => import('./assets/pages/info/Contact'));
+const Privacy               = lazy(() => import('./assets/pages/info/Privacy'));
+const Terms                 = lazy(() => import('./assets/pages/info/Terms'));
 
-// Dashboard pages
-import AdminDashboard from './assets/pages/dashboard/admin/AdminDashboard';
-import AdminProducts from './assets/pages/dashboard/admin/AdminProducts';
-import AdminOrders from './assets/pages/dashboard/admin/AdminOrders';
-import AdminUsers from './assets/pages/dashboard/admin/AdminUsers';
-import AdminCategories from './assets/pages/dashboard/admin/AdminCategories';
-import AdminBanners from './assets/pages/dashboard/admin/AdminBanners';
-import AdminCoupons from './assets/pages/dashboard/admin/AdminCoupons';
-import AdminVendors from './assets/pages/dashboard/admin/AdminVendors';
-import AdminAffiliates from './assets/pages/dashboard/admin/AdminAffiliates';
-import AdminTickets from './assets/pages/dashboard/admin/AdminTickets';
-import AdminPayments from './assets/pages/dashboard/admin/AdminPayments';
-import AdminKYC from './assets/pages/dashboard/admin/AdminKYC';
-import AdminReviews from './assets/pages/dashboard/admin/AdminReviews';
-import AdminWarranty from './assets/pages/dashboard/admin/AdminWarranty';
-import AdminInventory from './assets/pages/dashboard/admin/AdminInventory';
-import AdminCRM from './assets/pages/dashboard/admin/AdminCRM';
-import AdminCommunications from './assets/pages/dashboard/admin/AdminCommunications';
-import AdminContactSubmissions from './assets/pages/dashboard/admin/AdminContactSubmissions';
-import AdminManualOrders from './assets/pages/dashboard/admin/AdminManualOrders';
-import AdminBlog from './assets/pages/dashboard/admin/AdminBlog';
-import AdminCMS from './assets/pages/dashboard/admin/AdminCMS';
-import AdminSettings from './assets/pages/dashboard/admin/AdminSettings';
-import AdminShareCatalog from './assets/pages/dashboard/admin/AdminShareCatalog';
-import AdminOrderDetail from './assets/pages/dashboard/admin/AdminOrderDetail';
-import AdminCarousel from './assets/pages/dashboard/admin/AdminCarousel';
-import AdminGamification from './assets/pages/dashboard/admin/AdminGamification';
-import AdminCommissions from './assets/pages/dashboard/admin/AdminCommissions';
-import AdminFlashSales from './assets/pages/dashboard/admin/AdminFlashSales';
-import AdminReturns from './assets/pages/dashboard/admin/AdminReturns';
-import AdminNewsletter from './assets/pages/dashboard/admin/AdminNewsletter';
-import AdminAdsManagement from './assets/pages/dashboard/admin/AdminAdsManagement';
+// Admin pages — lazy loaded
+const AdminDashboard        = lazy(() => import('./assets/pages/dashboard/admin/AdminDashboard'));
+const AdminProducts         = lazy(() => import('./assets/pages/dashboard/admin/AdminProducts'));
+const AdminOrders           = lazy(() => import('./assets/pages/dashboard/admin/AdminOrders'));
+const AdminUsers            = lazy(() => import('./assets/pages/dashboard/admin/AdminUsers'));
+const AdminCategories       = lazy(() => import('./assets/pages/dashboard/admin/AdminCategories'));
+const AdminBanners          = lazy(() => import('./assets/pages/dashboard/admin/AdminBanners'));
+const AdminCoupons          = lazy(() => import('./assets/pages/dashboard/admin/AdminCoupons'));
+const AdminVendors          = lazy(() => import('./assets/pages/dashboard/admin/AdminVendors'));
+const AdminAffiliates       = lazy(() => import('./assets/pages/dashboard/admin/AdminAffiliates'));
+const AdminTickets          = lazy(() => import('./assets/pages/dashboard/admin/AdminTickets'));
+const AdminPayments         = lazy(() => import('./assets/pages/dashboard/admin/AdminPayments'));
+const AdminKYC              = lazy(() => import('./assets/pages/dashboard/admin/AdminKYC'));
+const AdminReviews          = lazy(() => import('./assets/pages/dashboard/admin/AdminReviews'));
+const AdminWarranty         = lazy(() => import('./assets/pages/dashboard/admin/AdminWarranty'));
+const AdminInventory        = lazy(() => import('./assets/pages/dashboard/admin/AdminInventory'));
+const AdminCRM              = lazy(() => import('./assets/pages/dashboard/admin/AdminCRM'));
+const AdminCommunications   = lazy(() => import('./assets/pages/dashboard/admin/AdminCommunications'));
+const AdminContactSubmissions = lazy(() => import('./assets/pages/dashboard/admin/AdminContactSubmissions'));
+const AdminManualOrders     = lazy(() => import('./assets/pages/dashboard/admin/AdminManualOrders'));
+const AdminBlog             = lazy(() => import('./assets/pages/dashboard/admin/AdminBlog'));
+const AdminCMS              = lazy(() => import('./assets/pages/dashboard/admin/AdminCMS'));
+const AdminSettings         = lazy(() => import('./assets/pages/dashboard/admin/AdminSettings'));
+const AdminShareCatalog     = lazy(() => import('./assets/pages/dashboard/admin/AdminShareCatalog'));
+const AdminOrderDetail      = lazy(() => import('./assets/pages/dashboard/admin/AdminOrderDetail'));
+const AdminCarousel         = lazy(() => import('./assets/pages/dashboard/admin/AdminCarousel'));
+const AdminGamification     = lazy(() => import('./assets/pages/dashboard/admin/AdminGamification'));
+const AdminCommissions      = lazy(() => import('./assets/pages/dashboard/admin/AdminCommissions'));
+const AdminFlashSales       = lazy(() => import('./assets/pages/dashboard/admin/AdminFlashSales'));
+const AdminReturns          = lazy(() => import('./assets/pages/dashboard/admin/AdminReturns'));
+const AdminNewsletter       = lazy(() => import('./assets/pages/dashboard/admin/AdminNewsletter'));
+const AdminAdsManagement    = lazy(() => import('./assets/pages/dashboard/admin/AdminAdsManagement'));
 
-import CustomerOrderDetail from './assets/pages/dashboard/customer/CustomerOrderDetail';
-import CustomerWishlist from './assets/pages/dashboard/customer/CustomerWishlist';
-import CustomerAddresses from './assets/pages/dashboard/customer/CustomerAddresses';
-import VendorDashboard from './assets/pages/dashboard/vendor/VendorDashboard';
-import VendorProducts from './assets/pages/dashboard/vendor/VendorProducts';
-import VendorOrders from './assets/pages/dashboard/vendor/VendorOrders';
-import VendorSupport from './assets/pages/dashboard/vendor/VendorSupport';
-import VendorKYC from './assets/pages/dashboard/vendor/VendorKYC';
-import VendorInventory from './assets/pages/dashboard/vendor/VendorInventory';
-import VendorSettlements from './assets/pages/dashboard/vendor/VendorSettlements';
-import VendorAds from './assets/pages/dashboard/vendor/VendorAds';
-import VendorCategories from './assets/pages/dashboard/vendor/VendorCategories';
-import VendorManualOrders from './assets/pages/dashboard/vendor/VendorManualOrders';
-import VendorSettings from './assets/pages/dashboard/vendor/VendorSettings';
+// Vendor pages — lazy loaded
+const VendorDashboard       = lazy(() => import('./assets/pages/dashboard/vendor/VendorDashboard'));
+const VendorProducts        = lazy(() => import('./assets/pages/dashboard/vendor/VendorProducts'));
+const VendorOrders          = lazy(() => import('./assets/pages/dashboard/vendor/VendorOrders'));
+const VendorSupport         = lazy(() => import('./assets/pages/dashboard/vendor/VendorSupport'));
+const VendorKYC             = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
+const VendorInventory       = lazy(() => import('./assets/pages/dashboard/vendor/VendorInventory'));
+const VendorSettlements     = lazy(() => import('./assets/pages/dashboard/vendor/VendorSettlements'));
+const VendorAds             = lazy(() => import('./assets/pages/dashboard/vendor/VendorAds'));
+const VendorCategories      = lazy(() => import('./assets/pages/dashboard/vendor/VendorCategories'));
+const VendorManualOrders    = lazy(() => import('./assets/pages/dashboard/vendor/VendorManualOrders'));
+const VendorSettings        = lazy(() => import('./assets/pages/dashboard/vendor/VendorSettings'));
 
-import CustomerDashboard from './assets/pages/dashboard/customer/CustomerDashboard';
-import CustomerOrders from './assets/pages/dashboard/customer/CustomerOrders';
-import CustomerSettings from './assets/pages/dashboard/customer/CustomerSettings';
+// Customer pages — lazy loaded
+const CustomerDashboard     = lazy(() => import('./assets/pages/dashboard/customer/CustomerDashboard'));
+const CustomerOrders        = lazy(() => import('./assets/pages/dashboard/customer/CustomerOrders'));
+const CustomerOrderDetail   = lazy(() => import('./assets/pages/dashboard/customer/CustomerOrderDetail'));
+const CustomerAddresses     = lazy(() => import('./assets/pages/dashboard/customer/CustomerAddresses'));
+const CustomerWishlist      = lazy(() => import('./assets/pages/dashboard/customer/CustomerWishlist'));
+const CustomerSettings      = lazy(() => import('./assets/pages/dashboard/customer/CustomerSettings'));
 
-import AffiliateDashboard from './assets/pages/dashboard/affiliate/AffiliateDashboard';
-import AffiliateEarnings from './assets/pages/dashboard/affiliate/AffiliateEarnings';
-import AffiliateLinks from './assets/pages/dashboard/affiliate/AffiliateLinks';
-import AffiliateProductLinks from './assets/pages/dashboard/affiliate/AffiliateProductLinks';
-import AffiliateSettings from './assets/pages/dashboard/affiliate/AffiliateSettings';
-import AffiliateKYC from './assets/pages/dashboard/affiliate/AffiliateKYC';
-import AffiliateSupport from './assets/pages/dashboard/affiliate/AffiliateSupport';
+// Affiliate pages — lazy loaded
+const AffiliateDashboard    = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateDashboard'));
+const AffiliateEarnings     = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateEarnings'));
+const AffiliateLinks        = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateLinks'));
+const AffiliateProductLinks = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateProductLinks'));
+const AffiliateSettings     = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateSettings'));
+const AffiliateKYC          = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateKYC'));
+const AffiliateSupport      = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateSupport'));
 
-import VendorRegister from './assets/pages/VendorRegister';
-import AffiliateRegister from './assets/pages/AffiliateRegister';
-import Category from './assets/pages/Category';
-import VendorStore from './assets/pages/VendorStore';
-import Blog from './assets/pages/Blog';
-import BlogPost from './assets/pages/BlogPost';
-import TrackOrder from './assets/pages/TrackOrder';
-import WarrantyCheck from './assets/pages/WarrantyCheck';
-
-// Info pages
-import About from './assets/pages/info/About';
-import Contact from './assets/pages/info/Contact';
-import Privacy from './assets/pages/info/Privacy';
-import Terms from './assets/pages/info/Terms';
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Spinner size="lg" />
+    </div>
+  );
+}
 
 function AuthInit({ children }) {
   const dispatch = useDispatch();
@@ -108,14 +118,11 @@ function AuthInit({ children }) {
   }, [dispatch]);
 
   useEffect(() => {
-    // Capture ?aff=CODE from URL (set by affiliate links), store for 30 days
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('aff') || params.get('aff_ref');
     if (ref && /^[A-Z0-9]{6,12}$/.test(ref)) {
       localStorage.setItem('aff_ref', JSON.stringify({ ref, expires: Date.now() + 30 * 24 * 60 * 60 * 1000 }));
-      // Fire-and-forget click count
       api.get(`/affiliates/record-click?ref=${ref}`).catch(() => {});
-      // Clean the param from URL
       params.delete('aff');
       params.delete('aff_ref');
       const newSearch = params.toString();
@@ -136,113 +143,115 @@ export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthInit>
-        <Routes>
-          {/* Public */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/products" element={<Search />} />
-            <Route path="/product/:slug" element={<Product />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/sell" element={<VendorRegister />} />
-            <Route path="/affiliate" element={<AffiliateRegister />} />
-            <Route path="/info/about" element={<About />} />
-            <Route path="/info/contact" element={<Contact />} />
-            <Route path="/info/privacy" element={<Privacy />} />
-            <Route path="/info/terms" element={<Terms />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/track-order" element={<TrackOrder />} />
-            <Route path="/warranty-check" element={<WarrantyCheck />} />
-            <Route path="/store/:id" element={<VendorStore />} />
-            <Route path="/category/:slug" element={<Category />} />
-          </Route>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Public */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/products" element={<Search />} />
+              <Route path="/product/:slug" element={<Product />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/sell" element={<VendorRegister />} />
+              <Route path="/affiliate" element={<AffiliateRegister />} />
+              <Route path="/info/about" element={<About />} />
+              <Route path="/info/contact" element={<Contact />} />
+              <Route path="/info/privacy" element={<Privacy />} />
+              <Route path="/info/terms" element={<Terms />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/track-order" element={<TrackOrder />} />
+              <Route path="/warranty-check" element={<WarrantyCheck />} />
+              <Route path="/store/:id" element={<VendorStore />} />
+              <Route path="/category/:slug" element={<Category />} />
+            </Route>
 
-          {/* Checkout — protected */}
-          <Route path="/checkout" element={<RequireAuth><PublicLayout /></RequireAuth>}>
-            <Route index element={<Checkout />} />
-          </Route>
-          <Route path="/order-confirmation/:orderId" element={<RequireAuth><PublicLayout /></RequireAuth>}>
-            <Route index element={<OrderConfirmation />} />
-          </Route>
+            {/* Checkout — protected */}
+            <Route path="/checkout" element={<RequireAuth><PublicLayout /></RequireAuth>}>
+              <Route index element={<Checkout />} />
+            </Route>
+            <Route path="/order-confirmation/:orderId" element={<RequireAuth><PublicLayout /></RequireAuth>}>
+              <Route index element={<OrderConfirmation />} />
+            </Route>
 
-          {/* Admin dashboard */}
-          <Route path="/dashboard/admin" element={<DashboardLayout requiredRole="admin" />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="categories" element={<AdminCategories />} />
-            <Route path="banners" element={<AdminBanners />} />
-            <Route path="coupons" element={<AdminCoupons />} />
-            <Route path="vendors" element={<AdminVendors />} />
-            <Route path="affiliates" element={<AdminAffiliates />} />
-            <Route path="tickets" element={<AdminTickets />} />
-            <Route path="payments" element={<AdminPayments />} />
-            <Route path="kyc" element={<AdminKYC />} />
-            <Route path="reviews" element={<AdminReviews />} />
-            <Route path="warranty" element={<AdminWarranty />} />
-            <Route path="inventory" element={<AdminInventory />} />
-            <Route path="crm" element={<AdminCRM />} />
-            <Route path="communications" element={<AdminCommunications />} />
-            <Route path="contact-submissions" element={<AdminContactSubmissions />} />
-            <Route path="manual-orders" element={<AdminManualOrders />} />
-            <Route path="blog" element={<AdminBlog />} />
-            <Route path="cms" element={<AdminCMS />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="share-catalog" element={<AdminShareCatalog />} />
-            <Route path="orders/:id" element={<AdminOrderDetail />} />
-            <Route path="carousel" element={<AdminCarousel />} />
-            <Route path="gamification" element={<AdminGamification />} />
-            <Route path="commissions" element={<AdminCommissions />} />
-            <Route path="flash-sales" element={<AdminFlashSales />} />
-            <Route path="returns" element={<AdminReturns />} />
-            <Route path="newsletter" element={<AdminNewsletter />} />
-            <Route path="ads" element={<AdminAdsManagement />} />
-          </Route>
+            {/* Admin dashboard */}
+            <Route path="/dashboard/admin" element={<DashboardLayout requiredRole="admin" />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="orders" element={<AdminOrders />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="banners" element={<AdminBanners />} />
+              <Route path="coupons" element={<AdminCoupons />} />
+              <Route path="vendors" element={<AdminVendors />} />
+              <Route path="affiliates" element={<AdminAffiliates />} />
+              <Route path="tickets" element={<AdminTickets />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="kyc" element={<AdminKYC />} />
+              <Route path="reviews" element={<AdminReviews />} />
+              <Route path="warranty" element={<AdminWarranty />} />
+              <Route path="inventory" element={<AdminInventory />} />
+              <Route path="crm" element={<AdminCRM />} />
+              <Route path="communications" element={<AdminCommunications />} />
+              <Route path="contact-submissions" element={<AdminContactSubmissions />} />
+              <Route path="manual-orders" element={<AdminManualOrders />} />
+              <Route path="blog" element={<AdminBlog />} />
+              <Route path="cms" element={<AdminCMS />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="share-catalog" element={<AdminShareCatalog />} />
+              <Route path="orders/:id" element={<AdminOrderDetail />} />
+              <Route path="carousel" element={<AdminCarousel />} />
+              <Route path="gamification" element={<AdminGamification />} />
+              <Route path="commissions" element={<AdminCommissions />} />
+              <Route path="flash-sales" element={<AdminFlashSales />} />
+              <Route path="returns" element={<AdminReturns />} />
+              <Route path="newsletter" element={<AdminNewsletter />} />
+              <Route path="ads" element={<AdminAdsManagement />} />
+            </Route>
 
-          {/* Vendor dashboard */}
-          <Route path="/dashboard/vendor" element={<DashboardLayout requiredRole="vendor" />}>
-            <Route index element={<VendorDashboard />} />
-            <Route path="products" element={<VendorProducts />} />
-            <Route path="orders" element={<VendorOrders />} />
-            <Route path="support" element={<VendorSupport />} />
-            <Route path="inventory" element={<VendorInventory />} />
-            <Route path="settlements" element={<VendorSettlements />} />
-            <Route path="ads" element={<VendorAds />} />
-            <Route path="categories" element={<VendorCategories />} />
-            <Route path="manual-orders" element={<VendorManualOrders />} />
-            <Route path="settings" element={<VendorSettings />} />
-            <Route path="kyc" element={<VendorKYC />} />
-          </Route>
+            {/* Vendor dashboard */}
+            <Route path="/dashboard/vendor" element={<DashboardLayout requiredRole="vendor" />}>
+              <Route index element={<VendorDashboard />} />
+              <Route path="products" element={<VendorProducts />} />
+              <Route path="orders" element={<VendorOrders />} />
+              <Route path="support" element={<VendorSupport />} />
+              <Route path="inventory" element={<VendorInventory />} />
+              <Route path="settlements" element={<VendorSettlements />} />
+              <Route path="ads" element={<VendorAds />} />
+              <Route path="categories" element={<VendorCategories />} />
+              <Route path="manual-orders" element={<VendorManualOrders />} />
+              <Route path="settings" element={<VendorSettings />} />
+              <Route path="kyc" element={<VendorKYC />} />
+            </Route>
 
-          {/* Customer dashboard */}
-          <Route path="/dashboard/customer" element={<DashboardLayout requiredRole="customer" />}>
-            <Route index element={<CustomerDashboard />} />
-            <Route path="orders" element={<CustomerOrders />} />
-            <Route path="orders/:id" element={<CustomerOrderDetail />} />
-            <Route path="addresses" element={<CustomerAddresses />} />
-            <Route path="wishlist" element={<CustomerWishlist />} />
-            <Route path="settings" element={<CustomerSettings />} />
-          </Route>
+            {/* Customer dashboard */}
+            <Route path="/dashboard/customer" element={<DashboardLayout requiredRole="customer" />}>
+              <Route index element={<CustomerDashboard />} />
+              <Route path="orders" element={<CustomerOrders />} />
+              <Route path="orders/:id" element={<CustomerOrderDetail />} />
+              <Route path="addresses" element={<CustomerAddresses />} />
+              <Route path="wishlist" element={<CustomerWishlist />} />
+              <Route path="settings" element={<CustomerSettings />} />
+            </Route>
 
-          {/* Affiliate dashboard */}
-          <Route path="/dashboard/affiliate" element={<DashboardLayout requiredRole="affiliate" />}>
-            <Route index element={<AffiliateDashboard />} />
-            <Route path="links" element={<AffiliateLinks />} />
-            <Route path="product-links" element={<AffiliateProductLinks />} />
-            <Route path="commissions" element={<AffiliateEarnings />} />
-            <Route path="earnings" element={<AffiliateEarnings />} />
-            <Route path="settings" element={<AffiliateSettings />} />
-            <Route path="kyc" element={<AffiliateKYC />} />
-            <Route path="support" element={<AffiliateSupport />} />
-          </Route>
+            {/* Affiliate dashboard */}
+            <Route path="/dashboard/affiliate" element={<DashboardLayout requiredRole="affiliate" />}>
+              <Route index element={<AffiliateDashboard />} />
+              <Route path="links" element={<AffiliateLinks />} />
+              <Route path="product-links" element={<AffiliateProductLinks />} />
+              <Route path="commissions" element={<AffiliateEarnings />} />
+              <Route path="earnings" element={<AffiliateEarnings />} />
+              <Route path="settings" element={<AffiliateSettings />} />
+              <Route path="kyc" element={<AffiliateKYC />} />
+              <Route path="support" element={<AffiliateSupport />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </AuthInit>
     </BrowserRouter>
   );
