@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { ShoppingCart, Search, Menu, X, ChevronDown, User } from 'lucide-react';
+import { ShoppingCart, Search, Menu, X, ChevronDown, User, Heart } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { clearUser } from '../../../store/slices/authSlice';
 import { clearCart, openCartDrawer } from '../../../store/slices/cartSlice';
@@ -158,6 +158,17 @@ export default function Header() {
                   </div>
                 )}
               </div>
+
+              {/* Wishlist */}
+              <Link
+                to="/dashboard/customer/wishlist"
+                className="relative hidden md:flex items-center gap-2 text-white hover:text-primary-400 transition-colors px-3 py-2 rounded-lg hover:bg-white/5"
+              >
+                <div className="relative">
+                  <Heart size={22} />
+                  <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">0</span>
+                </div>
+              </Link>
 
               {/* Cart */}
               <button
