@@ -34,42 +34,45 @@ const PROMO_BANNERS = [
 function HeroSection({ banners }) {
   const banner = banners?.[0];
   return (
-    <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: 440 }}>
-      {banner?.image ? (
-        <img src={normalizeImageUrl(banner.image)} alt={banner.title} className="absolute inset-0 w-full h-full object-cover" />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-secondary-900 to-secondary-800" />
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-secondary-900 via-secondary-800 to-slate-700" style={{ minHeight: 260 }}>
+      {banner?.image && (
+        <img src={normalizeImageUrl(banner.image)} alt={banner.title} className="absolute inset-0 w-full h-full object-cover opacity-30" />
       )}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-secondary-900/95 via-secondary-900/70 to-transparent" />
 
-      {/* Glow orbs */}
-      <div className="absolute -top-20 -right-20 w-96 h-96 bg-primary-600/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/3 w-72 h-72 bg-orange-400/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Accent line */}
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500" />
 
-      <div className="relative px-8 md:px-14 py-16 md:py-20 max-w-2xl">
-        <span className="inline-flex items-center gap-1.5 bg-primary-600 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-4">
-          <Zap size={11} fill="currentColor" /> {banner?.subtitle || 'Premium Collection'}
-        </span>
-        <h1 className="text-4xl md:text-5xl font-black text-white leading-tight tracking-tight">
-          {banner?.title || <>Professional<br />Tools &<br />Machinery</>}
-        </h1>
-        <p className="mt-4 text-slate-300 text-sm md:text-base leading-relaxed max-w-sm">
-          Trusted by engineers, contractors & workshops across India
-        </p>
-        <div className="flex flex-wrap gap-3 mt-7">
-          <Link to={banner?.link || '/products'} className="btn-primary px-6 py-2.5 text-sm shadow-lg shadow-orange-600/30">
-            Shop Now <ArrowRight size={16} />
-          </Link>
-          <Link to="/products?category=spare-parts" className="btn border border-white/25 text-white hover:bg-white/10 px-6 py-2.5 text-sm">
-            Spare Parts
-          </Link>
+      {/* Glow */}
+      <div className="absolute top-0 right-0 w-72 h-72 bg-primary-600/15 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative flex items-center h-full px-8 md:px-12 py-10">
+        <div className="max-w-lg">
+          <span className="inline-flex items-center gap-1.5 bg-primary-600/90 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
+            <Zap size={10} fill="currentColor" /> {banner?.subtitle || 'Premium Collection'}
+          </span>
+          <h1 className="text-3xl md:text-4xl font-black text-white leading-tight tracking-tight">
+            {banner?.title || 'Professional Tools & Machinery'}
+          </h1>
+          <p className="mt-2.5 text-secondary-400 text-sm leading-relaxed">
+            Trusted by engineers, contractors & workshops across India
+          </p>
+          <div className="flex flex-wrap gap-3 mt-5">
+            <Link to={banner?.link || '/products'} className="btn-primary px-5 py-2 text-sm shadow-lg shadow-orange-600/20">
+              Shop Now <ArrowRight size={15} />
+            </Link>
+            <Link to="/products?category=spare-parts" className="btn border border-white/20 text-secondary-300 hover:bg-white/10 hover:text-white px-5 py-2 text-sm">
+              Spare Parts
+            </Link>
+          </div>
         </div>
 
-        <div className="flex gap-8 mt-10 pt-7 border-t border-white/10">
+        {/* Right side decorative stat cards */}
+        <div className="hidden md:flex flex-col gap-3 ml-auto mr-4 shrink-0">
           {[['50K+', 'Engineers'], ['500+', 'Products'], ['Pan India', 'Delivery']].map(([n, l]) => (
-            <div key={l}>
-              <div className="text-white font-black text-xl leading-none">{n}</div>
-              <div className="text-slate-500 text-xs mt-1">{l}</div>
+            <div key={l} className="bg-white/5 backdrop-blur border border-white/10 rounded-xl px-5 py-3 text-center min-w-[100px]">
+              <div className="text-primary-400 font-black text-lg leading-none">{n}</div>
+              <div className="text-secondary-500 text-xs mt-1">{l}</div>
             </div>
           ))}
         </div>
