@@ -124,16 +124,6 @@ export default function Home() {
         {/* Hero */}
         <HeroSection banners={bannersData?.banners} />
 
-        {/* Stats strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-secondary-200 border border-secondary-200 rounded-xl bg-white overflow-hidden shadow-sm">
-          {STATS.map(({ value, label }) => (
-            <div key={label} className="flex flex-col items-center py-5 px-4 text-center">
-              <span className="text-2xl font-black text-primary-600">{value}</span>
-              <span className="text-xs text-secondary-500 font-medium mt-1">{label}</span>
-            </div>
-          ))}
-        </div>
-
         {/* Trust badges */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {TRUST_BADGES.map(({ icon: Icon, title, desc, bg, fg }) => (
