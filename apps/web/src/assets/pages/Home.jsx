@@ -34,7 +34,7 @@ const PROMO_BANNERS = [
 function HeroSection({ banners }) {
   const banner = banners?.[0];
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-secondary-900 via-secondary-800 to-slate-700" style={{ minHeight: 260 }}>
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-secondary-900 via-secondary-800 to-slate-700" style={{ minHeight: 180 }}>
       {banner?.image && (
         <img src={normalizeImageUrl(banner.image)} alt={banner.title} className="absolute inset-0 w-full h-full object-cover opacity-30" />
       )}
