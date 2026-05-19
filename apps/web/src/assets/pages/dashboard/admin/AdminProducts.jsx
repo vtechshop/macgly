@@ -219,22 +219,31 @@ export default function AdminProducts() {
                 ))}
               </select>
             </div>
-            {/* Subcategory — only shown when parent has children */}
-            {subCats.length > 0 && (
+            {/* Subcategory — shown when parent is selected */}
+            {parentCatId && (
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-secondary-700">Subcategory</label>
-                <select
-                  className="input"
-                  value={form.category}
-                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                >
-                  <option value={parentCats.find((c) => c._id.toString() === parentCatId)?.slug || ''}>
-                    — All {parentCats.find((c) => c._id.toString() === parentCatId)?.name} (no subcategory)
-                  </option>
-                  {subCats.map((c) => (
-                    <option key={c._id} value={c.slug}>{c.name}</option>
-                  ))}
-                </select>
+                {subCats.length > 0 ? (
+                  <select
+                    className="input"
+                    value={form.category}
+                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                  >
+                    <option value={parentCats.find((c) => c._id.toString() === parentCatId)?.slug || ''}>
+                      — No subcategory
+                    </option>
+                    {subCats.map((c) => (
+                      <option key={c._id} value={c.slug}>{c.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="input bg-secondary-50 text-secondary-400 text-xs flex items-center gap-2">
+                    No subcategories yet —
+                    <a href="/dashboard/admin/categories" target="_blank" className="text-primary-600 hover:underline font-semibold">
+                      Add subcategories in Categories
+                    </a>
+                  </div>
+                )}
               </div>
             )}
             <Input label="Price (₹) *" type="number" step="0.01" value={form.price} onChange={set('price')} required />
