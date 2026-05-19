@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Zap, Plus, Minus } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useState } from 'react';
 import { setCart, openCartDrawer, addItemOptimistic, updateItemOptimistic } from '../../../store/slices/cartSlice';
 import { formatCurrency, normalizeImageUrl } from '../../../utils/format';
 import api from '../../../utils/api';
@@ -136,7 +135,7 @@ export default function ProductCard({ product, onAddToCart }) {
             </span>
             <button
               onClick={() => changeQty(qty + 1)}
-              disabled={loading || qty >= product.stock}
+              disabled={qty >= product.stock}
               className="w-8 h-8 flex items-center justify-center rounded bg-primary-600 hover:bg-primary-700 text-white transition-colors disabled:opacity-50"
             >
               <Plus size={14} />
