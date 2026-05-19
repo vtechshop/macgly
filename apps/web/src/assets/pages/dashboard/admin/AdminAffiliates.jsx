@@ -388,25 +388,7 @@ export default function AdminAffiliates() {
                       {formatCurrency(a.affiliateProfile?.totalEarnings || 0)}
                     </td>
                     <td className="px-5 py-3">
-                      <div className="flex flex-col gap-1.5">
-                        <KycBadge status={a.affiliateProfile?.kycStatus} />
-                        {a.affiliateProfile?.kycStatus === 'pending' && (
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => approveKYC(a._id)}
-                              className="flex items-center gap-0.5 text-xs px-2 py-0.5 rounded bg-green-500 text-white hover:bg-green-600 font-semibold transition-colors"
-                            >
-                              <Check size={10} /> Approve
-                            </button>
-                            <button
-                              onClick={() => rejectKYC(a._id)}
-                              className="flex items-center gap-0.5 text-xs px-2 py-0.5 rounded bg-red-500 text-white hover:bg-red-600 font-semibold transition-colors"
-                            >
-                              <X size={10} /> Reject
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      <KycBadge status={a.affiliateProfile?.kycStatus} />
                     </td>
                     <td className="px-5 py-3">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${a.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
