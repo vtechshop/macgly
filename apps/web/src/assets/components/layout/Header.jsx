@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { ShoppingCart, Search, Menu, X, Phone, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Search, Menu, X, ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { clearUser } from '../../../store/slices/authSlice';
 import { clearCart, openCartDrawer } from '../../../store/slices/cartSlice';
@@ -72,21 +72,6 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* Top bar */}
-      <div className="bg-secondary-900 text-secondary-300 text-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-8">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1"><Phone size={11} /> +91 98765 43210</span>
-            <span className="hidden sm:block">Mon–Sat 9AM–6PM</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:block">Free shipping on orders above ₹999</span>
-            <Link to="/sell" className="hover:text-white transition-colors">Sell on Macgly</Link>
-            <Link to="/affiliate" className="hover:text-white transition-colors">Affiliate Program</Link>
-          </div>
-        </div>
-      </div>
-
       {/* Main bar */}
       <div className="bg-white border-b border-secondary-200 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
