@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ShoppingCart, Star, Shield, ChevronDown, ChevronUp, MapPin, CheckCircle, XCircle, Heart, Zap } from 'lucide-react';
+import ProductCard from '../components/product/ProductCard';
 import api from '../../utils/api';
 import { setCart, addItemOptimistic, openCartDrawer } from '../../store/slices/cartSlice';
 import { formatCurrency, normalizeImageUrl } from '../../utils/format';
@@ -56,6 +57,12 @@ export default function Product() {
   const { data, isLoading, error } = useFetch(
     ['product', slug],
     () => api.get(`/catalog/products/${slug}`).then((r) => r.data)
+  );
+
+  const categorySlug = data?.product?.category?.slug || data?.product?.category;
+  const { data: relatedData } = useFetch(
+    categorySlug ? ['related', categorySlug, slug] : null,
+    () => api.get('/catalog/products', { params: { category: categorySlug, limit: 8 } }).then((r) => r.data)
   );
 
   const product = data?.product;
@@ -165,20 +172,11 @@ export default function Product() {
         </div>
 
         <div className="space-y-4">
-          {/* Brand + wishlist row */}
-          <div className="flex items-center justify-between">
+          {/* Brand row */}
+          <div className="flex items-center">
             {product.brand
               ? <p className="text-xs font-bold uppercase tracking-widest text-primary-600 bg-primary-50 px-2 py-0.5 rounded">{product.brand}</p>
-              : <span />}
-            <button
-              onClick={toggleWishlist}
-              disabled={wishlistLoading}
-              className={`w-9 h-9 flex items-center justify-center rounded-full border transition-colors disabled:opacity-50 ${
-                wishlisted ? 'bg-red-50 border-red-300 text-red-500' : 'border-secondary-200 text-secondary-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50'
-              }`}
-            >
-              <Heart size={16} className={wishlisted ? 'fill-red-500' : ''} />
-            </button>
+              : null}
           </div>
 
           <h1 className="text-2xl md:text-3xl font-bold text-secondary-900 leading-snug">{product.title}</h1>
@@ -252,6 +250,20 @@ export default function Product() {
                   Buy Now
                 </button>
               </div>
+
+              {/* Wishlist */}
+              <button
+                onClick={toggleWishlist}
+                disabled={wishlistLoading}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-semibold text-sm transition-colors disabled:opacity-50 ${
+                  wishlisted
+                    ? 'border-red-400 bg-red-50 text-red-500'
+                    : 'border-secondary-300 text-secondary-600 hover:border-red-400 hover:bg-red-50 hover:text-red-500'
+                }`}
+              >
+                <Heart size={16} className={wishlisted ? 'fill-red-500' : ''} />
+                {wishlisted ? 'Saved to Wishlist' : 'Add to Wishlist'}
+              </button>
             </div>
           )}
 
@@ -328,6 +340,19 @@ export default function Product() {
       </div>
 
       <ReviewSection key={product._id} productId={product._id} />
+
+      {/* Related products */}
+      {relatedData?.products?.filter(p => p._id !== product._id).length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-lg font-black text-secondary-900 mb-4">You may also like</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {relatedData.products
+              .filter(p => p._id !== product._id)
+              .slice(0, 5)
+              .map(p => <ProductCard key={p._id} product={p} />)}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

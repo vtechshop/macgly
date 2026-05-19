@@ -14,15 +14,17 @@ function getCached(key) {
  * Simple data-fetching hook with 30s in-memory cache.
  * Re-runs when queryKey changes. keepPrevious shows stale data while loading.
  */
-export function useFetch(queryKey, fetcher, { keepPrevious = false } = {}) {
-  const keyStr = JSON.stringify(queryKey);
-  const cached = getCached(keyStr);
+export function useFetch(queryKey, fetcher, { keepPrevious = false, enabled = true } = {}) {
+  const active = enabled && queryKey != null;
+  const keyStr = active ? JSON.stringify(queryKey) : null;
+  const cached = keyStr ? getCached(keyStr) : null;
   const [data, setData] = useState(cached);
-  const [isLoading, setIsLoading] = useState(!cached);
+  const [isLoading, setIsLoading] = useState(active && !cached);
   const [error, setError] = useState(null);
   const prevRef = useRef(cached);
 
   useEffect(() => {
+    if (!active || !keyStr) { setIsLoading(false); return; }
     let cancelled = false;
     const hit = getCached(keyStr);
     if (hit) {
