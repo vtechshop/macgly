@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Zap, HelpCircle, Star, Plus, Trash2, Save } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 
 const SLICE_COLORS = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#f97316'];
 
-// ─── Spin Tab ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Spin Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SpinTab() {
   const [config, setConfig] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -69,7 +69,7 @@ function SpinTab() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-bold">Wheel Slices</h2>
-            <p className="text-xs text-secondary-400 mt-0.5">Total probability: <span className={totalProb > 1 ? 'text-red-500 font-bold' : 'text-green-600'}>{totalProb.toFixed(2)}</span> (should be ≤ 1.0)</p>
+            <p className="text-xs text-secondary-400 mt-0.5">Total probability: <span className={totalProb > 1 ? 'text-red-500 font-bold' : 'text-green-600'}>{totalProb.toFixed(2)}</span> (should be â‰¤ 1.0)</p>
           </div>
           <button onClick={addSlice} className="btn flex items-center gap-1.5 text-sm"><Plus size={14} /> Add Slice</button>
         </div>
@@ -92,12 +92,12 @@ function SpinTab() {
         ))}
       </div>
 
-      <button onClick={save} disabled={saving} className="btn-primary flex items-center gap-2"><Save size={15} /> {saving ? 'Saving…' : 'Save Spin Config'}</button>
+      <button onClick={save} disabled={saving} className="btn-primary flex items-center gap-2"><Save size={15} /> {saving ? 'Savingâ€¦' : 'Save Spin Config'}</button>
     </div>
   );
 }
 
-// ─── Quiz Tab ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Quiz Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function QuizTab() {
   const [rev, setRev] = useState(0);
   const [form, setForm] = useState(null);
@@ -156,10 +156,10 @@ function QuizTab() {
                 <div className="flex gap-1 flex-wrap mt-1">
                   {q.options.map((o, i) => <span key={i} className={`text-xs px-2 py-0.5 rounded-full ${o.isCorrect ? 'bg-green-100 text-green-700 font-semibold' : 'bg-secondary-100 text-secondary-500'}`}>{o.text}</span>)}
                 </div>
-                <p className="text-xs text-secondary-400 mt-1">{q.difficulty} · {q.pointsOnCorrect} pts {q.category && `· ${q.category}`}</p>
+                <p className="text-xs text-secondary-400 mt-1">{q.difficulty} Â· {q.pointsOnCorrect} pts {q.category && `Â· ${q.category}`}</p>
               </div>
               <div className="flex gap-1 shrink-0">
-                <button onClick={() => setForm({ ...q })} className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-500">✏️</button>
+                <button onClick={() => setForm({ ...q })} className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-500">âœï¸</button>
                 <button onClick={() => del(q._id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-500" /></button>
               </div>
             </div>
@@ -188,7 +188,7 @@ function QuizTab() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium mb-1">Category</label>
-                  <input className="input w-full" placeholder="Tools, General…" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
+                  <input className="input w-full" placeholder="Tools, Generalâ€¦" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Difficulty</label>
@@ -205,7 +205,7 @@ function QuizTab() {
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setForm(null)} className="btn flex-1">Cancel</button>
-                <button type="submit" disabled={saving} className="btn-primary flex-1">{saving ? 'Saving…' : 'Save'}</button>
+                <button type="submit" disabled={saving} className="btn-primary flex-1">{saving ? 'Savingâ€¦' : 'Save'}</button>
               </div>
             </form>
           </div>
@@ -215,7 +215,7 @@ function QuizTab() {
   );
 }
 
-// ─── Loyalty Config Tab ────────────────────────────────────────────────────────
+// â”€â”€â”€ Loyalty Config Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function LoyaltyTab() {
   const [cfg, setCfg] = useState({ loyalty_points_per_rupee: 0.1, loyalty_rupee_per_point: 0.5, loyalty_min_redeem: 100 });
   const [saving, setSaving] = useState(false);
@@ -236,30 +236,30 @@ function LoyaltyTab() {
   if (isLoading) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
 
   return (
-    <form onSubmit={save} className="space-y-5 max-w-lg">
+    <form onSubmit={save} className="space-y-5 w-full">
       <div className="card p-5 space-y-4">
         <h2 className="font-bold">Loyalty Points Configuration</h2>
         <div>
-          <label className="block text-sm font-medium mb-1">Points earned per ₹1 spent</label>
+          <label className="block text-sm font-medium mb-1">Points earned per â‚¹1 spent</label>
           <input type="number" step={0.01} className="input w-full" value={cfg.loyalty_points_per_rupee} onChange={(e) => setCfg((c) => ({ ...c, loyalty_points_per_rupee: Number(e.target.value) }))} />
-          <p className="text-xs text-secondary-400 mt-1">e.g. 0.1 = 1 point per ₹10 spent</p>
+          <p className="text-xs text-secondary-400 mt-1">e.g. 0.1 = 1 point per â‚¹10 spent</p>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">₹ value per point (redemption)</label>
+          <label className="block text-sm font-medium mb-1">â‚¹ value per point (redemption)</label>
           <input type="number" step={0.01} className="input w-full" value={cfg.loyalty_rupee_per_point} onChange={(e) => setCfg((c) => ({ ...c, loyalty_rupee_per_point: Number(e.target.value) }))} />
-          <p className="text-xs text-secondary-400 mt-1">e.g. 0.5 = 1 point = ₹0.50</p>
+          <p className="text-xs text-secondary-400 mt-1">e.g. 0.5 = 1 point = â‚¹0.50</p>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Minimum points to redeem</label>
           <input type="number" className="input w-full" value={cfg.loyalty_min_redeem} onChange={(e) => setCfg((c) => ({ ...c, loyalty_min_redeem: Number(e.target.value) }))} />
         </div>
       </div>
-      <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2"><Save size={15} /> {saving ? 'Saving…' : 'Save Config'}</button>
+      <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2"><Save size={15} /> {saving ? 'Savingâ€¦' : 'Save Config'}</button>
     </form>
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function AdminGamification() {
   const [tab, setTab] = useState('spin');
 

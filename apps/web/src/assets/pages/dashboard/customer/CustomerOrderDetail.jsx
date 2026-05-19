@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Package, Truck, CheckCircle, Clock, XCircle, AlertCircle, FileText, RotateCcw } from 'lucide-react';
 import api from '../../../../utils/api';
@@ -48,17 +48,17 @@ function ReturnModal({ orderId, onClose, onSuccess }) {
           <div>
             <label className="block text-sm font-medium mb-1">Reason</label>
             <select className="input w-full" value={reason} onChange={(e) => setReason(e.target.value)} required>
-              <option value="">Select reason…</option>
+              <option value="">Select reasonâ€¦</option>
               {RETURN_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Description <span className="text-secondary-400 font-normal">(optional)</span></label>
-            <textarea className="input w-full" rows={3} placeholder="Describe the issue…" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <textarea className="input w-full" rows={3} placeholder="Describe the issueâ€¦" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose} className="btn flex-1">Cancel</button>
-            <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? 'Submitting…' : 'Submit Request'}</button>
+            <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? 'Submittingâ€¦' : 'Submit Request'}</button>
           </div>
         </form>
       </div>
@@ -107,7 +107,7 @@ export default function CustomerOrderDetail() {
   const canReturn = order.status === 'delivered';
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="space-y-5 w-full">
       <div className="flex items-center gap-3">
         <Link to="/dashboard/customer/orders" className="text-secondary-500 hover:text-secondary-800">
           <ArrowLeft size={20} />
@@ -201,7 +201,7 @@ export default function CustomerOrderDetail() {
           {order.discount > 0 && (
             <div className="flex justify-between text-green-600">
               <span>Discount</span>
-              <span>−{formatCurrency(order.discount)}</span>
+              <span>âˆ’{formatCurrency(order.discount)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-secondary-900 pt-1 border-t border-secondary-200">
@@ -217,7 +217,7 @@ export default function CustomerOrderDetail() {
           <h2 className="font-bold text-secondary-800 mb-2">Shipping Address</h2>
           <p className="text-sm text-secondary-700">{order.shippingAddress.name}</p>
           <p className="text-sm text-secondary-500">{order.shippingAddress.line1}{order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ''}</p>
-          <p className="text-sm text-secondary-500">{order.shippingAddress.city}, {order.shippingAddress.state} — {order.shippingAddress.pincode}</p>
+          <p className="text-sm text-secondary-500">{order.shippingAddress.city}, {order.shippingAddress.state} â€” {order.shippingAddress.pincode}</p>
           <p className="text-sm text-secondary-500">{order.shippingAddress.phone}</p>
         </div>
       )}
@@ -237,7 +237,7 @@ export default function CustomerOrderDetail() {
         {canCancel && (
           <button onClick={handleCancel} disabled={cancelling}
             className="flex items-center gap-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
-            <XCircle size={15} /> {cancelling ? 'Cancelling…' : 'Cancel Order'}
+            <XCircle size={15} /> {cancelling ? 'Cancellingâ€¦' : 'Cancel Order'}
           </button>
         )}
       </div>

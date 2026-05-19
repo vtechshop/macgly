@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Package, Truck, FileText, RotateCcw } from 'lucide-react';
 import api from '../../../../utils/api';
@@ -7,7 +7,7 @@ import { formatCurrency, normalizeImageUrl } from '../../../../utils/format';
 import Spinner from '../../../components/common/Spinner';
 import toast from 'react-hot-toast';
 
-function fmtDate(iso) { return iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'â€”'; }
 
 const STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'];
 const STATUS_COLORS = {
@@ -64,7 +64,7 @@ export default function AdminOrderDetail() {
   );
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="space-y-5 w-full">
       <div className="flex items-center gap-3">
         <Link to="/dashboard/admin/orders" className="text-secondary-500 hover:text-secondary-800"><ArrowLeft size={20} /></Link>
         <div className="flex-1">
@@ -78,7 +78,7 @@ export default function AdminOrderDetail() {
         {/* Customer */}
         <div className="card p-4">
           <p className="text-xs font-bold uppercase text-secondary-400 mb-2">Customer</p>
-          <p className="font-semibold">{order.user?.name || '—'}</p>
+          <p className="font-semibold">{order.user?.name || 'â€”'}</p>
           <p className="text-sm text-secondary-500">{order.user?.email}</p>
           <p className="text-sm text-secondary-500">{order.user?.phone}</p>
         </div>
@@ -92,13 +92,13 @@ export default function AdminOrderDetail() {
               <p className="text-sm text-secondary-500">{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.pincode}</p>
               <p className="text-sm text-secondary-500">{order.shippingAddress.phone}</p>
             </>
-          ) : <p className="text-sm text-secondary-400">—</p>}
+          ) : <p className="text-sm text-secondary-400">â€”</p>}
         </div>
         {/* Payment */}
         <div className="card p-4">
           <p className="text-xs font-bold uppercase text-secondary-400 mb-2">Payment</p>
           <p className="font-semibold">{formatCurrency(order.totalAmount)}</p>
-          <p className="text-sm text-secondary-500 capitalize">{order.paymentMethod || '—'}</p>
+          <p className="text-sm text-secondary-500 capitalize">{order.paymentMethod || 'â€”'}</p>
           <p className={`text-sm font-medium mt-1 capitalize ${order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'}`}>{order.paymentStatus}</p>
           {order.discount > 0 && <p className="text-sm text-green-600 mt-0.5">Discount: {formatCurrency(order.discount)}</p>}
         </div>
@@ -132,17 +132,17 @@ export default function AdminOrderDetail() {
         {trackingForm ? (
           <form onSubmit={saveTracking} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div><label className="block text-xs font-medium mb-1">Carrier</label><input className="input w-full" placeholder="Delhivery, FedEx…" value={tracking.carrier} onChange={(e) => setTracking((t) => ({ ...t, carrier: e.target.value }))} /></div>
+              <div><label className="block text-xs font-medium mb-1">Carrier</label><input className="input w-full" placeholder="Delhivery, FedExâ€¦" value={tracking.carrier} onChange={(e) => setTracking((t) => ({ ...t, carrier: e.target.value }))} /></div>
               <div><label className="block text-xs font-medium mb-1">AWB / Tracking ID</label><input className="input w-full" value={tracking.trackingId} onChange={(e) => setTracking((t) => ({ ...t, trackingId: e.target.value }))} /></div>
-              <div><label className="block text-xs font-medium mb-1">Tracking URL</label><input className="input w-full" placeholder="https://…" value={tracking.url} onChange={(e) => setTracking((t) => ({ ...t, url: e.target.value }))} /></div>
+              <div><label className="block text-xs font-medium mb-1">Tracking URL</label><input className="input w-full" placeholder="https://â€¦" value={tracking.url} onChange={(e) => setTracking((t) => ({ ...t, url: e.target.value }))} /></div>
             </div>
             <button type="submit" className="btn-primary">Save Tracking</button>
           </form>
         ) : order.tracking?.trackingId ? (
           <div className="text-sm space-y-1">
-            <p><span className="font-medium">Carrier:</span> {order.tracking.carrier || '—'}</p>
+            <p><span className="font-medium">Carrier:</span> {order.tracking.carrier || 'â€”'}</p>
             <p><span className="font-medium">AWB:</span> {order.tracking.trackingId}</p>
-            {order.tracking.url && <a href={order.tracking.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Track on carrier →</a>}
+            {order.tracking.url && <a href={order.tracking.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Track on carrier â†’</a>}
           </div>
         ) : <p className="text-sm text-secondary-400">No tracking info added yet.</p>}
       </div>
@@ -158,7 +158,7 @@ export default function AdminOrderDetail() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm line-clamp-1">{item.title}</p>
-                <p className="text-xs text-secondary-400">Qty: {item.quantity} × {formatCurrency(item.price)}</p>
+                <p className="text-xs text-secondary-400">Qty: {item.quantity} Ã— {formatCurrency(item.price)}</p>
                 {item.vendor && <p className="text-xs text-secondary-400">Vendor: {item.vendor.name || item.vendor}</p>}
               </div>
               <p className="font-semibold text-sm shrink-0">{formatCurrency(item.price * item.quantity)}</p>
@@ -178,7 +178,7 @@ export default function AdminOrderDetail() {
           <FileText size={14} /> Invoice
         </a>
         {order.status === 'delivered' && (
-          <button onClick={() => toast('Refund via Payments page', { icon: 'ℹ️' })}
+          <button onClick={() => toast('Refund via Payments page', { icon: 'â„¹ï¸' })}
             className="flex items-center gap-2 text-sm font-medium text-orange-600 border border-orange-200 hover:bg-orange-50 px-4 py-2 rounded-lg">
             <RotateCcw size={14} /> Initiate Refund
           </button>

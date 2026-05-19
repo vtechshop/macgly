@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setUser } from '../../../../store/slices/authSlice';
 import api from '../../../../utils/api';
@@ -48,7 +48,7 @@ export default function AffiliateSettings() {
   }
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className="space-y-6 w-full">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-secondary-500 text-sm mt-0.5">Manage your account details</p>
@@ -139,7 +139,7 @@ export default function AffiliateSettings() {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-secondary-500">Member Since</span>
-          <span className="font-semibold">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long' }) : '—'}</span>
+          <span className="font-semibold">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long' }) : 'â€”'}</span>
         </div>
       </div>
     </div>

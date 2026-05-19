@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setUser } from '../../../../store/slices/authSlice';
 import api from '../../../../utils/api';
@@ -54,7 +54,7 @@ export default function VendorSettings() {
   );
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="space-y-5 w-full">
       <div>
         <h1 className="text-2xl font-bold">Vendor Settings</h1>
         <p className="text-secondary-500 text-sm mt-0.5">Manage your store and payout details</p>
@@ -88,7 +88,7 @@ export default function VendorSettings() {
 
         <div className="flex justify-end">
           <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2 px-6">
-            {saving ? <Spinner size="sm" /> : null} {saving ? 'Saving…' : 'Save Settings'}
+            {saving ? <Spinner size="sm" /> : null} {saving ? 'Savingâ€¦' : 'Save Settings'}
           </button>
         </div>
       </form>

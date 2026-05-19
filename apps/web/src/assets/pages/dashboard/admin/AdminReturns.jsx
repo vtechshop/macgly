@@ -1,11 +1,11 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
 import Spinner from '../../../components/common/Spinner';
 import toast from 'react-hot-toast';
 
-function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'â€”'; }
 
 const STATUS_COLORS = {
   requested: 'bg-yellow-100 text-yellow-700',
@@ -44,7 +44,7 @@ export default function AdminReturns() {
   }
 
   if (selected) return (
-    <div className="space-y-5 max-w-xl">
+    <div className="space-y-5 w-full">
       <button onClick={() => setSelected(null)} className="flex items-center gap-2 text-secondary-500 hover:text-secondary-800 text-sm font-medium"><ArrowLeft size={16} /> Back</button>
       <h2 className="text-xl font-bold">Return {selected.returnId}</h2>
       <div className="card p-5 space-y-3">
@@ -52,14 +52,14 @@ export default function AdminReturns() {
           <div><p className="text-secondary-400 text-xs">Customer</p><p className="font-medium">{selected.user?.name}</p><p className="text-secondary-400 text-xs">{selected.user?.email}</p></div>
           <div><p className="text-secondary-400 text-xs">Order</p><p className="font-mono">{selected.order?.orderId}</p></div>
           <div><p className="text-secondary-400 text-xs">Reason</p><p>{selected.reason}</p></div>
-          <div><p className="text-secondary-400 text-xs">Refund Amount</p><p className="font-medium">₹{(selected.refundAmount || 0).toLocaleString()}</p></div>
+          <div><p className="text-secondary-400 text-xs">Refund Amount</p><p className="font-medium">â‚¹{(selected.refundAmount || 0).toLocaleString()}</p></div>
         </div>
         {selected.description && <p className="text-sm text-secondary-600 bg-secondary-50 p-3 rounded-lg">{selected.description}</p>}
         <hr />
         <div className="space-y-3">
           <div><label className="block text-sm font-medium mb-1">Update Status</label>
             <select className="input w-full" value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
-              <option value="">Select status…</option>
+              <option value="">Select statusâ€¦</option>
               {['approved', 'rejected', 'pickup_scheduled', 'picked_up', 'refunded'].map((s) => <option key={s} value={s} className="capitalize">{s.replace('_', ' ')}</option>)}
             </select>
           </div>
@@ -94,7 +94,7 @@ export default function AdminReturns() {
                     <td className="px-4 py-3 font-mono text-xs">{r.returnId}</td>
                     <td className="px-4 py-3"><p className="font-medium">{r.user?.name}</p><p className="text-xs text-secondary-400">{r.user?.email}</p></td>
                     <td className="px-4 py-3 font-mono text-xs text-secondary-500">{r.order?.orderId}</td>
-                    <td className="px-4 py-3 text-right font-medium">₹{(r.refundAmount || 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-medium">â‚¹{(r.refundAmount || 0).toLocaleString()}</td>
                     <td className="px-4 py-3 text-secondary-500 text-xs">{fmtDate(r.createdAt)}</td>
                     <td className="px-4 py-3 text-center"><span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${STATUS_COLORS[r.status] || ''}`}>{r.status?.replace('_', ' ')}</span></td>
                   </tr>

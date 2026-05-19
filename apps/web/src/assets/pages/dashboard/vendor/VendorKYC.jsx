@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { ShieldCheck, Upload, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
@@ -45,7 +45,7 @@ function DocUploader({ label, hint, value, onChange, disabled }) {
       ) : (
         <label className={`flex items-center gap-2 text-sm font-medium cursor-pointer px-3 py-2 border border-dashed border-secondary-300 rounded-lg hover:bg-secondary-50 transition-colors ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
           {uploading ? <Spinner size="sm" /> : <Upload size={14} />}
-          {uploading ? 'Uploading…' : 'Choose file'}
+          {uploading ? 'Uploadingâ€¦' : 'Choose file'}
           <input type="file" className="hidden" accept="image/*,.pdf" onChange={handleFile} disabled={disabled} />
         </label>
       )}
@@ -95,7 +95,7 @@ export default function VendorKYC() {
   const BannerIcon = banner.icon;
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="w-full space-y-5">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><ShieldCheck size={22} /> KYC Verification</h1>
         <p className="text-secondary-500 text-sm mt-1">Upload your business documents to get verified and start selling</p>
@@ -129,9 +129,9 @@ export default function VendorKYC() {
       {/* Business info */}
       <div className="card p-5 text-sm text-secondary-600 space-y-1">
         <p className="font-semibold text-secondary-800 mb-2">Business Details on File</p>
-        <p>Business: <span className="font-medium">{user?.vendorProfile?.businessName || '—'}</span></p>
-        <p>GST: <span className="font-medium">{user?.vendorProfile?.gstNumber || '—'}</span></p>
-        <p>Bank: <span className="font-medium">{user?.vendorProfile?.bankAccount?.bankName || '—'}</span></p>
+        <p>Business: <span className="font-medium">{user?.vendorProfile?.businessName || 'â€”'}</span></p>
+        <p>GST: <span className="font-medium">{user?.vendorProfile?.gstNumber || 'â€”'}</span></p>
+        <p>Bank: <span className="font-medium">{user?.vendorProfile?.bankAccount?.bankName || 'â€”'}</span></p>
         {!user?.vendorProfile?.businessName && (
           <p className="text-secondary-400 text-xs mt-2">Update your business details in <a href="/dashboard/vendor/settings" className="text-primary-600 hover:underline">Vendor Settings</a> before submitting KYC.</p>
         )}
@@ -139,7 +139,7 @@ export default function VendorKYC() {
 
       {canSubmit && (
         <button onClick={handleSubmit} disabled={submitting} className="btn-primary w-full">
-          {submitting ? 'Submitting…' : `Submit for Review (${filled}/4 documents uploaded)`}
+          {submitting ? 'Submittingâ€¦' : `Submit for Review (${filled}/4 documents uploaded)`}
         </button>
       )}
     </div>
