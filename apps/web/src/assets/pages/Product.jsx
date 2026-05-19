@@ -128,11 +128,11 @@ export default function Product() {
         <span className="text-secondary-800 truncate">{product.title}</span>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-8">
         <div className="space-y-2">
-          <div className="rounded-xl overflow-hidden bg-secondary-50 border border-secondary-100" style={{ height: 320 }}>
+          <div className="rounded-xl overflow-hidden bg-white border border-secondary-200 shadow-sm" style={{ height: 400 }}>
             {product.images?.[activeImg] ? (
-              <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="w-full h-full object-contain p-4" />
+              <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="w-full h-full object-contain p-6" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-secondary-300"><ShoppingCart size={48} /></div>
             )}
@@ -141,7 +141,7 @@ export default function Product() {
             <div className="flex gap-1.5 flex-wrap">
               {product.images.map((img, i) => (
                 <button key={i} onClick={() => setActiveImg(i)}
-                  className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === activeImg ? 'border-primary-500' : 'border-secondary-200'}`}>
+                  className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors bg-white ${i === activeImg ? 'border-primary-500' : 'border-secondary-200 hover:border-secondary-400'}`}>
                   <img src={normalizeImageUrl(img)} alt="" className="w-full h-full object-contain p-1" />
                 </button>
               ))}
@@ -181,30 +181,38 @@ export default function Product() {
           )}
 
           {product.stock > 0 && (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center border border-secondary-300 rounded-lg">
-                <button className="px-3 py-2 text-secondary-600 hover:bg-secondary-50 disabled:opacity-40"
-                  onClick={() => setQty(Math.max(1, qty - 1))} disabled={qty <= 1}>−</button>
-                <span className="px-4 py-2 text-sm font-medium">{qty}</span>
-                <button className="px-3 py-2 text-secondary-600 hover:bg-secondary-50 disabled:opacity-40"
-                  onClick={() => setQty(Math.min(product.stock, qty + 1))} disabled={qty >= product.stock}>+</button>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-secondary-500 font-medium w-14">Qty:</span>
+                <div className="flex items-center border border-secondary-300 rounded-lg overflow-hidden">
+                  <button className="w-9 h-9 flex items-center justify-center text-secondary-600 hover:bg-secondary-100 disabled:opacity-40 text-lg font-medium transition-colors"
+                    onClick={() => setQty(Math.max(1, qty - 1))} disabled={qty <= 1}>−</button>
+                  <span className="w-10 text-center text-sm font-bold text-secondary-900">{qty}</span>
+                  <button className="w-9 h-9 flex items-center justify-center text-secondary-600 hover:bg-secondary-100 disabled:opacity-40 text-lg font-medium transition-colors"
+                    onClick={() => setQty(Math.min(product.stock, qty + 1))} disabled={qty >= product.stock}>+</button>
+                </div>
               </div>
-              <button className="btn-primary flex-1" onClick={addToCart} disabled={adding}>
-                {adding ? <Spinner size="sm" /> : <ShoppingCart size={16} />}
-                Add to Cart
-              </button>
-              <button
-                onClick={toggleWishlist}
-                disabled={wishlistLoading}
-                className={`p-2.5 rounded-lg border transition-colors disabled:opacity-50 ${
-                  wishlisted
-                    ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100'
-                    : 'border-secondary-300 text-secondary-400 hover:border-red-200 hover:text-red-500 hover:bg-red-50'
-                }`}
-                title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-              >
-                <Heart size={18} className={wishlisted ? 'fill-red-500' : ''} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  className="flex items-center gap-2 px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg transition-colors disabled:opacity-60 text-sm shadow-sm"
+                  onClick={addToCart} disabled={adding}
+                >
+                  {adding ? <Spinner size="sm" /> : <ShoppingCart size={16} />}
+                  Add to Cart
+                </button>
+                <button
+                  onClick={toggleWishlist}
+                  disabled={wishlistLoading}
+                  className={`w-11 h-11 flex items-center justify-center rounded-lg border transition-colors disabled:opacity-50 ${
+                    wishlisted
+                      ? 'bg-red-50 border-red-300 text-red-500 hover:bg-red-100'
+                      : 'border-secondary-300 text-secondary-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50'
+                  }`}
+                  title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                >
+                  <Heart size={18} className={wishlisted ? 'fill-red-500' : ''} />
+                </button>
+              </div>
             </div>
           )}
 
