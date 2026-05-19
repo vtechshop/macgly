@@ -1,45 +1,53 @@
-import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { X, ShoppingCart, Minus, Plus, Trash2, Check } from 'lucide-react';
-import { setCart, clearCart, closeCartDrawer } from '../../../store/slices/cartSlice';
+import { setCart, clearCart, closeCartDrawer, updateItemOptimistic } from '../../../store/slices/cartSlice';
 import { formatCurrency, normalizeImageUrl } from '../../../utils/format';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
+
+function itemPrice(item) {
+  return item.product?.price ?? item.price ?? 0;
+}
 
 export default function CartDrawer() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { items, count, drawerOpen, lastAdded } = useSelector((s) => s.cart);
-  const [loadingId, setLoadingId] = useState(null);
-  const [clearing, setClearing] = useState(false);
 
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + itemPrice(i) * i.quantity, 0);
 
   function close() { dispatch(closeCartDrawer()); }
 
-  async function changeQty(item, newQty) {
-    setLoadingId(item._id);
-    try {
-      if (newQty < 1) {
-        const { data } = await api.delete(`/cart/items/${item._id}`);
-        dispatch(setCart(data.cart));
-      } else {
-        const { data } = await api.put(`/cart/items/${item._id}`, { quantity: newQty });
-        dispatch(setCart(data.cart));
+  function changeQty(item, newQty) {
+    // Optimistic — instant UI
+    dispatch(updateItemOptimistic({ itemId: item._id, newQty }));
+
+    // Sync in background
+    const isOptimistic = item._id?.startsWith('opt-');
+    if (isOptimistic) {
+      if (newQty >= 1) {
+        api.post('/cart/items', { productId: item.product?._id ?? item.product, quantity: newQty })
+          .then(({ data }) => dispatch(setCart(data.cart)))
+          .catch(() => api.get('/cart').then(({ data }) => dispatch(setCart(data.cart))).catch(() => {}));
       }
-    } catch { toast.error('Could not update cart'); }
-    finally { setLoadingId(null); }
+      return;
+    }
+    if (newQty < 1) {
+      api.delete(`/cart/items/${item._id}`)
+        .then(({ data }) => dispatch(setCart(data.cart)))
+        .catch(() => { toast.error('Could not remove item'); api.get('/cart').then(({ data }) => dispatch(setCart(data.cart))).catch(() => {}); });
+    } else {
+      api.put(`/cart/items/${item._id}`, { quantity: newQty })
+        .then(({ data }) => dispatch(setCart(data.cart)))
+        .catch(() => { toast.error('Could not update cart'); api.get('/cart').then(({ data }) => dispatch(setCart(data.cart))).catch(() => {}); });
+    }
   }
 
-  async function handleClearCart() {
+  function handleClearCart() {
     if (!confirm('Remove all items from cart?')) return;
-    setClearing(true);
-    try {
-      await api.delete('/cart');
-      dispatch(clearCart());
-    } catch { toast.error('Could not clear cart'); }
-    finally { setClearing(false); }
+    dispatch(clearCart());
+    api.delete('/cart').catch(() => {});
   }
 
   return (
@@ -69,19 +77,19 @@ export default function CartDrawer() {
 
         {/* Added to Cart banner */}
         {lastAdded && items.length > 0 && (
-          <div className="bg-green-50 border-b border-green-100 px-5 py-3 shrink-0">
+          <div className="bg-primary-50 border-b border-primary-100 px-5 py-3 shrink-0">
             <div className="flex items-center gap-1.5 mb-2">
-              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+              <div className="w-5 h-5 bg-primary-600 rounded-full flex items-center justify-center shrink-0">
                 <Check size={11} className="text-white" />
               </div>
-              <span className="text-sm font-semibold text-green-700">Added to Cart</span>
+              <span className="text-sm font-semibold text-primary-700">Added to Cart</span>
             </div>
             <div className="flex items-center gap-3">
               {lastAdded.images?.[0] && (
                 <img
                   src={normalizeImageUrl(lastAdded.images[0])}
                   alt=""
-                  className="w-12 h-12 rounded-lg object-contain bg-white border border-green-100 shrink-0"
+                  className="w-12 h-12 rounded-lg object-contain bg-white border border-primary-100 shrink-0"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
               )}
@@ -90,7 +98,7 @@ export default function CartDrawer() {
                 <p className="text-xs text-secondary-500 mt-0.5">Qty: 1 &middot; {formatCurrency(lastAdded.price)}</p>
               </div>
             </div>
-            <p className="text-xs font-semibold text-green-700 mt-2">
+            <p className="text-xs font-semibold text-primary-700 mt-2">
               Cart subtotal ({count} item{count !== 1 ? 's' : ''}): {formatCurrency(subtotal)}
             </p>
           </div>
@@ -102,7 +110,7 @@ export default function CartDrawer() {
             <div className="flex flex-col items-center justify-center h-full py-16 space-y-3 text-center">
               <ShoppingCart size={52} className="text-secondary-200" />
               <p className="font-semibold text-secondary-500">Your cart is empty</p>
-              <button onClick={close} className="text-sm text-blue-600 hover:underline font-medium">
+              <button onClick={close} className="text-sm text-primary-600 hover:underline font-medium">
                 Continue Shopping
               </button>
             </div>
@@ -129,13 +137,12 @@ export default function CartDrawer() {
                     {item.product?.title || item.title}
                   </p>
                   <p className="text-sm font-bold text-secondary-900 mt-0.5">
-                    {formatCurrency(item.price * item.quantity)}
+                    {formatCurrency(itemPrice(item) * item.quantity)}
                   </p>
                   <div className="flex items-center gap-2 mt-1.5">
                     <button
                       onClick={() => changeQty(item, item.quantity - 1)}
-                      disabled={loadingId === item._id}
-                      className="w-6 h-6 flex items-center justify-center rounded bg-secondary-100 hover:bg-secondary-200 text-secondary-700 transition-colors disabled:opacity-40"
+                      className="w-6 h-6 flex items-center justify-center rounded bg-secondary-100 hover:bg-secondary-200 text-secondary-700 transition-colors"
                     >
                       <Minus size={12} />
                     </button>
@@ -144,8 +151,7 @@ export default function CartDrawer() {
                     </span>
                     <button
                       onClick={() => changeQty(item, item.quantity + 1)}
-                      disabled={loadingId === item._id}
-                      className="w-6 h-6 flex items-center justify-center rounded bg-secondary-900 hover:bg-secondary-700 text-white transition-colors disabled:opacity-40"
+                      className="w-6 h-6 flex items-center justify-center rounded bg-secondary-900 hover:bg-secondary-700 text-white transition-colors"
                     >
                       <Plus size={12} />
                     </button>
@@ -154,8 +160,7 @@ export default function CartDrawer() {
 
                 <button
                   onClick={() => changeQty(item, 0)}
-                  disabled={loadingId === item._id}
-                  className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 shrink-0"
+                  className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -169,10 +174,9 @@ export default function CartDrawer() {
           <div className="border-t border-secondary-200 px-5 py-4 space-y-3 shrink-0">
             <button
               onClick={handleClearCart}
-              disabled={clearing}
-              className="text-red-500 text-sm font-medium hover:underline w-full text-center disabled:opacity-50"
+              className="text-red-500 text-sm font-medium hover:underline w-full text-center"
             >
-              {clearing ? 'Clearing…' : 'Clear Cart'}
+              Clear Cart
             </button>
 
             <div className="space-y-1.5 text-sm">
@@ -192,7 +196,7 @@ export default function CartDrawer() {
 
             <button
               onClick={() => { close(); navigate('/checkout'); }}
-              className="w-full bg-primary-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 rounded-xl transition-colors text-sm"
+              className="w-full bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold py-3 rounded-xl transition-colors text-sm"
             >
               Proceed to Checkout
             </button>
