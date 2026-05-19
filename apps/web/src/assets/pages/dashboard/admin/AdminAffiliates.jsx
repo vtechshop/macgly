@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserCheck, IndianRupee, Users, Search, Edit2, Check, X } from 'lucide-react';
+import { UserCheck, IndianRupee, Users, Search, Edit2, Check, X, ShieldCheck, ShieldX, Clock } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
 import { formatCurrency } from '../../../../utils/format';
@@ -80,6 +80,31 @@ export default function AdminAffiliates() {
     } catch { toast.error('Could not update role'); }
   }
 
+  async function approveKYC(id) {
+    try {
+      await api.put(`/admin/kyc/affiliate/${id}/approve`);
+      toast.success('KYC approved!');
+      setRev((r) => r + 1);
+    } catch { toast.error('Could not approve KYC'); }
+  }
+
+  async function rejectKYC(id) {
+    const reason = window.prompt('Rejection reason (optional):') ?? '';
+    try {
+      await api.put(`/admin/kyc/affiliate/${id}/reject`, { reason });
+      toast.success('KYC rejected');
+      setRev((r) => r + 1);
+    } catch { toast.error('Could not reject KYC'); }
+  }
+
+  function KycBadge({ status }) {
+    if (!status || status === 'not_submitted') return <span className="text-xs text-secondary-400 italic">Not submitted</span>;
+    if (status === 'pending') return <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700"><Clock size={10} /> Pending</span>;
+    if (status === 'verified') return <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700"><ShieldCheck size={10} /> Verified</span>;
+    if (status === 'rejected') return <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700"><ShieldX size={10} /> Rejected</span>;
+    return null;
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -146,6 +171,7 @@ export default function AdminAffiliates() {
                   <th className="px-5 py-3 text-left">Referral Code</th>
                   <th className="px-5 py-3 text-left">Commission Rate</th>
                   <th className="px-5 py-3 text-left">Total Earnings</th>
+                  <th className="px-5 py-3 text-left">KYC</th>
                   <th className="px-5 py-3 text-left">Status</th>
                   <th className="px-5 py-3 text-left">Joined</th>
                   <th className="px-5 py-3 text-left">Actions</th>
@@ -176,6 +202,27 @@ export default function AdminAffiliates() {
                     </td>
                     <td className="px-5 py-3 font-semibold text-green-700">
                       {formatCurrency(a.affiliateProfile?.totalEarnings || 0)}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex flex-col gap-1.5">
+                        <KycBadge status={a.affiliateProfile?.kycStatus} />
+                        {a.affiliateProfile?.kycStatus === 'pending' && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => approveKYC(a._id)}
+                              className="flex items-center gap-0.5 text-xs px-2 py-0.5 rounded bg-green-500 text-white hover:bg-green-600 font-semibold transition-colors"
+                            >
+                              <Check size={10} /> Approve
+                            </button>
+                            <button
+                              onClick={() => rejectKYC(a._id)}
+                              className="flex items-center gap-0.5 text-xs px-2 py-0.5 rounded bg-red-500 text-white hover:bg-red-600 font-semibold transition-colors"
+                            >
+                              <X size={10} /> Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${a.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
