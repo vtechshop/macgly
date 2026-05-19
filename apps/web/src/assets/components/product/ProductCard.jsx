@@ -90,7 +90,7 @@ export default function ProductCard({ product, onAddToCart }) {
               </span>
             )}
             {product.stock === 0 && (
-              <span className="absolute top-2 right-2 z-10 bg-secondary-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+              <span className="absolute bottom-2 right-2 z-10 bg-secondary-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
                 OUT OF STOCK
               </span>
             )}
@@ -109,24 +109,25 @@ export default function ProductCard({ product, onAddToCart }) {
             )}
           </Link>
 
-          {/* Hover overlays */}
-          <div className="absolute inset-x-0 top-0 flex items-start justify-between px-2 pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+          {/* Action overlays — always visible, stacked on right */}
+          <div className="absolute top-2 right-2 flex flex-col gap-1.5">
             <button
               onClick={toggleWishlist}
               disabled={wishlistLoading}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold shadow-md transition-colors disabled:opacity-60 ${
+              title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+              className={`w-8 h-8 flex items-center justify-center rounded-full shadow-md transition-colors disabled:opacity-60 ${
                 wishlisted
                   ? 'bg-red-500 text-white'
-                  : 'bg-white text-secondary-700 hover:bg-red-500 hover:text-white'
+                  : 'bg-white text-secondary-500 hover:bg-red-500 hover:text-white'
               }`}
             >
-              <Heart size={12} className={wishlisted ? 'fill-white' : ''} />
-              {wishlisted ? 'Wishlisted' : 'Wishlist'}
+              <Heart size={14} className={wishlisted ? 'fill-white' : ''} />
             </button>
 
             <button
               onClick={(e) => { e.preventDefault(); setQuickViewOpen(true); }}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-secondary-600 hover:bg-primary-600 hover:text-white shadow-md transition-colors"
+              title="Quick view"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-secondary-500 hover:bg-primary-600 hover:text-white shadow-md transition-colors"
             >
               <Eye size={14} />
             </button>
