@@ -77,23 +77,12 @@ export default function Header() {
 
       {/* ── Main bar ─────────────────────────────────────────── */}
       <div className="bg-[#0f1923]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-10">
           <div className="flex items-center gap-5 h-[72px]">
 
             {/* Logo */}
-            <Link to="/" className="shrink-0 select-none">
-              <div className="flex flex-col leading-none">
-                <div className="flex items-baseline gap-0">
-                  <span className="text-2xl font-black italic text-primary-500 tracking-tight">Mac</span>
-                  <span className="text-2xl font-black italic text-white tracking-tight">gly</span>
-                  <span className="text-[10px] text-secondary-400 ml-0.5 not-italic font-normal">®</span>
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="block h-[2px] w-4 bg-primary-500 rounded" />
-                  <span className="text-[9px] font-bold tracking-[0.2em] text-secondary-400 uppercase">Tools & Machinery</span>
-                  <span className="block h-[2px] w-4 bg-primary-500 rounded" />
-                </div>
-              </div>
+            <Link to="/" className="shrink-0">
+              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-14 w-auto" />
             </Link>
 
             {/* Search — desktop */}
@@ -197,7 +186,7 @@ export default function Header() {
 
       {/* ── Nav bar ──────────────────────────────────────────── */}
       <div className="bg-[#161f2c] hidden md:block border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-10">
           <div className="flex items-center">
             {NAV_LINKS.map((link) => (
               <Link
