@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { ShoppingCart, Search, Menu, X, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Search, Menu, X, ChevronDown, User } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { clearUser } from '../../../store/slices/authSlice';
 import { clearCart, openCartDrawer } from '../../../store/slices/cartSlice';
@@ -9,12 +9,13 @@ import { normalizeImageUrl } from '../../../utils/format';
 import toast from 'react-hot-toast';
 
 const NAV_LINKS = [
-  { label: 'All Products', to: '/products' },
-  { label: 'Power Tools', to: '/products?category=power-tools' },
-  { label: 'Hand Tools', to: '/products?category=hand-tools' },
-  { label: 'Spare Parts', to: '/products?category=spare-parts' },
-  { label: 'Machines', to: '/products?category=machines' },
-  { label: 'Safety Equipment', to: '/products?category=safety' },
+  { label: 'ALL PRODUCTS',     to: '/products' },
+  { label: 'POWER TOOLS',      to: '/products?category=power-tools' },
+  { label: 'HAND TOOLS',       to: '/products?category=hand-tools' },
+  { label: 'SPARE PARTS',      to: '/products?category=spare-parts' },
+  { label: 'MACHINES',         to: '/products?category=machines' },
+  { label: 'SAFETY EQUIPMENT', to: '/products?category=safety' },
+  { label: 'NEW ARRIVALS',     to: '/products?featured=true', highlight: true },
 ];
 
 export default function Header() {
@@ -31,6 +32,7 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -72,36 +74,39 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* Main bar */}
-      <div className="bg-white border-b border-secondary-200 shadow-md">
+
+      {/* ── Main bar ─────────────────────────────────────────── */}
+      <div className="bg-[#0f1923]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 h-16">
+          <div className="flex items-center gap-5 h-[72px]">
+
             {/* Logo */}
-            <Link to="/" className="shrink-0 -my-6">
-              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-28 w-auto" />
+            <Link to="/" className="shrink-0">
+              <img src="/logo.png" alt="Macgly" className="h-10 w-auto brightness-0 invert" />
             </Link>
 
-            {/* Search */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl mx-4" ref={searchRef}>
+            {/* Search — desktop */}
+            <form onSubmit={handleSearch} className="hidden md:flex flex-1" ref={searchRef}>
               <div className="flex w-full relative">
                 <input
-                  className="input rounded-r-none flex-1 border-r-0"
-                  placeholder="Search for tools, machines, spare parts..."
+                  className="flex-1 h-11 px-4 text-sm bg-white text-secondary-900 placeholder-secondary-400 border-0 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="What are you looking for?"
                   value={searchQuery}
                   autoComplete="off"
                   onChange={(e) => { setSearchQuery(e.target.value); fetchSuggestions(e.target.value); setShowSuggestions(true); }}
                   onFocus={() => suggestions.length && setShowSuggestions(true)}
                 />
-                <button type="submit" className="bg-primary-600 hover:bg-primary-700 text-white px-5 rounded-r font-medium text-sm flex items-center transition-colors">
-                  <Search size={16} />
+                <button type="submit" className="bg-primary-600 hover:bg-primary-700 text-white h-11 px-5 rounded-r-lg flex items-center justify-center transition-colors shrink-0">
+                  <Search size={18} />
                 </button>
+
                 {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-secondary-200 rounded-b-lg shadow-xl z-50 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-secondary-200 rounded-b-xl shadow-2xl z-50 overflow-hidden mt-0.5">
                     {suggestions.map((p) => (
                       <Link key={p._id} to={`/product/${p.slug}`}
                         onClick={() => { setShowSuggestions(false); setSearchQuery(''); }}
                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary-50 transition-colors">
-                        {p.images?.[0] && <img src={normalizeImageUrl(p.images[0])} alt="" className="w-8 h-8 rounded object-contain bg-secondary-100" onError={(e) => e.target.style.display='none'} />}
+                        {p.images?.[0] && <img src={normalizeImageUrl(p.images[0])} alt="" className="w-8 h-8 rounded object-contain bg-secondary-100" onError={(e) => e.target.style.display = 'none'} />}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium line-clamp-1">{p.title}</p>
                           <p className="text-xs text-secondary-400">{p.brand}</p>
@@ -111,7 +116,7 @@ export default function Header() {
                     ))}
                     <Link to={`/products?search=${encodeURIComponent(searchQuery)}`}
                       onClick={() => setShowSuggestions(false)}
-                      className="block px-4 py-2 text-xs text-center text-primary-600 font-semibold hover:bg-primary-50 border-t border-secondary-100">
+                      className="block px-4 py-2.5 text-xs text-center text-primary-600 font-semibold hover:bg-primary-50 border-t border-secondary-100">
                       See all results for "{searchQuery}"
                     </Link>
                   </div>
@@ -119,50 +124,59 @@ export default function Header() {
               </div>
             </form>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2 ml-auto md:ml-0">
-              {user ? (
-                <div className="relative hidden md:block" ref={accountRef}>
-                  <button onClick={() => setAccountOpen((v) => !v)} className="flex flex-col items-start text-secondary-700 hover:text-primary-600 transition-colors">
-                    <span className="text-[10px] text-secondary-400">Hello, {user.name.split(' ')[0]}</span>
-                    <span className="text-xs font-semibold flex items-center gap-1">My Account <ChevronDown size={12} /></span>
-                  </button>
-                  {accountOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-48 card py-1 shadow-lg z-50">
-                      <Link to={`/dashboard/${user.role}`} onClick={() => setAccountOpen(false)} className="block px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50">
-                        Dashboard
-                      </Link>
-                      <Link to="/dashboard/customer/orders" onClick={() => setAccountOpen(false)} className="block px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50">
-                        My Orders
-                      </Link>
-                      <button onClick={() => { setAccountOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                        Logout
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="hidden md:flex flex-col items-start">
-                  <span className="text-[10px] text-secondary-400">Welcome</span>
-                  <Link to="/login" className="text-xs font-semibold text-secondary-700 hover:text-primary-600 flex items-center gap-1">
-                    Sign In / Register <ChevronDown size={12} />
-                  </Link>
-                </div>
-              )}
+            {/* Right actions */}
+            <div className="flex items-center gap-1 ml-auto md:ml-0 shrink-0">
 
-              <button onClick={() => dispatch(openCartDrawer())} className="relative flex flex-col items-center text-secondary-700 hover:text-primary-600 transition-colors px-2">
+              {/* Account */}
+              <div className="relative hidden md:block" ref={accountRef}>
+                <button
+                  onClick={() => setAccountOpen((v) => !v)}
+                  className="flex items-center gap-2 text-white hover:text-primary-400 transition-colors px-3 py-2 rounded-lg hover:bg-white/5"
+                >
+                  <User size={20} />
+                  <div className="flex flex-col items-start leading-none">
+                    {user
+                      ? <><span className="text-[10px] text-secondary-400">Hello, {user.name.split(' ')[0]}</span><span className="text-xs font-semibold flex items-center gap-0.5">My Account <ChevronDown size={11} /></span></>
+                      : <><span className="text-[10px] text-secondary-400">Welcome</span><span className="text-xs font-semibold flex items-center gap-0.5">LOGIN <ChevronDown size={11} /></span></>
+                    }
+                  </div>
+                </button>
+                {accountOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl border border-secondary-200 shadow-xl z-50 py-1 overflow-hidden">
+                    {user ? (
+                      <>
+                        <Link to={`/dashboard/${user.role}`} onClick={() => setAccountOpen(false)} className="block px-4 py-2.5 text-sm text-secondary-700 hover:bg-secondary-50">Dashboard</Link>
+                        <Link to="/dashboard/customer/orders" onClick={() => setAccountOpen(false)} className="block px-4 py-2.5 text-sm text-secondary-700 hover:bg-secondary-50">My Orders</Link>
+                        <button onClick={() => { setAccountOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-secondary-100">Logout</button>
+                      </>
+                    ) : (
+                      <>
+                        <Link to="/login" onClick={() => setAccountOpen(false)} className="block px-4 py-2.5 text-sm font-semibold text-secondary-800 hover:bg-secondary-50">Sign In</Link>
+                        <Link to="/register" onClick={() => setAccountOpen(false)} className="block px-4 py-2.5 text-sm text-secondary-700 hover:bg-secondary-50">Register</Link>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Cart */}
+              <button
+                onClick={() => dispatch(openCartDrawer())}
+                className="relative flex items-center gap-2 text-white hover:text-primary-400 transition-colors px-3 py-2 rounded-lg hover:bg-white/5"
+              >
                 <div className="relative">
                   <ShoppingCart size={22} />
                   {count > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                    <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
                       {count > 99 ? '99+' : count}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-semibold hidden md:block">Cart</span>
+                <span className="text-xs font-semibold hidden md:block">Cart</span>
               </button>
 
-              <button className="md:hidden p-2 text-secondary-700" onClick={() => setMenuOpen(!menuOpen)}>
+              {/* Mobile hamburger */}
+              <button className="md:hidden p-2 text-white" onClick={() => setMenuOpen(!menuOpen)}>
                 {menuOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
             </div>
@@ -170,55 +184,56 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Category nav bar */}
-      <div className="bg-gradient-to-r from-secondary-900 via-secondary-800 to-secondary-900 hidden md:block border-b border-secondary-700/50">
+      {/* ── Nav bar ──────────────────────────────────────────── */}
+      <div className="bg-[#161f2c] hidden md:block border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-xs font-semibold text-secondary-300 hover:text-white hover:bg-white/10 px-4 py-2.5 transition-colors whitespace-nowrap rounded-sm"
+                className={`text-[11px] font-bold tracking-wider px-4 py-3 whitespace-nowrap transition-colors ${
+                  link.highlight
+                    ? 'text-primary-400 hover:text-primary-300'
+                    : 'text-secondary-300 hover:text-white hover:bg-white/5'
+                }`}
               >
                 {link.label}
               </Link>
             ))}
-            <Link to="/products?featured=true" className="ml-auto text-xs font-bold text-primary-400 hover:text-primary-300 hover:bg-primary-900/30 px-4 py-2.5 flex items-center gap-1.5 transition-colors">
-              🔥 Hot Deals
-            </Link>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* ── Mobile menu ──────────────────────────────────────── */}
       {menuOpen && (
-        <div className="md:hidden bg-white border-b border-secondary-200 shadow-lg">
-          <div className="px-4 py-3 space-y-3">
+        <div className="md:hidden bg-[#0f1923] border-b border-white/10">
+          <div className="px-4 py-4 space-y-4">
             <form onSubmit={handleSearch}>
               <div className="flex">
                 <input
-                  className="input rounded-r-none flex-1 border-r-0"
+                  className="flex-1 h-10 px-4 text-sm bg-white text-secondary-900 placeholder-secondary-400 rounded-l-lg border-0 focus:outline-none"
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <button type="submit" className="bg-primary-600 text-white px-4 rounded-r">
+                <button type="submit" className="bg-primary-600 text-white h-10 px-4 rounded-r-lg">
                   <Search size={16} />
                 </button>
               </div>
             </form>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1">
               {NAV_LINKS.map((link) => (
                 <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)}
-                  className="text-sm text-secondary-700 hover:text-primary-600 py-1">
+                  className="text-sm text-secondary-300 hover:text-primary-400 py-2 px-1 transition-colors">
                   {link.label}
                 </Link>
               ))}
             </div>
             {!user && (
-              <div className="flex gap-2 pt-2 border-t border-secondary-100">
+              <div className="flex gap-2 pt-2 border-t border-white/10">
                 <Link to="/login" onClick={() => setMenuOpen(false)} className="btn-primary flex-1 text-center text-xs">Sign In</Link>
-                <Link to="/register" onClick={() => setMenuOpen(false)} className="btn-outline flex-1 text-center text-xs">Register</Link>
+                <Link to="/register" onClick={() => setMenuOpen(false)} className="btn-outline flex-1 text-center text-xs border-white/20 text-white hover:bg-white/10">Register</Link>
               </div>
             )}
           </div>
