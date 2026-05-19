@@ -52,9 +52,30 @@ export default function AdminProducts() {
     { onSuccess: () => { setRev((r) => r + 1); toast.success('Deleted'); }, onError: () => toast.error('Failed') }
   );
 
-  function openNew() { setEditing(null); setForm(emptyForm); setModalOpen(true); }
+  const [parentCatId, setParentCatId] = useState('');
+
+  const allCats = catsData?.categories || [];
+  const parentCats = allCats.filter((c) => !c.parentId);
+  const subCats = parentCatId ? allCats.filter((c) => c.parentId?.toString() === parentCatId) : [];
+
+  function openNew() {
+    setEditing(null);
+    setForm(emptyForm);
+    setParentCatId('');
+    setModalOpen(true);
+  }
+
   function openEdit(p) {
     setEditing(p);
+    // Resolve parent category from the product's category slug
+    const cat = allCats.find((c) => c.slug === p.category);
+    if (cat?.parentId) {
+      setParentCatId(cat.parentId.toString());
+    } else if (cat) {
+      setParentCatId(cat._id.toString());
+    } else {
+      setParentCatId('');
+    }
     setForm({
       ...emptyForm, ...p,
       images: p.images || [],
@@ -181,13 +202,41 @@ export default function AdminProducts() {
             <Input label="Brand" value={form.brand} onChange={set('brand')} />
             <div className="space-y-1">
               <label className="block text-sm font-medium text-secondary-700">Category</label>
-              <select className="input" value={form.category} onChange={set('category')}>
+              <select
+                className="input"
+                value={parentCatId}
+                onChange={(e) => {
+                  const pid = e.target.value;
+                  setParentCatId(pid);
+                  const parent = parentCats.find((c) => c._id.toString() === pid);
+                  // Set category to parent slug immediately; overridden if subcategory picked
+                  setForm((f) => ({ ...f, category: parent?.slug || '' }));
+                }}
+              >
                 <option value="">Select category</option>
-                {catsData?.categories?.map((c) => (
-                  <option key={c._id} value={c.slug}>{c.name}</option>
+                {parentCats.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
                 ))}
               </select>
             </div>
+            {/* Subcategory — only shown when parent has children */}
+            {subCats.length > 0 && (
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-secondary-700">Subcategory</label>
+                <select
+                  className="input"
+                  value={form.category}
+                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                >
+                  <option value={parentCats.find((c) => c._id.toString() === parentCatId)?.slug || ''}>
+                    — All {parentCats.find((c) => c._id.toString() === parentCatId)?.name} (no subcategory)
+                  </option>
+                  {subCats.map((c) => (
+                    <option key={c._id} value={c.slug}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <Input label="Price (₹) *" type="number" step="0.01" value={form.price} onChange={set('price')} required />
             <Input label="Compare At Price (₹)" type="number" step="0.01" value={form.compareAt} onChange={set('compareAt')} />
             <Input label="Stock *" type="number" value={form.stock} onChange={set('stock')} required />
