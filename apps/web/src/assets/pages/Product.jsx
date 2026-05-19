@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ShoppingCart, Star, Shield, ChevronDown, ChevronUp, MapPin, CheckCircle, XCircle, Heart, Zap } from 'lucide-react';
 import api from '../../utils/api';
-import { setCart } from '../../store/slices/cartSlice';
+import { setCart, addItemOptimistic, openCartDrawer } from '../../store/slices/cartSlice';
 import { formatCurrency, normalizeImageUrl } from '../../utils/format';
 import { productJsonLd, injectJsonLd, setMeta } from '../../utils/seo';
 import { useFetch } from '../../hooks';
@@ -78,16 +78,17 @@ export default function Product() {
   }, [product]);
 
   async function addToCart() {
-    setAdding(true);
-    try {
-      const { data: cartData } = await api.post('/cart/items', { productId: product._id, quantity: qty });
-      dispatch(setCart(cartData.cart));
-      toast.success('Added to cart');
-    } catch {
-      toast.error('Could not add to cart');
-    } finally {
-      setAdding(false);
-    }
+    // Instant UI update
+    dispatch(addItemOptimistic({ product, quantity: qty }));
+    dispatch(openCartDrawer(product));
+    toast.success('Added to cart');
+    // Sync in background
+    api.post('/cart/items', { productId: product._id, quantity: qty })
+      .then(({ data }) => dispatch(setCart(data.cart)))
+      .catch(() => {
+        toast.error('Could not sync cart');
+        api.get('/cart').then(({ data }) => { if (data.cart) dispatch(setCart(data.cart)); }).catch(() => {});
+      });
   }
 
   async function buyNow() {

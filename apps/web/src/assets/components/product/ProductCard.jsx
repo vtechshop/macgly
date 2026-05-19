@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Zap, Plus, Minus } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useState } from 'react';
-import { setCart, openCartDrawer } from '../../../store/slices/cartSlice';
+import { setCart, openCartDrawer, addItemOptimistic, updateItemOptimistic } from '../../../store/slices/cartSlice';
 import { formatCurrency, normalizeImageUrl } from '../../../utils/format';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
@@ -12,30 +12,39 @@ export default function ProductCard({ product, onAddToCart }) {
   const cartItems = useSelector((s) => s.cart.items);
   const cartItem = cartItems.find((i) => i.product?._id === product._id || i.product === product._id);
   const qty = cartItem?.quantity || 0;
-  const [loading, setLoading] = useState(false);
 
   const discount = product.compareAt > product.price
     ? Math.round(((product.compareAt - product.price) / product.compareAt) * 100)
     : null;
 
   async function changeQty(newQty) {
-    setLoading(true);
+    const isNew = qty === 0;
+    const isOptimistic = cartItem?._id?.startsWith('opt-');
+
+    // Update UI instantly
+    if (isNew) {
+      dispatch(addItemOptimistic({ product, quantity: 1 }));
+      dispatch(openCartDrawer(product));
+    } else {
+      dispatch(updateItemOptimistic({ itemId: cartItem._id, newQty }));
+    }
+
+    // Sync with server in background
     try {
-      if (newQty < 1) {
+      if (newQty < 1 && !isOptimistic) {
         const { data } = await api.delete(`/cart/items/${cartItem._id}`);
         dispatch(setCart(data.cart));
-      } else if (qty === 0) {
-        const { data } = await api.post('/cart/items', { productId: product._id, quantity: 1 });
+      } else if (isNew || isOptimistic) {
+        const { data } = await api.post('/cart/items', { productId: product._id, quantity: isNew ? 1 : newQty });
         dispatch(setCart(data.cart));
-        dispatch(openCartDrawer(product));
       } else {
         const { data } = await api.put(`/cart/items/${cartItem._id}`, { quantity: newQty });
         dispatch(setCart(data.cart));
       }
     } catch {
       toast.error('Could not update cart');
-    } finally {
-      setLoading(false);
+      // Revert by re-fetching
+      api.get('/cart').then(({ data }) => { if (data.cart) dispatch(setCart(data.cart)); }).catch(() => {});
     }
   }
 
@@ -117,7 +126,7 @@ export default function ProductCard({ product, onAddToCart }) {
           <div className="mt-2 flex items-center justify-between gap-2">
             <button
               onClick={() => changeQty(qty - 1)}
-              disabled={loading}
+              disabled={false}
               className="w-8 h-8 flex items-center justify-center rounded bg-secondary-100 hover:bg-primary-100 hover:text-primary-700 text-secondary-700 transition-colors disabled:opacity-50"
             >
               <Minus size={14} />
@@ -136,7 +145,7 @@ export default function ProductCard({ product, onAddToCart }) {
         ) : (
           <button
             onClick={handleAdd}
-            disabled={loading}
+            disabled={false}
             className="mt-2 w-full text-xs py-1.5 btn-primary disabled:opacity-50"
           >
             <ShoppingCart size={13} /> Add to Cart
