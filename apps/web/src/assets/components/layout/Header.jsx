@@ -78,11 +78,11 @@ export default function Header() {
       {/* ── Main bar ─────────────────────────────────────────── */}
       <div className="bg-[#0f1923]">
         <div className="px-4 sm:px-6 lg:px-10">
-          <div className="flex items-center gap-5 h-[72px]">
+          <div className="flex items-center gap-5 h-[88px]">
 
             {/* Logo */}
-            <Link to="/" className="shrink-0 min-w-[180px]">
-              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-16 w-auto" />
+            <Link to="/" className="shrink-0 min-w-[220px]">
+              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-20 w-auto" />
             </Link>
 
             {/* Search — desktop */}
