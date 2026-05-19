@@ -128,21 +128,21 @@ export default function Product() {
         <span className="text-secondary-800 truncate">{product.title}</span>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div className="space-y-3">
-          <div className="aspect-square rounded-xl overflow-hidden bg-secondary-50">
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-8">
+        <div className="space-y-2">
+          <div className="rounded-xl overflow-hidden bg-secondary-50 border border-secondary-100" style={{ height: 320 }}>
             {product.images?.[activeImg] ? (
-              <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="w-full h-full object-cover" />
+              <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="w-full h-full object-contain p-4" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-secondary-300"><ShoppingCart size={64} /></div>
+              <div className="w-full h-full flex items-center justify-center text-secondary-300"><ShoppingCart size={48} /></div>
             )}
           </div>
           {product.images?.length > 1 && (
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 flex-wrap">
               {product.images.map((img, i) => (
                 <button key={i} onClick={() => setActiveImg(i)}
-                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${i === activeImg ? 'border-primary-500' : 'border-secondary-200'}`}>
-                  <img src={normalizeImageUrl(img)} alt="" className="w-full h-full object-cover" />
+                  className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === activeImg ? 'border-primary-500' : 'border-secondary-200'}`}>
+                  <img src={normalizeImageUrl(img)} alt="" className="w-full h-full object-contain p-1" />
                 </button>
               ))}
             </div>
