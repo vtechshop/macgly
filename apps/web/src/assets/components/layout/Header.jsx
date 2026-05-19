@@ -81,12 +81,12 @@ export default function Header() {
           <div className="flex items-center gap-5 h-[72px]">
 
             {/* Logo */}
-            <Link to="/" className="shrink-0">
-              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-14 w-auto" />
+            <Link to="/" className="shrink-0 min-w-[180px]">
+              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-16 w-auto" />
             </Link>
 
             {/* Search — desktop */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1" ref={searchRef}>
+            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl mx-auto" ref={searchRef}>
               <div className="flex w-full relative">
                 <input
                   className="flex-1 h-11 px-4 text-sm bg-white text-secondary-900 placeholder-secondary-400 border-0 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
