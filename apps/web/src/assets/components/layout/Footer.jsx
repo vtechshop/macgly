@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <footer className="bg-secondary-900 text-secondary-300 mt-auto">
       {/* Main footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="px-4 sm:px-6 lg:px-10 py-10">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-2">
@@ -68,7 +68,7 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-secondary-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-secondary-500">
+        <div className="px-4 sm:px-6 lg:px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-secondary-500">
           <span>© {new Date().getFullYear()} Macgly. All rights reserved. GST: 33XXXXX0000X1ZX</span>
           <div className="flex items-center gap-3">
             <span>Secure Payments</span>

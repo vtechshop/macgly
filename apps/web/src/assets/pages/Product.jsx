@@ -108,7 +108,7 @@ export default function Product() {
 
   if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
   if (error || !product) return (
-    <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+    <div className="px-4 sm:px-6 lg:px-10 py-20 text-center">
       <p className="text-lg font-medium">Product not found</p>
       <Link to="/products" className="text-primary-600 hover:underline mt-2 inline-block">Browse products</Link>
     </div>
@@ -119,7 +119,7 @@ export default function Product() {
     : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="px-4 sm:px-6 lg:px-10 py-6">
       <nav className="text-sm text-secondary-500 mb-4 flex gap-2">
         <Link to="/" className="hover:text-primary-600">Home</Link>
         <span>/</span>

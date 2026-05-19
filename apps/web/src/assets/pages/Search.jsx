@@ -60,7 +60,7 @@ export default function Search() {
   const { products, pagination } = data || {};
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="px-4 sm:px-6 lg:px-10 py-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="section-title">

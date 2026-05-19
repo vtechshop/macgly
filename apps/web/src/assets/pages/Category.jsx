@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, ChevronDown, ChevronUp, X } from 'lucide-react';
 import api from '../../utils/api';
@@ -26,7 +26,7 @@ function FilterPanel({ filters, onChange, onClear }) {
         {priceOpen && (
           <div className="flex gap-2 items-center">
             <input type="number" placeholder="Min" className="input w-full text-sm py-1.5" value={filters.minPrice} onChange={(e) => onChange('minPrice', e.target.value)} />
-            <span className="text-secondary-400">–</span>
+            <span className="text-secondary-400">â€“</span>
             <input type="number" placeholder="Max" className="input w-full text-sm py-1.5" value={filters.maxPrice} onChange={(e) => onChange('maxPrice', e.target.value)} />
           </div>
         )}
@@ -42,7 +42,7 @@ function FilterPanel({ filters, onChange, onClear }) {
             {[4, 3, 2, 1].map((r) => (
               <button key={r} onClick={() => onChange('minRating', filters.minRating === String(r) ? '' : String(r))}
                 className={`flex items-center gap-2 w-full text-sm px-2 py-1 rounded ${filters.minRating === String(r) ? 'bg-primary-50 text-primary-600' : 'hover:bg-secondary-50'}`}>
-                {'★'.repeat(r)}{'☆'.repeat(5 - r)} <span className="text-xs text-secondary-400">& up</span>
+                {'â˜…'.repeat(r)}{'â˜†'.repeat(5 - r)} <span className="text-xs text-secondary-400">& up</span>
               </button>
             ))}
           </div>
@@ -102,7 +102,7 @@ export default function Category() {
   useEffect(() => {
     if (category) {
       setMeta({
-        title: `${category.name} — Buy Online | Macgly`,
+        title: `${category.name} â€” Buy Online | Macgly`,
         description: category.description || `Shop ${category.name} from trusted vendors on Macgly. Genuine products, fast delivery across India.`,
         canonical: `https://macgly.com/category/${slug}`,
       });
@@ -121,7 +121,7 @@ export default function Category() {
   const activeFilterCount = [minPrice, maxPrice, minRating, inStock].filter(Boolean).length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="px-4 sm:px-6 lg:px-10 py-6">
       {/* Breadcrumb */}
       <nav className="text-sm text-secondary-400 mb-4 flex items-center gap-1.5">
         <Link to="/" className="hover:text-secondary-700">Home</Link>
@@ -175,9 +175,9 @@ export default function Category() {
           {/* Active filter chips */}
           {activeFilterCount > 0 && (
             <div className="flex gap-2 flex-wrap mb-4">
-              {minPrice && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">Min ₹{minPrice} <button onClick={() => setParam('minPrice', '')}><X size={10} /></button></span>}
-              {maxPrice && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">Max ₹{maxPrice} <button onClick={() => setParam('maxPrice', '')}><X size={10} /></button></span>}
-              {minRating && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">{'★'.repeat(Number(minRating))}+ <button onClick={() => setParam('minRating', '')}><X size={10} /></button></span>}
+              {minPrice && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">Min â‚¹{minPrice} <button onClick={() => setParam('minPrice', '')}><X size={10} /></button></span>}
+              {maxPrice && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">Max â‚¹{maxPrice} <button onClick={() => setParam('maxPrice', '')}><X size={10} /></button></span>}
+              {minRating && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">{'â˜…'.repeat(Number(minRating))}+ <button onClick={() => setParam('minRating', '')}><X size={10} /></button></span>}
               {inStock && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">In Stock <button onClick={() => setParam('inStock', '')}><X size={10} /></button></span>}
             </div>
           )}
@@ -197,11 +197,11 @@ export default function Category() {
 
               {pagination.pages > 1 && (
                 <div className="flex justify-center gap-1 mt-8">
-                  <button disabled={page <= 1} onClick={() => setParam('page', page - 1)} className="px-3 py-1.5 rounded text-sm font-medium hover:bg-secondary-100 disabled:opacity-40">← Prev</button>
+                  <button disabled={page <= 1} onClick={() => setParam('page', page - 1)} className="px-3 py-1.5 rounded text-sm font-medium hover:bg-secondary-100 disabled:opacity-40">â† Prev</button>
                   {Array.from({ length: Math.min(pagination.pages, 7) }, (_, i) => i + 1).map((p) => (
                     <button key={p} onClick={() => setParam('page', p)} className={`w-8 h-8 rounded text-sm font-medium ${p === page ? 'bg-primary-600 text-white' : 'hover:bg-secondary-100'}`}>{p}</button>
                   ))}
-                  <button disabled={page >= pagination.pages} onClick={() => setParam('page', page + 1)} className="px-3 py-1.5 rounded text-sm font-medium hover:bg-secondary-100 disabled:opacity-40">Next →</button>
+                  <button disabled={page >= pagination.pages} onClick={() => setParam('page', page + 1)} className="px-3 py-1.5 rounded text-sm font-medium hover:bg-secondary-100 disabled:opacity-40">Next â†’</button>
                 </div>
               )}
             </>
