@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const BASE =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
+
 const api = axios.create({
-  baseURL: import.meta.env.DEV ? (import.meta.env.VITE_API_URL || 'http://localhost:5000/api') : '/api',
+  baseURL: BASE,
   withCredentials: true,
 });
 
@@ -9,7 +13,7 @@ let csrfToken = null;
 let refreshPromise = null;
 
 async function fetchCsrfToken() {
-  const { data } = await axios.get('/api/csrf-token', { withCredentials: true });
+  const { data } = await axios.get(`${BASE}/csrf-token`, { withCredentials: true });
   csrfToken = data.csrfToken;
 }
 
@@ -35,7 +39,7 @@ api.interceptors.response.use(
         // Deduplicate concurrent refresh calls — only one token rotation at a time
         if (!refreshPromise) {
           refreshPromise = axios
-            .post('/api/auth/refresh', {}, { withCredentials: true })
+            .post(`${BASE}/auth/refresh`, {}, { withCredentials: true })
             .finally(() => { refreshPromise = null; });
         }
         await refreshPromise;
