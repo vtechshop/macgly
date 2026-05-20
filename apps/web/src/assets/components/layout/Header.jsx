@@ -6,6 +6,7 @@ import { clearUser } from '../../../store/slices/authSlice';
 import { clearCart, openCartDrawer } from '../../../store/slices/cartSlice';
 import api from '../../../utils/api';
 import { normalizeImageUrl } from '../../../utils/format';
+import { useFetch } from '../../../hooks';
 import toast from 'react-hot-toast';
 
 const NAV_LINKS = [
@@ -21,6 +22,11 @@ const NAV_LINKS = [
 export default function Header() {
   const { user } = useSelector((s) => s.auth);
   const { count } = useSelector((s) => s.cart);
+  const { data: wishlistData } = useFetch(
+    user ? ['wishlist-ids', user._id] : null,
+    () => api.get('/users/wishlist/ids').then((r) => r.data)
+  );
+  const wishlistCount = wishlistData?.ids?.length || 0;
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -166,7 +172,9 @@ export default function Header() {
               >
                 <div className="relative">
                   <Heart size={22} />
-                  <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">0</span>
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">{wishlistCount}</span>
+                  )}
                 </div>
               </Link>
 
