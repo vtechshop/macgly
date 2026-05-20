@@ -16,7 +16,6 @@ export default function ProductCard({ product, onAddToCart }) {
   const qty = cartItem?.quantity || 0;
 
   const [wishlisted, setWishlisted] = useState(false);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   const discount = product.compareAt > product.price
@@ -27,19 +26,20 @@ export default function ProductCard({ product, onAddToCart }) {
     e.preventDefault();
     e.stopPropagation();
     if (!user) { toast.error('Please login to save to wishlist'); return; }
-    setWishlistLoading(true);
+    const next = !wishlisted;
+    setWishlisted(next); // instant UI update
     try {
-      if (wishlisted) {
+      if (!next) {
         await api.delete(`/users/wishlist/${product._id}`);
-        setWishlisted(false);
         toast.success('Removed from wishlist');
       } else {
         await api.post(`/users/wishlist/${product._id}`);
-        setWishlisted(true);
         toast.success('Saved to wishlist');
       }
-    } catch { toast.error('Could not update wishlist'); }
-    finally { setWishlistLoading(false); }
+    } catch {
+      setWishlisted(!next); // revert on failure
+      toast.error('Could not update wishlist');
+    }
   }
 
   async function changeQty(newQty) {
@@ -113,7 +113,7 @@ export default function ProductCard({ product, onAddToCart }) {
           <div className="absolute top-2 right-2 flex flex-col gap-1.5">
             <button
               onClick={toggleWishlist}
-              disabled={wishlistLoading}
+              disabled={false}
               title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
               className={`w-8 h-8 flex items-center justify-center rounded-full shadow-md transition-colors disabled:opacity-60 ${
                 wishlisted
