@@ -1,13 +1,10 @@
 import axios from 'axios';
 
-function resolveBase() {
-  const raw = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
-  // Strip trailing slash, then ensure /api suffix
-  const stripped = raw.replace(/\/$/, '');
-  if (!stripped) return '/api';
-  return stripped.endsWith('/api') ? stripped : `${stripped}/api`;
-}
-const BASE = resolveBase();
+// In production: always use /api (Vercel proxy → Render). No CORS needed.
+// In dev: use VITE_API_URL or localhost.
+const BASE = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_URL || 'http://localhost:5000/api')
+  : '/api';
 
 const api = axios.create({
   baseURL: BASE,
