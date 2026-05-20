@@ -143,7 +143,8 @@ app.get('/robots.txt', (req, res) => {
 
 // Serve React app in production (Vite handles it in dev)
 if (isProd()) {
-  const DIST = path.join(process.cwd(), 'apps/web/dist');
+  // __dirname = apps/api/src — go up 3 levels to repo root, then into web/dist
+  const DIST = path.join(__dirname, '../../../apps/web/dist');
   app.use(express.static(DIST, { index: false }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
