@@ -1,10 +1,6 @@
 import axios from 'axios';
 
-// In production: always use /api (Vercel proxy → Render). No CORS needed.
-// In dev: use VITE_API_URL or localhost.
-const BASE = import.meta.env.DEV
-  ? (import.meta.env.VITE_API_URL || 'http://localhost:5000/api')
-  : '/api';
+const BASE = '/api';
 
 const api = axios.create({
   baseURL: BASE,
