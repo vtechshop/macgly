@@ -50,7 +50,11 @@ const allowedOrigins = [
 ].filter(Boolean);
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.some(o => origin.startsWith(o))) return cb(null, true);
+    if (!origin) return cb(null, true);
+    // Allow any Vercel preview deploy and all production domains
+    if (origin.endsWith('.vercel.app') || allowedOrigins.some(o => origin.startsWith(o))) {
+      return cb(null, true);
+    }
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
