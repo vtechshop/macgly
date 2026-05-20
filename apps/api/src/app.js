@@ -51,11 +51,11 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    // Allow any Vercel preview deploy and all production domains
-    if (origin.endsWith('.vercel.app') || allowedOrigins.some(o => origin.startsWith(o))) {
+    if (origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com') || allowedOrigins.some(o => origin.startsWith(o))) {
       return cb(null, true);
     }
-    cb(new Error('Not allowed by CORS'));
+    // Return false (blocked) instead of throwing — avoids unhandled error crash
+    return cb(null, false);
   },
   credentials: true,
 }));
