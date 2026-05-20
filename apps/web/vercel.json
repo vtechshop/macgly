@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://macgly-api.onrender.com/api/:path*"
+      "destination": "https://macgly.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
