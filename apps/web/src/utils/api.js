@@ -1,8 +1,13 @@
 import axios from 'axios';
 
-const BASE =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
+function resolveBase() {
+  const raw = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+  // Strip trailing slash, then ensure /api suffix
+  const stripped = raw.replace(/\/$/, '');
+  if (!stripped) return '/api';
+  return stripped.endsWith('/api') ? stripped : `${stripped}/api`;
+}
+const BASE = resolveBase();
 
 const api = axios.create({
   baseURL: BASE,
