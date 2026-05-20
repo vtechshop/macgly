@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 
 const NAV_LINKS = [
   { label: 'ALL PRODUCTS',     to: '/products' },
+  { label: 'ALL CATEGORIES',  to: '/categories' },
   { label: 'POWER TOOLS',      to: '/products?category=power-tools' },
   { label: 'HAND TOOLS',       to: '/products?category=hand-tools' },
   { label: 'SPARE PARTS',      to: '/products?category=spare-parts' },

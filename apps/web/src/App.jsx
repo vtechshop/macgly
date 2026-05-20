@@ -23,6 +23,7 @@ const OrderConfirmation     = lazy(() => import('./assets/pages/OrderConfirmatio
 const VendorRegister        = lazy(() => import('./assets/pages/VendorRegister'));
 const AffiliateRegister     = lazy(() => import('./assets/pages/AffiliateRegister'));
 const Category              = lazy(() => import('./assets/pages/Category'));
+const AllCategories         = lazy(() => import('./assets/pages/AllCategories'));
 const VendorStore           = lazy(() => import('./assets/pages/VendorStore'));
 const Blog                  = lazy(() => import('./assets/pages/Blog'));
 const BlogPost              = lazy(() => import('./assets/pages/BlogPost'));
@@ -166,6 +167,7 @@ export default function App() {
               <Route path="/track-order" element={<TrackOrder />} />
               <Route path="/warranty-check" element={<WarrantyCheck />} />
               <Route path="/store/:id" element={<VendorStore />} />
+              <Route path="/categories" element={<AllCategories />} />
               <Route path="/category/:slug" element={<Category />} />
             </Route>
 
