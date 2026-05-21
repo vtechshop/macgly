@@ -6,14 +6,14 @@ import Spinner from '../../../components/common/Spinner';
 export default function VendorCategories() {
   const { data, isLoading } = useFetch(
     ['vendor-categories'],
-    () => api.get('/admin/categories').then((r) => r.data)
+    () => api.get('/catalog/categories').then((r) => r.data)
   );
 
   const categories = data?.categories || [];
-  const parents = categories.filter((c) => !c.parent);
+  const parents = categories.filter((c) => !c.parentId);
   const byParent = {};
-  categories.filter((c) => c.parent).forEach((c) => {
-    const pid = typeof c.parent === 'object' ? c.parent._id : c.parent;
+  categories.filter((c) => c.parentId).forEach((c) => {
+    const pid = c.parentId?.toString();
     if (!byParent[pid]) byParent[pid] = [];
     byParent[pid].push(c);
   });
