@@ -83,13 +83,26 @@ export default function Header() {
     <header className="sticky top-0 z-50">
 
       {/* ── Main bar ─────────────────────────────────────────── */}
-      <div className="bg-[#0f1923]">
+      <div className="bg-white border-b border-secondary-200 shadow-sm">
         <div className="px-4 sm:px-6 lg:px-10">
           <div className="flex items-center gap-5 h-[88px]">
 
             {/* Logo */}
-            <Link to="/" className="shrink-0 min-w-[220px]">
-              <img src="/logo.png" alt="Macgly Tools & Machinery" className="h-20 w-auto" />
+            <Link to="/" className="shrink-0 flex items-center gap-2.5 select-none">
+              {/* Hexagon M icon */}
+              <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 2L34.5 11V27L19 36L3.5 27V11L19 2Z" fill="#3B1F0A"/>
+                <path d="M19 2L34.5 11V27L19 36L3.5 27V11L19 2Z" stroke="#3B1F0A" strokeWidth="1"/>
+                <text x="19" y="24" textAnchor="middle" fill="white" fontSize="16" fontWeight="800" fontFamily="Arial Black, sans-serif">M</text>
+                <path d="M24 26L31 22" stroke="#F97316" strokeWidth="3" strokeLinecap="round"/>
+              </svg>
+              {/* Brand text */}
+              <div className="flex flex-col leading-none">
+                <span className="font-black tracking-wider text-xl">
+                  <span style={{ color: '#3B1F0A' }}>MAC</span><span className="text-orange-500">GLY</span>
+                </span>
+                <span className="text-[9px] font-semibold tracking-[0.2em] uppercase" style={{ color: '#7B4F2E' }}>Tools &amp; Machinery</span>
+              </div>
             </Link>
 
             {/* Search — desktop */}
@@ -138,13 +151,13 @@ export default function Header() {
               <div className="relative hidden md:block" ref={accountRef}>
                 <button
                   onClick={() => setAccountOpen((v) => !v)}
-                  className="flex items-center gap-2 text-white hover:text-primary-400 transition-colors px-3 py-2 rounded-lg hover:bg-white/5"
+                  className="flex items-center gap-2 text-secondary-700 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-secondary-100"
                 >
                   <User size={20} />
                   <div className="flex flex-col items-start leading-none">
                     {user
-                      ? <><span className="text-[10px] text-secondary-400">Hello, {user.name.split(' ')[0]}</span><span className="text-xs font-semibold flex items-center gap-0.5">My Account <ChevronDown size={11} /></span></>
-                      : <><span className="text-[10px] text-secondary-400">Welcome</span><span className="text-xs font-semibold flex items-center gap-0.5">LOGIN <ChevronDown size={11} /></span></>
+                      ? <><span className="text-[10px] text-secondary-500">Hello, {user.name.split(' ')[0]}</span><span className="text-xs font-semibold flex items-center gap-0.5">My Account <ChevronDown size={11} /></span></>
+                      : <><span className="text-[10px] text-secondary-500">Welcome</span><span className="text-xs font-semibold flex items-center gap-0.5">LOGIN <ChevronDown size={11} /></span></>
                     }
                   </div>
                 </button>
@@ -169,7 +182,7 @@ export default function Header() {
               {/* Wishlist */}
               <Link
                 to="/dashboard/customer/wishlist"
-                className="relative hidden md:flex items-center gap-2 text-white hover:text-primary-400 transition-colors px-3 py-2 rounded-lg hover:bg-white/5"
+                className="relative hidden md:flex items-center gap-2 text-secondary-700 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-secondary-100"
               >
                 <div className="relative">
                   <Heart size={22} />
@@ -182,7 +195,7 @@ export default function Header() {
               {/* Cart */}
               <button
                 onClick={() => dispatch(openCartDrawer())}
-                className="relative flex items-center gap-2 text-white hover:text-primary-400 transition-colors px-3 py-2 rounded-lg hover:bg-white/5"
+                className="relative flex items-center gap-2 text-secondary-700 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-secondary-100"
               >
                 <div className="relative">
                   <ShoppingCart size={22} />
@@ -192,11 +205,11 @@ export default function Header() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-semibold hidden md:block">Cart</span>
+                <span className="text-xs font-semibold hidden md:block text-secondary-700">Cart</span>
               </button>
 
               {/* Mobile hamburger */}
-              <button className="md:hidden p-2 text-white" onClick={() => setMenuOpen(!menuOpen)}>
+              <button className="md:hidden p-2 text-secondary-700" onClick={() => setMenuOpen(!menuOpen)}>
                 {menuOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
             </div>
@@ -205,7 +218,7 @@ export default function Header() {
       </div>
 
       {/* ── Nav bar ──────────────────────────────────────────── */}
-      <div className="bg-[#161f2c] hidden md:block border-b border-white/5">
+      <div className="bg-secondary-50 hidden md:block border-b border-secondary-200">
         <div className="px-4 sm:px-6 lg:px-10">
           <div className="flex items-center">
             {NAV_LINKS.map((link) => (
@@ -214,8 +227,8 @@ export default function Header() {
                 to={link.to}
                 className={`text-[11px] font-bold tracking-wider px-4 py-3 whitespace-nowrap transition-colors ${
                   link.highlight
-                    ? 'text-primary-400 hover:text-primary-300'
-                    : 'text-secondary-300 hover:text-white hover:bg-white/5'
+                    ? 'text-primary-600 hover:text-primary-700'
+                    : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
                 }`}
               >
                 {link.label}
@@ -227,7 +240,7 @@ export default function Header() {
 
       {/* ── Mobile menu ──────────────────────────────────────── */}
       {menuOpen && (
-        <div className="md:hidden bg-[#0f1923] border-b border-white/10">
+        <div className="md:hidden bg-white border-b border-secondary-200">
           <div className="px-4 py-4 space-y-4">
             <form onSubmit={handleSearch}>
               <div className="flex">
@@ -245,13 +258,13 @@ export default function Header() {
             <div className="grid grid-cols-2 gap-1">
               {NAV_LINKS.map((link) => (
                 <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)}
-                  className="text-sm text-secondary-300 hover:text-primary-400 py-2 px-1 transition-colors">
+                  className="text-sm text-secondary-600 hover:text-primary-600 py-2 px-1 transition-colors">
                   {link.label}
                 </Link>
               ))}
             </div>
             {!user && (
-              <div className="flex gap-2 pt-2 border-t border-white/10">
+              <div className="flex gap-2 pt-2 border-t border-secondary-200">
                 <Link to="/login" onClick={() => setMenuOpen(false)} className="btn-primary flex-1 text-center text-xs">Sign In</Link>
                 <Link to="/register" onClick={() => setMenuOpen(false)} className="btn-outline flex-1 text-center text-xs border-white/20 text-white hover:bg-white/10">Register</Link>
               </div>

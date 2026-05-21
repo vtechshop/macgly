@@ -1,4 +1,6 @@
 import axios from 'axios';
+import store from '../store';
+import { clearUser } from '../store/slices/authSlice';
 
 const BASE = '/api';
 
@@ -44,7 +46,8 @@ api.interceptors.response.use(
         csrfToken = null;
         return api(original);
       } catch {
-        // let the caller handle it — AuthInit will clearUser(), router redirects
+        // Refresh failed — session is truly dead, clear stale auth immediately
+        store.dispatch(clearUser());
       }
     }
     return Promise.reject(error);

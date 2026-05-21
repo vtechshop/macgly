@@ -9,8 +9,18 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-2">
-            <Link to="/" className="inline-block bg-white rounded-xl px-4 py-2">
-              <img src="/logo.png" alt="Macgly" className="h-10 w-auto" />
+            <Link to="/" className="inline-flex items-center gap-2 select-none">
+              <svg width="32" height="32" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 2L34.5 11V27L19 36L3.5 27V11L19 2Z" fill="#3B1F0A"/>
+                <text x="19" y="24" textAnchor="middle" fill="white" fontSize="16" fontWeight="800" fontFamily="Arial Black, sans-serif">M</text>
+                <path d="M24 26L31 22" stroke="#F97316" strokeWidth="3" strokeLinecap="round"/>
+              </svg>
+              <div className="flex flex-col leading-none">
+                <span className="font-black tracking-wider text-lg">
+                  <span className="text-white">MAC</span><span className="text-orange-400">GLY</span>
+                </span>
+                <span className="text-[8px] font-semibold tracking-[0.15em] uppercase text-secondary-400">Tools &amp; Machinery</span>
+              </div>
             </Link>
             <p className="mt-3 text-sm text-secondary-400 leading-relaxed">
               India's trusted marketplace for professional tools, industrial machines and genuine spare parts.

@@ -36,9 +36,13 @@ export default function ProductCard({ product, onAddToCart }) {
         await api.post(`/users/wishlist/${product._id}`);
         toast.success('Saved to wishlist');
       }
-    } catch {
+    } catch (err) {
       setWishlisted(!next); // revert on failure
-      toast.error('Could not update wishlist');
+      if (err?.response?.status === 401) {
+        toast.error('Please log in to save to wishlist');
+      } else {
+        toast.error('Could not update wishlist');
+      }
     }
   }
 

@@ -104,7 +104,19 @@ function SidebarContent({ navItems, user, activeOrderCount, onNav, onLogout }) {
   return (
     <>
       <div className="px-4 py-3 border-b border-white/10 flex justify-center shrink-0 bg-white">
-        <NavLink to="/"><img src="/logo.png" alt="Macgly" className="h-20 w-auto" /></NavLink>
+        <NavLink to="/" className="inline-flex items-center gap-2 select-none">
+          <svg width="30" height="30" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 2L34.5 11V27L19 36L3.5 27V11L19 2Z" fill="#3B1F0A"/>
+            <text x="19" y="24" textAnchor="middle" fill="white" fontSize="16" fontWeight="800" fontFamily="Arial Black, sans-serif">M</text>
+            <path d="M24 26L31 22" stroke="#F97316" strokeWidth="3" strokeLinecap="round"/>
+          </svg>
+          <div className="flex flex-col leading-none">
+            <span className="font-black tracking-wider text-base">
+              <span style={{ color: '#3B1F0A' }}>MAC</span><span className="text-orange-500">GLY</span>
+            </span>
+            <span className="text-[8px] font-semibold tracking-[0.15em] uppercase" style={{ color: '#7B4F2E' }}>Tools &amp; Machinery</span>
+          </div>
+        </NavLink>
       </div>
 
       <nav className="flex-1 py-3 overflow-y-auto">

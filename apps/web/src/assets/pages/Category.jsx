@@ -105,9 +105,8 @@ export default function Category() {
   const { data, isLoading } = useFetch(
     ['category-products', slug, page, sort, minPrice, maxPrice, minRating, inStock],
     () => api.get('/catalog/products', {
-      params: { category: catData?.category?._id, page, limit: 24, sort, minPrice: minPrice || undefined, maxPrice: maxPrice || undefined, minRating: minRating || undefined, inStock: inStock || undefined },
-    }).then((r) => r.data),
-    { enabled: !!catData?.category?._id }
+      params: { category: slug, page, limit: 24, sort, minPrice: minPrice || undefined, maxPrice: maxPrice || undefined, minRating: minRating || undefined, inStock: inStock || undefined },
+    }).then((r) => r.data)
   );
 
   const category = catData?.category;

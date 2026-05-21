@@ -113,7 +113,7 @@ export default function Home() {
 
       {/* Sticky left category nav — desktop only */}
       {categories.length > 0 && (
-        <aside className="hidden lg:block w-48 shrink-0 self-start sticky border-r border-secondary-200" style={{ top: '200px' }}>
+        <aside className="hidden lg:block w-48 shrink-0 self-start sticky z-40" style={{ top: '110px' }}>
           <CategorySidebar categories={categories} sticky />
         </aside>
       )}

@@ -13,7 +13,19 @@ async function getProducts(req, res, next) {
     const filter = { published: true };
 
     if (category) {
-      filter.category = category.toLowerCase();
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        // Sent as ObjectId — match by categoryIds array OR legacy category slug
+        filter.$or = [{ categoryIds: category }, { category: category.toLowerCase() }];
+      } else {
+        // Sent as slug — also check categoryIds by resolving the slug to an id
+        const catDoc = await Category.findOne({ slug: category.toLowerCase() }).select('_id');
+        if (catDoc) {
+          filter.$or = [{ category: category.toLowerCase() }, { categoryIds: catDoc._id }];
+        } else {
+          filter.category = category.toLowerCase();
+        }
+      }
     }
     if (featured === 'true') filter.featured = true;
     if (brand) filter.brand = new RegExp(brand, 'i');

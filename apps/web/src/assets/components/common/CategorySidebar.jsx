@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Zap, Wrench, Settings, Hammer, HardHat, Package, Ruler, Flame, Scissors, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { normalizeImageUrl } from '../../../utils/format';
@@ -25,50 +25,143 @@ function CatIcon({ cat, size = 16 }) {
 
 /* ── Sticky left-nav mode (used on homepage) ─────────────────────────── */
 function StickyNav({ parents, childrenMap }) {
+  const [hoveredId, setHoveredId] = useState(null);
+  const [hoveredSubId, setHoveredSubId] = useState(null);
+  const leaveTimer = useRef(null);
+  const subLeaveTimer = useRef(null);
+
+  const activeCat = parents.find(p => p._id === hoveredId);
+  const activeChildren = hoveredId ? (childrenMap[hoveredId] || []) : [];
+  const activeGrandChildren = hoveredSubId ? (childrenMap[hoveredSubId] || []) : [];
+  const activeSubCat = activeChildren.find(c => c._id === hoveredSubId);
+
+  function enterL1(id) {
+    clearTimeout(leaveTimer.current);
+    setHoveredId(id);
+    setHoveredSubId(null);
+  }
+  function enterL2(id) {
+    clearTimeout(subLeaveTimer.current);
+    setHoveredSubId(id);
+  }
+  function leave() {
+    leaveTimer.current = setTimeout(() => { setHoveredId(null); setHoveredSubId(null); }, 150);
+  }
+
   return (
-    <nav className="bg-secondary-50 border-r border-secondary-200 w-full">
-      {parents.map(cat => {
-        const children = childrenMap[cat._id] || [];
-        return (
-          <div key={cat._id} className="relative group">
-            <Link
-              to={`/category/${cat.slug}`}
-              className="flex items-center gap-2 px-3 py-2.5 text-secondary-700 hover:bg-white hover:text-primary-600 transition-colors"
+    <div className="relative" onMouseLeave={leave}>
+      {/* Level 1 sidebar */}
+      <nav className="bg-white border border-secondary-200 shadow-md rounded-lg overflow-hidden w-full">
+        <div className="px-3 py-2 bg-secondary-50 border-b border-secondary-200">
+          <span className="text-[10px] font-bold text-secondary-500 uppercase tracking-widest">All Categories</span>
+        </div>
+        {parents.map(cat => {
+          const hasChildren = !!(childrenMap[cat._id]?.length);
+          const isActive = hoveredId === cat._id;
+          return (
+            <div
+              key={cat._id}
+              onMouseEnter={() => enterL1(cat._id)}
+              className={`flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-colors border-l-2 ${
+                isActive
+                  ? 'bg-primary-50 border-primary-500 text-primary-600'
+                  : 'border-transparent text-secondary-700 hover:bg-secondary-50'
+              }`}
             >
-              <div className="w-7 h-7 rounded bg-secondary-200 group-hover:bg-primary-50 flex items-center justify-center shrink-0 text-secondary-500 group-hover:text-primary-500 transition-colors">
+              <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 transition-colors ${isActive ? 'bg-primary-100 text-primary-600' : 'bg-secondary-100 text-secondary-500'}`}>
                 <CatIcon cat={cat} size={14} />
               </div>
               <span className="text-xs font-medium flex-1 leading-tight">{cat.name}</span>
-              {children.length > 0 && <ChevronRight size={11} className="opacity-40 shrink-0" />}
-            </Link>
+              {hasChildren && <ChevronRight size={11} className={`shrink-0 transition-colors ${isActive ? 'text-primary-500' : 'text-secondary-300'}`} />}
+            </div>
+          );
+        })}
+        <Link to="/categories" className="flex items-center gap-2 px-3 py-2.5 text-xs text-primary-600 font-semibold border-t border-secondary-100 hover:bg-primary-50 transition-colors">
+          <Package size={14} /> View All Categories
+        </Link>
+      </nav>
 
-            {/* Flyout panel */}
-            {children.length > 0 && (
-              <div className="absolute left-full top-0 z-50 w-56 bg-white border border-secondary-200 shadow-xl rounded-r-lg hidden group-hover:block">
-                <div className="px-3 py-2 border-b border-secondary-100">
-                  <span className="text-xs font-bold text-secondary-700">{cat.name}</span>
-                </div>
-                {children.map(sub => (
-                  <Link
+      {/* Level 2 flyout panel */}
+      {hoveredId && activeChildren.length > 0 && activeCat && (
+        <div
+          className="absolute left-full top-0 z-[200] bg-white border border-secondary-200 shadow-2xl rounded-r-xl overflow-hidden flex"
+          style={{ minHeight: '100%', minWidth: 220 }}
+          onMouseEnter={() => clearTimeout(leaveTimer.current)}
+          onMouseLeave={leave}
+        >
+          {/* L2 list */}
+          <div className="w-52 shrink-0 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-primary-50 border-b border-primary-100">
+              <span className="text-sm font-bold text-primary-700">{activeCat.name}</span>
+              <Link to={`/category/${activeCat.slug}`} className="text-xs text-primary-600 font-semibold hover:underline flex items-center gap-0.5">
+                All <ChevronRight size={11} />
+              </Link>
+            </div>
+            <div className="flex-1 overflow-y-auto py-1">
+              {activeChildren.map(sub => {
+                const hasSubs = !!(childrenMap[sub._id]?.length);
+                const isSubActive = hoveredSubId === sub._id;
+                return (
+                  <div
                     key={sub._id}
-                    to={`/category/${sub.slug}`}
-                    className="flex items-center gap-2 px-3 py-2 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                    onMouseEnter={() => enterL2(sub._id)}
+                    className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${
+                      isSubActive ? 'bg-primary-50 text-primary-600' : 'text-secondary-700 hover:bg-secondary-50'
+                    }`}
                   >
-                    <div className="w-6 h-6 rounded bg-secondary-100 flex items-center justify-center shrink-0 text-secondary-500">
-                      <CatIcon cat={sub} size={12} />
+                    <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 overflow-hidden transition-colors ${isSubActive ? 'bg-primary-100 text-primary-600' : 'bg-secondary-100 text-secondary-400'}`}>
+                      {sub.image
+                        ? <img src={normalizeImageUrl(sub.image)} alt="" className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display='none'; }} />
+                        : <CatIcon cat={sub} size={13} />
+                      }
                     </div>
-                    <span className="text-xs text-secondary-700">{sub.name}</span>
-                  </Link>
-                ))}
-                <Link to={`/category/${cat.slug}`} className="block px-3 py-2 text-xs text-primary-600 font-semibold border-t border-secondary-100 hover:bg-primary-50">
-                  View all {cat.name} →
+                    <Link to={`/category/${sub.slug}`} className="text-xs font-medium flex-1 leading-tight" onClick={(e) => hasSubs && e.preventDefault()}>
+                      {sub.name}
+                    </Link>
+                    {hasSubs
+                      ? <ChevronRight size={11} className={`shrink-0 ${isSubActive ? 'text-primary-500' : 'text-secondary-300'}`} />
+                      : null
+                    }
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* L3 panel — shown when hovering a L2 item that has children */}
+          {hoveredSubId && activeGrandChildren.length > 0 && activeSubCat && (
+            <div
+              className="w-52 border-l border-secondary-100 flex flex-col"
+              onMouseEnter={() => enterL2(hoveredSubId)}
+            >
+              <div className="flex items-center justify-between px-4 py-2.5 bg-secondary-50 border-b border-secondary-100">
+                <span className="text-xs font-bold text-secondary-700">{activeSubCat.name}</span>
+                <Link to={`/category/${activeSubCat.slug}`} className="text-xs text-primary-600 hover:underline flex items-center gap-0.5">
+                  All <ChevronRight size={10} />
                 </Link>
               </div>
-            )}
-          </div>
-        );
-      })}
-    </nav>
+              <div className="flex-1 overflow-y-auto py-1">
+                {activeGrandChildren.map(gc => (
+                  <Link
+                    key={gc._id}
+                    to={`/category/${gc.slug}`}
+                    className="flex items-center gap-2 px-3 py-2 text-xs text-secondary-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                  >
+                    <div className="w-6 h-6 rounded bg-secondary-100 flex items-center justify-center shrink-0 text-secondary-400 overflow-hidden">
+                      {gc.image
+                        ? <img src={normalizeImageUrl(gc.image)} alt="" className="w-full h-full object-contain p-0.5" onError={(e) => { e.target.style.display='none'; }} />
+                        : <CatIcon cat={gc} size={12} />
+                      }
+                    </div>
+                    <span className="leading-tight">{gc.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

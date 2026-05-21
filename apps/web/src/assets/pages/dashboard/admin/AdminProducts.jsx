@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 
 const emptyForm = {
   title: '', slug: '', description: '', price: '', compareAt: '', stock: '',
-  brand: '', sku: '', category: '', images: [], tags: '',
+  brand: '', sku: '', category: '', categoryIds: [], images: [], tags: '',
   gstRate: 18, hsn: '',
   published: true, featured: false, displayOrder: 0,
   hasWarranty: false,
@@ -43,7 +43,11 @@ export default function AdminProducts() {
     (d) => editing ? api.put(`/admin/products/${editing._id}`, d) : api.post('/admin/products', d),
     {
       onSuccess: () => { setRev((r) => r + 1); setModalOpen(false); toast.success(editing ? 'Updated' : 'Product created'); },
-      onError: (err) => toast.error(err.response?.data?.error?.message || 'Failed'),
+      onError: (err) => {
+        const e = err.response?.data?.error;
+        const msg = e?.message || (e?.fields && `Validation: ${Object.values(e.fields)[0]}`) || 'Save failed';
+        toast.error(msg);
+      },
     }
   );
 
@@ -52,32 +56,95 @@ export default function AdminProducts() {
     { onSuccess: () => { setRev((r) => r + 1); toast.success('Deleted'); }, onError: () => toast.error('Failed') }
   );
 
-  const [parentCatId, setParentCatId] = useState('');
+  const [l1Id, setL1Id] = useState('');
+  const [l2Id, setL2Id] = useState('');
+  const [l3Id, setL3Id] = useState('');
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatParentId, setNewCatParentId] = useState('');
+  const [showNewCat, setShowNewCat] = useState(false);
+  const [creatingCat, setCreatingCat] = useState(false);
+  const [localCats, setLocalCats] = useState([]);
 
-  const allCats = catsData?.categories || [];
-  const parentCats = allCats.filter((c) => !c.parentId);
-  const subCats = parentCatId ? allCats.filter((c) => c.parentId?.toString() === parentCatId) : [];
+  const allCats = [...(catsData?.categories || []), ...localCats];
+  const l1Cats = allCats.filter((c) => !c.parentId);
+  const l2Cats = l1Id ? allCats.filter((c) => c.parentId?.toString() === l1Id) : [];
+  const l3Cats = l2Id ? allCats.filter((c) => c.parentId?.toString() === l2Id) : [];
+
+  function addCategory() {
+    const deepest = l3Id || l2Id || l1Id;
+    if (!deepest) return;
+    const cat = allCats.find((c) => c._id.toString() === deepest);
+    if (!cat) return;
+    if (form.categoryIds.includes(cat._id.toString())) return;
+    setForm((f) => ({
+      ...f,
+      category: cat.slug,
+      categoryIds: [...f.categoryIds, cat._id.toString()],
+    }));
+    setL1Id(''); setL2Id(''); setL3Id('');
+  }
+
+  function removeCategoryId(id) {
+    setForm((f) => {
+      const next = f.categoryIds.filter((c) => c !== id);
+      const remaining = allCats.find((c) => c._id.toString() === next[next.length - 1]);
+      return { ...f, categoryIds: next, category: remaining?.slug || '' };
+    });
+  }
+
+  function getCatPath(id) {
+    const parts = [];
+    let currentId = id?.toString();
+    const visited = new Set();
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
+      const cat = allCats.find((c) => (c._id?._id || c._id)?.toString() === currentId);
+      if (!cat) break;
+      parts.unshift(cat.name);
+      const pid = cat.parentId?._id || cat.parentId;
+      currentId = pid ? pid.toString() : null;
+    }
+    return parts.join(' › ') || id;
+  }
+
+  async function createCategory() {
+    if (!newCatName.trim()) return;
+    setCreatingCat(true);
+    try {
+      const slug = newCatName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const body = { name: newCatName.trim(), slug, parentId: newCatParentId || undefined };
+      const { data } = await api.post('/admin/categories', body);
+      const created = data.category;
+      setLocalCats((prev) => [...prev, created]);
+      setForm((f) => ({
+        ...f,
+        category: created.slug,
+        categoryIds: [...f.categoryIds, created._id.toString()],
+      }));
+      setNewCatName(''); setNewCatParentId(''); setShowNewCat(false);
+      toast.success(`Category "${created.name}" created & added`);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Could not create category');
+    } finally {
+      setCreatingCat(false);
+    }
+  }
 
   function openNew() {
     setEditing(null);
     setForm(emptyForm);
-    setParentCatId('');
+    setL1Id(''); setL2Id(''); setL3Id('');
+    setLocalCats([]); setShowNewCat(false);
     setModalOpen(true);
   }
 
   function openEdit(p) {
     setEditing(p);
-    // Resolve parent category from the product's category slug
-    const cat = allCats.find((c) => c.slug === p.category);
-    if (cat?.parentId) {
-      setParentCatId(cat.parentId.toString());
-    } else if (cat) {
-      setParentCatId(cat._id.toString());
-    } else {
-      setParentCatId('');
-    }
+    setL1Id(''); setL2Id(''); setL3Id('');
+    setLocalCats([]); setShowNewCat(false);
     setForm({
       ...emptyForm, ...p,
+      categoryIds: (p.categoryIds || []).map((id) => id.toString()),
       images: p.images || [],
       tags: p.tags?.join(', ') || '',
       hasWarranty: !!(p.warranty?.duration),
@@ -92,12 +159,27 @@ export default function AdminProducts() {
   function handleSave(e) {
     e.preventDefault();
     const slug = form.slug || form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    // Auto-include any category currently selected in the dropdowns that wasn't explicitly "+ Add"ed
+    let finalCategoryIds = [...form.categoryIds];
+    let finalCategory = form.category;
+    const deepest = l3Id || l2Id || l1Id;
+    if (deepest && !finalCategoryIds.includes(deepest)) {
+      const cat = allCats.find((c) => c._id.toString() === deepest);
+      if (cat) {
+        finalCategoryIds = [...finalCategoryIds, cat._id.toString()];
+        finalCategory = cat.slug;
+      }
+    }
+
     save({
       ...form,
       slug,
       price: parseFloat(form.price),
       compareAt: form.compareAt ? parseFloat(form.compareAt) : undefined,
       stock: parseInt(form.stock),
+      category: finalCategory,
+      categoryIds: finalCategoryIds,
       displayOrder: parseInt(form.displayOrder) || 0,
       gstRate: parseInt(form.gstRate) || 18,
       images: Array.isArray(form.images) ? form.images : [],
@@ -200,52 +282,105 @@ export default function AdminProducts() {
             <Input label="Slug (auto if blank)" value={form.slug} onChange={set('slug')} />
             <Input label="SKU (auto if blank)" value={form.sku} onChange={set('sku')} placeholder="e.g. PWR-001" />
             <Input label="Brand" value={form.brand} onChange={set('brand')} />
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-secondary-700">Category</label>
-              <select
-                className="input"
-                value={parentCatId}
-                onChange={(e) => {
-                  const pid = e.target.value;
-                  setParentCatId(pid);
-                  const parent = parentCats.find((c) => c._id.toString() === pid);
-                  // Set category to parent slug immediately; overridden if subcategory picked
-                  setForm((f) => ({ ...f, category: parent?.slug || '' }));
-                }}
-              >
-                <option value="">Select category</option>
-                {parentCats.map((c) => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            {/* Subcategory — shown when parent is selected */}
-            {parentCatId && (
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-secondary-700">Subcategory</label>
-                {subCats.length > 0 ? (
-                  <select
-                    className="input"
-                    value={form.category}
-                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  >
-                    <option value={parentCats.find((c) => c._id.toString() === parentCatId)?.slug || ''}>
-                      — No subcategory
-                    </option>
-                    {subCats.map((c) => (
-                      <option key={c._id} value={c.slug}>{c.name}</option>
-                    ))}
+            {/* Multi-category selector */}
+            <div className="col-span-2 space-y-2">
+              <label className="block text-sm font-medium text-secondary-700">Categories</label>
+
+              {/* Selected tags */}
+              {form.categoryIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {form.categoryIds.map((id) => (
+                    <span key={id} className="inline-flex items-center gap-1 bg-primary-50 border border-primary-200 text-primary-700 text-xs px-2.5 py-1 rounded-full">
+                      {getCatPath(id)}
+                      <button type="button" onClick={() => removeCategoryId(id)} className="ml-0.5 text-primary-400 hover:text-red-500 font-bold leading-none">&times;</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Cascade pickers */}
+              <div className="flex gap-2 flex-wrap items-end">
+                <div className="space-y-0.5 flex-1 min-w-[130px]">
+                  <p className="text-[10px] text-secondary-500 font-medium uppercase tracking-wide">Level 1</p>
+                  <select className="input text-sm" value={l1Id} onChange={(e) => { setL1Id(e.target.value); setL2Id(''); setL3Id(''); }}>
+                    <option value="">Select category</option>
+                    {l1Cats.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
                   </select>
-                ) : (
-                  <div className="input bg-secondary-50 text-secondary-400 text-xs flex items-center gap-2">
-                    No subcategories yet —
-                    <a href="/dashboard/admin/categories" target="_blank" className="text-primary-600 hover:underline font-semibold">
-                      Add subcategories in Categories
-                    </a>
+                </div>
+                {l1Id && (
+                  <div className="space-y-0.5 flex-1 min-w-[130px]">
+                    <p className="text-[10px] text-secondary-500 font-medium uppercase tracking-wide">Level 2</p>
+                    <select className="input text-sm" value={l2Id} onChange={(e) => { setL2Id(e.target.value); setL3Id(''); }}>
+                      <option value="">— None</option>
+                      {l2Cats.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                )}
+                {l2Id && l3Cats.length > 0 && (
+                  <div className="space-y-0.5 flex-1 min-w-[130px]">
+                    <p className="text-[10px] text-secondary-500 font-medium uppercase tracking-wide">Level 3</p>
+                    <select className="input text-sm" value={l3Id} onChange={(e) => setL3Id(e.target.value)}>
+                      <option value="">— None</option>
+                      {l3Cats.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={addCategory}
+                  disabled={!l1Id}
+                  className="px-3 py-2 text-xs font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-40 transition-colors shrink-0"
+                >
+                  + Add
+                </button>
+              </div>
+              <p className="text-[11px] text-secondary-400">
+                Select the <strong>deepest</strong> level you need (e.g. L1 → L2 → L3), then click <strong>+ Add</strong> once. The full path is stored automatically. A product can belong to multiple category paths.
+              </p>
+
+              {/* Create new category inline */}
+              <div className="mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowNewCat((v) => !v)}
+                  className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1"
+                >
+                  <Plus size={12} /> {showNewCat ? 'Cancel' : "Can't find it? Create new category"}
+                </button>
+                {showNewCat && (
+                  <div className="mt-2 p-3 bg-secondary-50 border border-secondary-200 rounded-lg space-y-2">
+                    <p className="text-[10px] font-bold text-secondary-500 uppercase tracking-wide">New Category</p>
+                    <div className="flex gap-2">
+                      <input
+                        className="input text-sm flex-1"
+                        placeholder="Category name (e.g. Cordless Drills)"
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), createCategory())}
+                      />
+                      <select
+                        className="input text-sm w-40"
+                        value={newCatParentId}
+                        onChange={(e) => setNewCatParentId(e.target.value)}
+                      >
+                        <option value="">Top-level</option>
+                        {allCats.map((c) => (
+                          <option key={c._id} value={c._id}>{c.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={createCategory}
+                        disabled={!newCatName.trim() || creatingCat}
+                        className="px-3 py-2 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-40 transition-colors shrink-0"
+                      >
+                        {creatingCat ? '...' : 'Create'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
-            )}
+            </div>
             <Input label="Price (₹) *" type="number" step="0.01" value={form.price} onChange={set('price')} required />
             <Input label="Compare At Price (₹)" type="number" step="0.01" value={form.compareAt} onChange={set('compareAt')} />
             <Input label="Stock *" type="number" value={form.stock} onChange={set('stock')} required />

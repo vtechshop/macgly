@@ -40,7 +40,7 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!product) throw new AppError('Product not found', 404, 'NOT_FOUND');
     await invalidateCache('cache:/api/catalog*');
     res.json({ product });
