@@ -3,6 +3,7 @@ const Order = require('../../models/Order');
 const User = require('../../models/User');
 const Product = require('../../models/Product');
 const AppError = require('../../utils/AppError');
+const { createShipment } = require('../../services/shippingService');
 
 // Individual order detail
 router.get('/:id', async (req, res, next) => {
@@ -122,6 +123,31 @@ router.put('/:id', async (req, res, next) => {
     }
 
     res.json({ order });
+  } catch (err) { next(err); }
+});
+
+// Create shipment via carrier (Shiprocket / Delhivery / Mock)
+router.post('/:id/ship', async (req, res, next) => {
+  try {
+    const { carrier = 'auto', waybill } = req.body;
+    const order = await Order.findById(req.params.id).populate('user', 'name email phone');
+    if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
+    if (['delivered', 'cancelled', 'returned'].includes(order.status)) {
+      throw new AppError('Cannot ship an order with status: ' + order.status, 400, 'INVALID_STATUS');
+    }
+    const result = await createShipment({ order, carrier, waybill });
+    const updated = await Order.findByIdAndUpdate(
+      order._id,
+      {
+        status: 'shipped',
+        'tracking.carrier': result.carrier,
+        'tracking.trackingId': result.trackingId,
+        'tracking.url': result.url,
+        $push: { 'tracking.history': { status: 'shipped', timestamp: new Date(), description: `Shipped via ${result.carrier}${result.trackingId ? ' · AWB: ' + result.trackingId : ''}` } },
+      },
+      { new: true }
+    );
+    res.json({ order: updated, shipment: result });
   } catch (err) { next(err); }
 });
 

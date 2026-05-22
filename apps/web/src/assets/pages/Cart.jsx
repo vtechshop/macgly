@@ -77,6 +77,13 @@ export default function Cart() {
                 <Link to={`/product/${item.product?.slug}`} className="font-medium hover:text-primary-600 line-clamp-2">
                   {item.product?.title || item.title}
                 </Link>
+                {item.variantAttributes && Object.keys(item.variantAttributes).length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {Object.entries(item.variantAttributes).map(([k, v]) => (
+                      <span key={k} className="text-xs bg-secondary-100 text-secondary-600 px-2 py-0.5 rounded-full">{k}: {v}</span>
+                    ))}
+                  </div>
+                )}
                 <p className="text-sm text-secondary-500 mt-0.5">{formatCurrency(item.price)} each</p>
                 <div className="flex items-center gap-3 mt-2">
                   <div className="flex items-center border border-secondary-300 rounded-lg">

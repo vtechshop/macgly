@@ -37,6 +37,7 @@ export default function Product() {
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [pincode, setPincode] = useState('');
   const [pincodeStatus, setPincodeStatus] = useState(null);
+  const [selectedAttributes, setSelectedAttributes] = useState({});
 
   async function checkPincode() {
     if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
@@ -84,13 +85,30 @@ export default function Product() {
     injectJsonLd(productJsonLd(product));
   }, [product]);
 
+  // Derive selected variant
+  const selectedVariant = product?.hasVariants
+    ? (product.variants || []).find((v) => {
+        const attrs = v.attributes instanceof Map ? Object.fromEntries(v.attributes) : (v.attributes || {});
+        return Object.keys(selectedAttributes).length > 0 &&
+          Object.entries(selectedAttributes).every(([k, val]) => attrs[k] === val);
+      })
+    : null;
+
+  const activePrice = selectedVariant?.price ?? product?.price;
+  const activeCompareAt = selectedVariant?.compareAt ?? product?.compareAt;
+  const activeStock = product?.hasVariants
+    ? (selectedVariant?.stock ?? 0)
+    : (product?.stock ?? 0);
+
   async function addToCart() {
-    // Instant UI update
-    dispatch(addItemOptimistic({ product, quantity: qty }));
+    if (product.hasVariants && !selectedVariant) {
+      toast.error('Please select all options');
+      return;
+    }
+    dispatch(addItemOptimistic({ product: { ...product, price: activePrice }, quantity: qty }));
     dispatch(openCartDrawer(product));
     toast.success('Added to cart');
-    // Sync in background
-    api.post('/cart/items', { productId: product._id, quantity: qty })
+    api.post('/cart/items', { productId: product._id, quantity: qty, variantId: selectedVariant?._id })
       .then(({ data }) => dispatch(setCart(data.cart)))
       .catch(() => {
         toast.error('Could not sync cart');
@@ -99,9 +117,13 @@ export default function Product() {
   }
 
   async function buyNow() {
+    if (product.hasVariants && !selectedVariant) {
+      toast.error('Please select all options');
+      return;
+    }
     setAdding(true);
     try {
-      const { data: cartData } = await api.post('/cart/items', { productId: product._id, quantity: qty });
+      const { data: cartData } = await api.post('/cart/items', { productId: product._id, quantity: qty, variantId: selectedVariant?._id });
       dispatch(setCart(cartData.cart));
       navigate('/checkout');
     } catch {
@@ -136,8 +158,8 @@ export default function Product() {
     </div>
   );
 
-  const discount = product.compareAt > product.price
-    ? Math.round(((product.compareAt - product.price) / product.compareAt) * 100)
+  const discount = activeCompareAt > activePrice
+    ? Math.round(((activeCompareAt - activePrice) / activeCompareAt) * 100)
     : null;
 
   return (
@@ -190,36 +212,77 @@ export default function Product() {
             </div>
           )}
 
+          {/* Variant selectors */}
+          {product.hasVariants && product.variantOptions?.length > 0 && (
+            <div className="space-y-3">
+              {product.variantOptions.map((opt) => (
+                <div key={opt.name} className="space-y-1.5">
+                  <p className="text-sm font-semibold text-secondary-700">{opt.name}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {opt.values.map((val) => {
+                      const isSelected = selectedAttributes[opt.name] === val;
+                      const testAttrs = { ...selectedAttributes, [opt.name]: val };
+                      const matchVariant = product.variants?.find((v) => {
+                        const attrs = v.attributes instanceof Map ? Object.fromEntries(v.attributes) : (v.attributes || {});
+                        return Object.entries(testAttrs).every(([k, vv]) => attrs[k] === vv);
+                      });
+                      const isUnavailable = product.variantOptions.length === 1 && matchVariant && matchVariant.stock === 0;
+                      return (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setSelectedAttributes((prev) => ({ ...prev, [opt.name]: val }))}
+                          className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                            isSelected
+                              ? 'border-primary-600 bg-primary-50 text-primary-700'
+                              : isUnavailable
+                              ? 'border-secondary-200 text-secondary-300 line-through cursor-not-allowed'
+                              : 'border-secondary-300 text-secondary-700 hover:border-primary-400 hover:bg-primary-50/50'
+                          }`}
+                          disabled={isUnavailable}
+                        >
+                          {val}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Price card */}
           <div className="bg-primary-50 border border-primary-100 rounded-xl p-4 space-y-1">
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-black text-secondary-900">{formatCurrency(product.price)}</span>
-              {product.compareAt > product.price && (
+              <span className="text-3xl font-black text-secondary-900">{formatCurrency(activePrice)}</span>
+              {activeCompareAt > activePrice && (
                 <>
-                  <span className="text-base text-secondary-400 line-through">{formatCurrency(product.compareAt)}</span>
+                  <span className="text-base text-secondary-400 line-through">{formatCurrency(activeCompareAt)}</span>
                   <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded">{discount}% OFF</span>
                 </>
               )}
             </div>
-            {product.compareAt > product.price && (
-              <p className="text-xs text-secondary-500">You save {formatCurrency(product.compareAt - product.price)}</p>
+            {activeCompareAt > activePrice && (
+              <p className="text-xs text-secondary-500">You save {formatCurrency(activeCompareAt - activePrice)}</p>
             )}
           </div>
 
           {/* Stock */}
-          {product.stock > 0 ? (
+          {activeStock > 0 ? (
             <p className="text-sm text-green-600 font-semibold flex items-center gap-1.5">
               <CheckCircle size={15} className="shrink-0" />
               In Stock
-              {product.stock <= (product.lowStockThreshold || 5) && (
-                <span className="text-orange-500 flex items-center gap-0.5 ml-1"><Zap size={12} /> Only {product.stock} left</span>
+              {activeStock <= (product.lowStockThreshold || 5) && (
+                <span className="text-orange-500 flex items-center gap-0.5 ml-1"><Zap size={12} /> Only {activeStock} left</span>
               )}
             </p>
+          ) : product.hasVariants && Object.keys(selectedAttributes).length < (product.variantOptions?.length || 0) ? (
+            <p className="text-sm text-secondary-500 font-medium">Select options to check availability</p>
           ) : (
             <p className="text-sm text-red-500 font-semibold flex items-center gap-1.5"><XCircle size={15} /> Out of Stock</p>
           )}
 
-          {product.stock > 0 && (
+          {activeStock > 0 && (
             <div className="space-y-3">
               {/* Quantity */}
               <div className="flex items-center gap-3">
@@ -229,7 +292,7 @@ export default function Product() {
                     onClick={() => setQty(Math.max(1, qty - 1))} disabled={qty <= 1}>−</button>
                   <span className="w-12 text-center text-sm font-bold text-secondary-900 border-x border-secondary-200 h-9 flex items-center justify-center">{qty}</span>
                   <button className="w-9 h-9 flex items-center justify-center text-secondary-600 hover:bg-secondary-100 disabled:opacity-40 text-lg transition-colors"
-                    onClick={() => setQty(Math.min(product.stock, qty + 1))} disabled={qty >= product.stock}>+</button>
+                    onClick={() => setQty(Math.min(activeStock, qty + 1))} disabled={qty >= activeStock}>+</button>
                 </div>
               </div>
 

@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Package, Truck, FileText, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Package, Truck, FileText, RotateCcw, Send } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
 import { formatCurrency, normalizeImageUrl } from '../../../../utils/format';
@@ -23,6 +23,9 @@ export default function AdminOrderDetail() {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [trackingForm, setTrackingForm] = useState(false);
   const [tracking, setTracking] = useState({ carrier: '', trackingId: '', url: '' });
+  const [shipModal, setShipModal] = useState(false);
+  const [shipCarrier, setShipCarrier] = useState('auto');
+  const [shipping, setShipping] = useState(false);
 
   const { data, isLoading } = useFetch(
     ['admin-order', id, rev],
@@ -52,6 +55,20 @@ export default function AdminOrderDetail() {
       setRev((r) => r + 1);
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed');
+    }
+  }
+
+  async function createShipment() {
+    setShipping(true);
+    try {
+      const { data: res } = await api.post(`/admin/orders/${id}/ship`, { carrier: shipCarrier });
+      toast.success(`Shipped via ${res.shipment.carrier}${res.shipment.trackingId ? ' · AWB: ' + res.shipment.trackingId : ''}`);
+      setShipModal(false);
+      setRev((r) => r + 1);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Shipment creation failed');
+    } finally {
+      setShipping(false);
     }
   }
 
@@ -119,6 +136,41 @@ export default function AdminOrderDetail() {
           ))}
         </div>
       </div>
+
+      {/* Ship via Carrier */}
+      {!['delivered', 'cancelled', 'returned', 'shipped'].includes(order.status) && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold flex items-center gap-2"><Send size={16} /> Create Shipment</h2>
+              <p className="text-xs text-secondary-400 mt-0.5">Push this order to Shiprocket / Delhivery and mark as shipped automatically</p>
+            </div>
+            <button onClick={() => setShipModal((o) => !o)} className="text-sm text-primary-600 hover:underline">
+              {shipModal ? 'Cancel' : 'Ship Now'}
+            </button>
+          </div>
+          {shipModal && (
+            <div className="mt-4 flex items-end gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-secondary-600">Carrier</label>
+                <select className="input text-sm" value={shipCarrier} onChange={(e) => setShipCarrier(e.target.value)}>
+                  <option value="auto">Auto (best available)</option>
+                  <option value="shiprocket">Shiprocket</option>
+                  <option value="delhivery">Delhivery</option>
+                  <option value="mock">Mock (test)</option>
+                </select>
+              </div>
+              <button
+                onClick={createShipment}
+                disabled={shipping}
+                className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60 flex items-center gap-2"
+              >
+                {shipping ? <Spinner size="xs" /> : <Send size={14} />} Create Shipment
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tracking */}
       <div className="card p-5">

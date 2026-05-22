@@ -66,6 +66,7 @@ const AdminFlashSales       = lazy(() => import('./assets/pages/dashboard/admin/
 const AdminReturns          = lazy(() => import('./assets/pages/dashboard/admin/AdminReturns'));
 const AdminNewsletter       = lazy(() => import('./assets/pages/dashboard/admin/AdminNewsletter'));
 const AdminAdsManagement    = lazy(() => import('./assets/pages/dashboard/admin/AdminAdsManagement'));
+const AdminAnalytics        = lazy(() => import('./assets/pages/dashboard/admin/AdminAnalytics'));
 
 // Vendor pages — lazy loaded
 const VendorDashboard       = lazy(() => import('./assets/pages/dashboard/vendor/VendorDashboard'));
@@ -212,6 +213,7 @@ export default function App() {
               <Route path="returns" element={<AdminReturns />} />
               <Route path="newsletter" element={<AdminNewsletter />} />
               <Route path="ads" element={<AdminAdsManagement />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
             </Route>
 
             {/* Vendor dashboard */}

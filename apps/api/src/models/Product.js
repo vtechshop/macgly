@@ -56,6 +56,17 @@ const productSchema = new mongoose.Schema({
 
   faqs: [{ question: String, answer: String }],
   specifications: [{ label: String, value: String }],
+
+  hasVariants: { type: Boolean, default: false },
+  variantOptions: [{ name: String, values: [String] }],
+  variants: [{
+    sku: String,
+    attributes: { type: Map, of: String },
+    price: Number,
+    compareAt: Number,
+    stock: { type: Number, default: 0 },
+    images: [String],
+  }],
 }, { timestamps: true });
 
 productSchema.index({ published: 1, displayOrder: -1 });

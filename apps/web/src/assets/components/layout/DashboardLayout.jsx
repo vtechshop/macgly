@@ -6,7 +6,7 @@ import {
   Tag, Image, Settings, LogOut, Ticket, MapPin, Heart,
   Store, UserCheck, IndianRupee, Link2, ShieldCheck, HelpCircle, Clock, CreditCard, Star, Menu, X,
   FileText, Inbox, Sliders, LayoutTemplate, ClipboardList, BookOpen, Share2, Mail, Warehouse,
-  RotateCcw, Megaphone, Zap, BarChart2, PenTool,
+  RotateCcw, Megaphone, Zap, BarChart2, PenTool, TrendingUp,
 } from 'lucide-react';
 import VendorOnboarding from '../../pages/dashboard/vendor/VendorOnboarding';
 import api from '../../../utils/api';
@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 const navsByRole = {
   admin: [
     { type: 'item', to: '/dashboard/admin', label: 'Overview', icon: LayoutDashboard, end: true },
+    { type: 'item', to: '/dashboard/admin/analytics', label: 'Analytics', icon: TrendingUp },
     { type: 'section', label: 'Orders' },
     { type: 'item', to: '/dashboard/admin/orders', label: 'All Orders', icon: ShoppingBag },
     { type: 'section', label: 'Catalog' },

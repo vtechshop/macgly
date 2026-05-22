@@ -43,6 +43,9 @@ module.exports = {
   DELHIVERY_API_KEY: process.env.DELHIVERY_API_KEY || '',
   DELHIVERY_BASE_URL: process.env.DELHIVERY_BASE_URL || 'https://track.delhivery.com',
 
+  SHIPROCKET_EMAIL: process.env.SHIPROCKET_EMAIL || '',
+  SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD || '',
+
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
 
   isProd,

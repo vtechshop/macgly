@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Pencil, Trash2, Eye, EyeOff, ShieldCheck, HelpCircle, Search as SearchIcon } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, ShieldCheck, HelpCircle, Search as SearchIcon, Upload, X, RefreshCw } from 'lucide-react';
 import api from '../../../../utils/api';
 import { formatCurrency, normalizeImageUrl } from '../../../../utils/format';
 import { useFetch, useAction } from '../../../../hooks';
@@ -20,6 +20,9 @@ const emptyForm = {
   specifications: [],
   faqs: [],
   seo: { title: '', description: '', keywords: '' },
+  hasVariants: false,
+  variantOptions: [],
+  variants: [],
 };
 
 export default function AdminProducts() {
@@ -152,6 +155,12 @@ export default function AdminProducts() {
       specifications: p.specifications || [],
       faqs: p.faqs || [],
       seo: p.seo || emptyForm.seo,
+      hasVariants: p.hasVariants || false,
+      variantOptions: p.variantOptions || [],
+      variants: (p.variants || []).map((v) => ({
+        ...v,
+        attributes: v.attributes instanceof Map ? Object.fromEntries(v.attributes) : (v.attributes || {}),
+      })),
     });
     setModalOpen(true);
   }
@@ -177,7 +186,7 @@ export default function AdminProducts() {
       slug,
       price: parseFloat(form.price),
       compareAt: form.compareAt ? parseFloat(form.compareAt) : undefined,
-      stock: parseInt(form.stock),
+      stock: form.hasVariants ? form.variants.reduce((s, v) => s + (parseInt(v.stock) || 0), 0) : parseInt(form.stock),
       category: finalCategory,
       categoryIds: finalCategoryIds,
       displayOrder: parseInt(form.displayOrder) || 0,
@@ -190,6 +199,14 @@ export default function AdminProducts() {
       specifications: form.specifications.filter((s) => s.label?.trim()),
       faqs: form.faqs.filter((f) => f.question?.trim()),
       seo: form.seo,
+      hasVariants: form.hasVariants,
+      variantOptions: form.hasVariants ? form.variantOptions : [],
+      variants: form.hasVariants ? form.variants.map((v) => ({
+        ...v,
+        price: parseFloat(v.price) || parseFloat(form.price),
+        compareAt: v.compareAt ? parseFloat(v.compareAt) : undefined,
+        stock: parseInt(v.stock) || 0,
+      })) : [],
     });
   }
 
@@ -205,12 +222,79 @@ export default function AdminProducts() {
   function setFaq(i, k, v) { setForm((f) => { const a = [...f.faqs]; a[i] = { ...a[i], [k]: v }; return { ...f, faqs: a }; }); }
   function removeFaq(i) { setForm((f) => ({ ...f, faqs: f.faqs.filter((_, idx) => idx !== i) })); }
 
+  // Variant helpers
+  function addVariantOption() { setForm((f) => ({ ...f, variantOptions: [...f.variantOptions, { name: '', values: [] }] })); }
+  function setVariantOptionName(i, v) { setForm((f) => { const o = [...f.variantOptions]; o[i] = { ...o[i], name: v }; return { ...f, variantOptions: o }; }); }
+  function setVariantOptionValues(i, csv) { setForm((f) => { const o = [...f.variantOptions]; o[i] = { ...o[i], values: csv.split(',').map((s) => s.trim()).filter(Boolean) }; return { ...f, variantOptions: o }; }); }
+  function removeVariantOption(i) { setForm((f) => ({ ...f, variantOptions: f.variantOptions.filter((_, idx) => idx !== i) })); }
+
+  function generateVariantMatrix() {
+    const opts = form.variantOptions.filter((o) => o.name && o.values.length);
+    if (!opts.length) { toast.error('Add at least one option with values'); return; }
+    function cartesian(arrays) {
+      return arrays.reduce((acc, arr) => acc.flatMap((a) => arr.map((b) => [...a, b])), [[]]);
+    }
+    const combos = cartesian(opts.map((o) => o.values.map((v) => ({ name: o.name, value: v }))));
+    const existing = form.variants;
+    const newVariants = combos.map((combo) => {
+      const attributes = {};
+      combo.forEach(({ name, value }) => { attributes[name] = value; });
+      const key = combo.map((c) => c.value).join('|');
+      const prev = existing.find((v) => Object.entries(v.attributes || {}).map(([, val]) => val).join('|') === key);
+      return prev || { sku: '', attributes, price: form.price || '', compareAt: '', stock: form.stock || '', images: [] };
+    });
+    setForm((f) => ({ ...f, variants: newVariants }));
+  }
+
+  function setVariant(i, k, v) { setForm((f) => { const vs = [...f.variants]; vs[i] = { ...vs[i], [k]: v }; return { ...f, variants: vs }; }); }
+
+  // CSV import state
+  const csvRef = useRef(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+
+  async function handleCsvImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const { data } = await api.post('/admin/products/import', formData);
+      setImportResult(data.results);
+      setRev((r) => r + 1);
+      toast.success(`Import done: ${data.results.created} created, ${data.results.updated} updated`);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Import failed');
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Products</h1>
-        <Button onClick={openNew}><Plus size={16} /> New Product</Button>
+        <div className="flex items-center gap-2">
+          <input ref={csvRef} type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
+          <Button variant="outline" onClick={() => csvRef.current?.click()} disabled={importing}>
+            {importing ? <Spinner size="xs" /> : <Upload size={16} />} Import CSV
+          </Button>
+          <Button onClick={openNew}><Plus size={16} /> New Product</Button>
+        </div>
       </div>
+
+      {importResult && (
+        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-start gap-3">
+          <div className="flex-1 text-sm text-green-800">
+            <strong>Import complete</strong> — {importResult.created} created, {importResult.updated} updated
+            {importResult.errors?.length > 0 && <span className="ml-2 text-red-600">({importResult.errors.length} errors)</span>}
+          </div>
+          <button onClick={() => setImportResult(null)} className="text-green-500 hover:text-green-700"><X size={14} /></button>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
@@ -527,6 +611,72 @@ export default function AdminProducts() {
                 ))
               )}
             </div>
+          </div>
+
+          {/* Variants */}
+          <div className="border border-secondary-200 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+              <p className="text-sm font-semibold text-secondary-700">Product Variants</p>
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input type="checkbox" checked={form.hasVariants} onChange={set('hasVariants')} className="accent-primary-600" />
+                Has Variants
+              </label>
+            </div>
+            {!form.hasVariants && (
+              <p className="px-4 py-3 text-xs text-secondary-400">Enable if this product comes in different sizes, colors, etc.</p>
+            )}
+            {form.hasVariants && (
+              <div className="p-4 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-secondary-600 uppercase tracking-wide">Options (e.g. Color, Size)</p>
+                    <button type="button" onClick={addVariantOption} className="text-xs text-primary-600 font-semibold flex items-center gap-1 hover:text-primary-700"><Plus size={12} /> Add Option</button>
+                  </div>
+                  {form.variantOptions.map((opt, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input className="input text-sm w-32 shrink-0" placeholder="Name (e.g. Color)" value={opt.name} onChange={(e) => setVariantOptionName(i, e.target.value)} />
+                      <input className="input text-sm flex-1" placeholder="Values comma separated (Red, Blue, Green)" value={opt.values.join(', ')} onChange={(e) => setVariantOptionValues(i, e.target.value)} />
+                      <button type="button" onClick={() => removeVariantOption(i)} className="p-1.5 text-red-400 hover:text-red-600 shrink-0"><Trash2 size={14} /></button>
+                    </div>
+                  ))}
+                  {form.variantOptions.length > 0 && (
+                    <button type="button" onClick={generateVariantMatrix} className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary-100 hover:bg-secondary-200 text-secondary-700 text-xs font-semibold rounded-lg transition-colors">
+                      <RefreshCw size={12} /> Generate / Refresh Variants
+                    </button>
+                  )}
+                </div>
+                {form.variants.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-secondary-600 uppercase tracking-wide">{form.variants.length} Variants</p>
+                    <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                      {form.variants.map((v, i) => (
+                        <div key={i} className="bg-secondary-50 border border-secondary-200 rounded-lg p-3">
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {Object.entries(v.attributes || {}).map(([k, val]) => (
+                              <span key={k} className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full font-medium">{k}: {val}</span>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-0.5">
+                              <label className="text-[10px] text-secondary-500">SKU</label>
+                              <input className="input text-xs py-1" placeholder="auto" value={v.sku || ''} onChange={(e) => setVariant(i, 'sku', e.target.value)} />
+                            </div>
+                            <div className="space-y-0.5">
+                              <label className="text-[10px] text-secondary-500">Price (₹)</label>
+                              <input type="number" className="input text-xs py-1" placeholder={form.price} value={v.price || ''} onChange={(e) => setVariant(i, 'price', e.target.value)} />
+                            </div>
+                            <div className="space-y-0.5">
+                              <label className="text-[10px] text-secondary-500">Stock</label>
+                              <input type="number" className="input text-xs py-1" placeholder="0" value={v.stock || ''} onChange={(e) => setVariant(i, 'stock', e.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* SEO */}
