@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-import { ArrowRight, Shield, Truck, Headphones, RotateCcw, ChevronRight, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, Shield, Truck, Headphones, RotateCcw, ChevronRight, Zap, Wrench, Settings, Hammer, HardHat, Package, Ruler, Flame, Scissors } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import api from '../../utils/api';
 import ProductGrid from '../components/product/ProductGrid';
@@ -10,6 +10,12 @@ import { useFetch } from '../../hooks';
 import { normalizeImageUrl } from '../../utils/format';
 import { setMeta } from '../../utils/seo';
 import toast from 'react-hot-toast';
+
+const CAT_ICONS = {
+  'power-tools': Zap, 'hand-tools': Wrench, 'spare-parts': Settings,
+  'machines': Hammer, 'safety-equipment': HardHat, 'measuring-tools': Ruler,
+  'welding': Flame, 'cutting-tools': Scissors, default: Package,
+};
 
 const TRUST_BADGES = [
   { icon: Shield,     title: '100% Genuine',    desc: 'Authenticated products only', bg: 'bg-primary-50',   fg: 'text-primary-600' },
@@ -92,9 +98,14 @@ export default function Home() {
     });
   }, []);
 
+  const [selectedCat, setSelectedCat] = useState(null);
+
   const { data: bannersData } = useFetch(['banners'], () => api.get('/catalog/banners').then((r) => r.data));
-  const { data: featuredData, isLoading } = useFetch(['featured'], () => api.get('/catalog/featured').then((r) => r.data));
   const { data: categoriesData } = useFetch(['categories'], () => api.get('/catalog/categories').then((r) => r.data));
+  const { data: catProductsData, isLoading: catLoading } = useFetch(
+    selectedCat ? ['cat-products-home', selectedCat] : null,
+    () => api.get('/catalog/products', { params: { category: selectedCat, limit: 8 } }).then((r) => r.data)
+  );
 
   async function handleAddToCart(product) {
     try {
@@ -107,6 +118,7 @@ export default function Home() {
   }
 
   const categories = categoriesData?.categories || [];
+  const topCats = categories.filter((c) => !c.parentId);
 
   return (
     <div className="flex w-full">
@@ -167,20 +179,63 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Featured Products */}
+        {/* Shop by Category */}
         <section>
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-black text-secondary-900 flex items-center gap-2">
-                🔥 Featured Products
-              </h2>
-              <p className="text-xs text-secondary-400 mt-0.5">Handpicked top sellers from trusted vendors</p>
+              <h2 className="text-xl font-black text-secondary-900">Shop by Category</h2>
+              <p className="text-xs text-secondary-400 mt-0.5">Select a category to explore products</p>
             </div>
-            <Link to="/products?featured=true" className="btn-primary text-xs py-2 px-4">
-              View All <ChevronRight size={14} />
+            <Link to="/categories" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
+              All Categories <ChevronRight size={14} />
             </Link>
           </div>
-          <ProductGrid products={featuredData?.products} loading={isLoading} onAddToCart={handleAddToCart} />
+
+          {/* Category tiles */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+            {topCats.map((cat) => {
+              const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
+              const isActive = selectedCat === cat.slug;
+              return (
+                <button
+                  key={cat._id}
+                  onClick={() => setSelectedCat(isActive ? null : cat.slug)}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 group ${
+                    isActive
+                      ? 'border-primary-500 bg-primary-50 shadow-md shadow-primary-100'
+                      : 'border-secondary-200 bg-white hover:border-primary-300 hover:bg-primary-50/40 hover:shadow-sm'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                    isActive ? 'bg-primary-500 text-white' : 'bg-secondary-100 text-secondary-500 group-hover:bg-primary-100 group-hover:text-primary-600'
+                  }`}>
+                    {cat.image
+                      ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-6 h-6 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+                      : <Icon size={18} />
+                    }
+                  </div>
+                  <span className={`text-[11px] font-semibold text-center leading-tight line-clamp-2 ${isActive ? 'text-primary-700' : 'text-secondary-600'}`}>
+                    {cat.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Products for selected category */}
+          {selectedCat && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-secondary-900 capitalize">
+                  {topCats.find((c) => c.slug === selectedCat)?.name || selectedCat}
+                </h3>
+                <Link to={`/category/${selectedCat}`} className="btn-primary text-xs py-1.5 px-3">
+                  View All <ChevronRight size={13} />
+                </Link>
+              </div>
+              <ProductGrid products={catProductsData?.products} loading={catLoading} onAddToCart={handleAddToCart} />
+            </div>
+          )}
         </section>
 
         {/* Bottom CTA */}
