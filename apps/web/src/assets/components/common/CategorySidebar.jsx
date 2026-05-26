@@ -76,9 +76,6 @@ function StickyNav({ parents, childrenMap }) {
             </div>
           );
         })}
-        <Link to="/categories" className="flex items-center gap-2 px-3 py-2.5 text-xs text-primary-600 font-semibold border-t border-secondary-100 hover:bg-primary-50 transition-colors">
-          <Package size={14} /> View All Categories
-        </Link>
       </nav>
 
       {/* Level 2 flyout panel */}
@@ -115,7 +112,7 @@ function StickyNav({ parents, childrenMap }) {
                         : <CatIcon cat={sub} size={13} />
                       }
                     </div>
-                    <Link to={`/category/${sub.slug}`} className="text-xs font-medium flex-1 leading-tight" onClick={(e) => hasSubs && e.preventDefault()}>
+                    <Link to={`/category/${sub.slug}`} className="text-xs font-medium flex-1 leading-tight">
                       {sub.name}
                     </Link>
                     {hasSubs

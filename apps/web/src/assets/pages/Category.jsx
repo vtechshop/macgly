@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { SlidersHorizontal, ChevronDown, ChevronUp, X, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, ChevronUp, X, Star, ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import api from '../../utils/api';
 import { useFetch } from '../../hooks';
 import Spinner from '../components/common/Spinner';
 import ProductCard from '../components/product/ProductCard';
 import { setMeta } from '../../utils/seo';
+import { normalizeImageUrl } from '../../utils/format';
 
 function StarRow({ filled, empty }) {
   return (
@@ -102,6 +103,11 @@ export default function Category() {
     () => api.get(`/catalog/categories/${slug}`).then((r) => r.data)
   );
 
+  const { data: allCatsData } = useFetch(
+    ['categories'],
+    () => api.get('/catalog/categories').then((r) => r.data)
+  );
+
   const { data, isLoading } = useFetch(
     ['category-products', slug, page, sort, minPrice, maxPrice, minRating, inStock],
     () => api.get('/catalog/products', {
@@ -111,6 +117,9 @@ export default function Category() {
 
   const category = catData?.category;
   const products = data?.products || [];
+  const subcategories = (allCatsData?.categories || []).filter(
+    (c) => c.parentId && String(c.parentId) === String(category?._id)
+  );
 
   useEffect(() => {
     if (category) {
@@ -148,6 +157,36 @@ export default function Category() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-secondary-900">{category.name}</h1>
           {category.description && <p className="text-secondary-500 mt-1">{category.description}</p>}
+        </div>
+      )}
+
+      {/* Subcategory list */}
+      {subcategories.length > 0 && (
+        <div className="mb-8 max-w-xs">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-sm font-bold text-primary-600 uppercase tracking-wide">{category?.name}</span>
+            <Link to={`/products?category=${slug}`} className="text-xs text-primary-600 hover:underline font-semibold flex items-center gap-0.5">
+              All <ChevronRight size={13} />
+            </Link>
+          </div>
+          <div className="bg-white rounded-xl border border-secondary-200 overflow-hidden">
+            {subcategories.map((sub, i) => (
+              <Link
+                key={sub._id}
+                to={`/category/${sub.slug}`}
+                className={`flex items-center gap-3 px-4 py-3 hover:bg-primary-50 transition-colors group ${i !== 0 ? 'border-t border-secondary-100' : ''}`}
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary-100 text-secondary-500 group-hover:bg-primary-100 group-hover:text-primary-600 transition-colors shrink-0">
+                  {sub.image
+                    ? <img src={normalizeImageUrl(sub.image)} alt="" className="w-full h-full object-contain p-0.5" onError={(e) => { e.target.style.display = 'none'; }} />
+                    : <Package size={15} />
+                  }
+                </div>
+                <span className="flex-1 text-sm font-medium text-secondary-700 group-hover:text-primary-700">{sub.name}</span>
+                <ChevronRight size={14} className="text-secondary-400 group-hover:text-primary-500" />
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 

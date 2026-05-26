@@ -1,15 +1,11 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { ArrowRight, Shield, Truck, Headphones, RotateCcw, ChevronRight, Zap, Wrench, Settings, Hammer, HardHat, Package, Ruler, Flame, Scissors } from 'lucide-react';
-import { useDispatch } from 'react-redux';
+import { useEffect } from 'react';
+import { ArrowRight, ChevronRight, Zap, Wrench, Settings, Hammer, HardHat, Package, Ruler, Flame, Scissors } from 'lucide-react';
 import api from '../../utils/api';
-import ProductGrid from '../components/product/ProductGrid';
 import CategorySidebar from '../components/common/CategorySidebar';
-import { setCart } from '../../store/slices/cartSlice';
 import { useFetch } from '../../hooks';
 import { normalizeImageUrl } from '../../utils/format';
 import { setMeta } from '../../utils/seo';
-import toast from 'react-hot-toast';
 
 const CAT_ICONS = {
   'power-tools': Zap, 'hand-tools': Wrench, 'spare-parts': Settings,
@@ -17,25 +13,6 @@ const CAT_ICONS = {
   'welding': Flame, 'cutting-tools': Scissors, default: Package,
 };
 
-const TRUST_BADGES = [
-  { icon: Shield,     title: '100% Genuine',    desc: 'Authenticated products only', bg: 'bg-primary-50',   fg: 'text-primary-600' },
-  { icon: Truck,      title: 'Fast Delivery',    desc: 'Pan India shipping',          bg: 'bg-primary-100',  fg: 'text-primary-700' },
-  { icon: Headphones, title: 'Expert Support',   desc: 'Technical assistance',        bg: 'bg-secondary-100',fg: 'text-secondary-600' },
-  { icon: RotateCcw,  title: 'Easy Returns',     desc: '7-day return policy',         bg: 'bg-primary-50',   fg: 'text-primary-600' },
-];
-
-const STATS = [
-  { value: '50,000+', label: 'Happy Customers' },
-  { value: '500+',    label: 'Products' },
-  { value: '100+',    label: 'Trusted Vendors' },
-  { value: '7-Day',   label: 'Easy Returns' },
-];
-
-const PROMO_BANNERS = [
-  { label: 'POWER TOOLS',  sub: 'Up to 40% Off',    desc: 'Top brands at best prices',      color: 'from-orange-700 to-orange-500', to: '/products?category=power-tools' },
-  { label: 'SPARE PARTS',  sub: 'OEM Quality',       desc: 'Genuine replacement parts',      color: 'from-slate-800 to-slate-600',   to: '/products?category=spare-parts' },
-  { label: 'NEW ARRIVALS', sub: 'Latest Machines',   desc: 'Fresh stock added weekly',       color: 'from-blue-800 to-blue-600',     to: '/products?featured=true' },
-];
 
 function HeroSection({ banners }) {
   const banner = banners?.[0];
@@ -88,8 +65,6 @@ function HeroSection({ banners }) {
 }
 
 export default function Home() {
-  const dispatch = useDispatch();
-
   useEffect(() => {
     setMeta({
       title: 'Macgly — Professional Tools & Machinery in India',
@@ -98,24 +73,8 @@ export default function Home() {
     });
   }, []);
 
-  const [selectedCat, setSelectedCat] = useState(null);
-
   const { data: bannersData } = useFetch(['banners'], () => api.get('/catalog/banners').then((r) => r.data));
   const { data: categoriesData } = useFetch(['categories'], () => api.get('/catalog/categories').then((r) => r.data));
-  const { data: catProductsData, isLoading: catLoading } = useFetch(
-    selectedCat ? ['cat-products-home', selectedCat] : null,
-    () => api.get('/catalog/products', { params: { category: selectedCat, limit: 8 } }).then((r) => r.data)
-  );
-
-  async function handleAddToCart(product) {
-    try {
-      const { data } = await api.post('/cart/items', { productId: product._id, quantity: 1 });
-      dispatch(setCart(data.cart));
-      toast.success(`${product.title} added to cart`);
-    } catch {
-      toast.error('Could not add to cart');
-    }
-  }
 
   const categories = categoriesData?.categories || [];
   const topCats = categories.filter((c) => !c.parentId);
@@ -136,49 +95,7 @@ export default function Home() {
         {/* Hero */}
         <HeroSection banners={bannersData?.banners} />
 
-        {/* Trust badges */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {TRUST_BADGES.map(({ icon: Icon, title, desc, bg, fg }) => (
-            <div key={title} className="card flex items-center gap-3.5 px-4 py-4 hover:shadow-md">
-              <div className={`${bg} ${fg} p-3 rounded-xl shrink-0`}>
-                <Icon size={20} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-secondary-900">{title}</p>
-                <p className="text-xs text-secondary-400 mt-0.5">{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
         {/* Mobile categories accordion */}
-        {categories.length > 0 && (
-          <section className="lg:hidden">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="section-title">Shop by Category</h2>
-              <Link to="/products" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
-                All <ChevronRight size={14} />
-              </Link>
-            </div>
-            <CategorySidebar categories={categories} />
-          </section>
-        )}
-
-        {/* Promo banners */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {PROMO_BANNERS.map((b) => (
-            <Link key={b.label} to={b.to}
-              className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${b.color} p-6 text-white hover:opacity-95 hover:shadow-xl transition-all duration-200 group`}
-              style={{ minHeight: 130 }}>
-              <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
-              <p className="text-xs font-bold opacity-70 uppercase tracking-widest">{b.sub}</p>
-              <p className="text-xl font-black mt-1 leading-tight">{b.label}</p>
-              <p className="text-xs opacity-60 mt-1">{b.desc}</p>
-              <ArrowRight size={16} className="absolute right-5 bottom-5 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
-            </Link>
-          ))}
-        </div>
-
         {/* Shop by Category */}
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -195,47 +112,27 @@ export default function Home() {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
             {topCats.map((cat) => {
               const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
-              const isActive = selectedCat === cat.slug;
               return (
-                <button
+                <Link
                   key={cat._id}
-                  onClick={() => setSelectedCat(isActive ? null : cat.slug)}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 group ${
-                    isActive
-                      ? 'border-primary-500 bg-primary-50 shadow-md shadow-primary-100'
-                      : 'border-secondary-200 bg-white hover:border-primary-300 hover:bg-primary-50/40 hover:shadow-sm'
-                  }`}
+                  to={`/category/${cat.slug}`}
+                  className="flex flex-col rounded-xl border-2 border-secondary-200 bg-white hover:border-primary-300 hover:shadow-sm transition-all duration-150 group overflow-hidden"
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                    isActive ? 'bg-primary-500 text-white' : 'bg-secondary-100 text-secondary-500 group-hover:bg-primary-100 group-hover:text-primary-600'
-                  }`}>
+                  <div className="w-full aspect-square bg-secondary-50 flex items-center justify-center group-hover:bg-secondary-100 transition-colors">
                     {cat.image
-                      ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-6 h-6 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
-                      : <Icon size={18} />
+                      ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                      : <div className="text-secondary-400 group-hover:text-primary-500 transition-colors"><Icon size={28} /></div>
                     }
                   </div>
-                  <span className={`text-[11px] font-semibold text-center leading-tight line-clamp-2 ${isActive ? 'text-primary-700' : 'text-secondary-600'}`}>
-                    {cat.name}
-                  </span>
-                </button>
+                  <div className="px-2 py-2 text-center">
+                    <span className="text-[11px] font-semibold leading-tight line-clamp-2 text-secondary-700 group-hover:text-primary-700">
+                      {cat.name}
+                    </span>
+                  </div>
+                </Link>
               );
             })}
           </div>
-
-          {/* Products for selected category */}
-          {selectedCat && (
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-secondary-900 capitalize">
-                  {topCats.find((c) => c.slug === selectedCat)?.name || selectedCat}
-                </h3>
-                <Link to={`/category/${selectedCat}`} className="btn-primary text-xs py-1.5 px-3">
-                  View All <ChevronRight size={13} />
-                </Link>
-              </div>
-              <ProductGrid products={catProductsData?.products} loading={catLoading} onAddToCart={handleAddToCart} />
-            </div>
-          )}
         </section>
 
         {/* Bottom CTA */}
