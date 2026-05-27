@@ -117,9 +117,17 @@ export default function Category() {
 
   const category = catData?.category;
   const products = data?.products || [];
-  const subcategories = (allCatsData?.categories || []).filter(
+  const allCats = allCatsData?.categories || [];
+
+  // Subcategories of current category
+  const subcategories = allCats.filter(
     (c) => c.parentId && String(c.parentId) === String(category?._id)
   );
+
+  // Parent category for breadcrumb
+  const parentCat = category?.parentId
+    ? allCats.find((c) => String(c._id) === String(category.parentId?._id || category.parentId))
+    : null;
 
   useEffect(() => {
     if (category) {
@@ -130,7 +138,13 @@ export default function Category() {
       });
     }
   }, [category, slug]);
+
   const pagination = data?.pagination || {};
+  const activeFilterCount = [minPrice, maxPrice, minRating, inStock].filter(Boolean).length;
+
+  // Hide products section when category has subcategories and no filters applied
+  const hasActiveFilters = activeFilterCount > 0;
+  const showProducts = products.length > 0 || hasActiveFilters || subcategories.length === 0;
 
   const SORT_OPTIONS = [
     { value: 'newest', label: 'Newest' },
@@ -140,15 +154,19 @@ export default function Category() {
     { value: 'popular', label: 'Most Popular' },
   ];
 
-  const activeFilterCount = [minPrice, maxPrice, minRating, inStock].filter(Boolean).length;
-
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-6">
       {/* Breadcrumb */}
-      <nav className="text-sm text-secondary-400 mb-4 flex items-center gap-1.5">
+      <nav className="text-sm text-secondary-400 mb-4 flex items-center gap-1.5 flex-wrap">
         <Link to="/" className="hover:text-secondary-700">Home</Link>
         <span>/</span>
         <Link to="/products" className="hover:text-secondary-700">Products</Link>
+        {parentCat && (
+          <>
+            <span>/</span>
+            <Link to={`/category/${parentCat.slug}`} className="hover:text-secondary-700">{parentCat.name}</Link>
+          </>
+        )}
         {category && <><span>/</span><span className="text-secondary-700 font-medium">{category.name}</span></>}
       </nav>
 
@@ -190,84 +208,87 @@ export default function Category() {
         </div>
       )}
 
-      <div className="flex gap-6">
-        {/* Desktop filter sidebar */}
-        <aside className="hidden lg:block w-56 shrink-0">
-          <div className="card p-4 sticky top-20">
-            <FilterPanel
-              filters={{ minPrice, maxPrice, minRating, inStock }}
-              onChange={setParam}
-              onClear={clearFilters}
-            />
-          </div>
-        </aside>
-
-        <div className="flex-1 min-w-0">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowFilters((o) => !o)} className="lg:hidden flex items-center gap-1.5 text-sm font-medium border border-secondary-200 rounded-lg px-3 py-1.5 hover:bg-secondary-50">
-                <SlidersHorizontal size={14} /> Filters
-                {activeFilterCount > 0 && <span className="bg-primary-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{activeFilterCount}</span>}
-              </button>
-              {pagination.total > 0 && <p className="text-sm text-secondary-500">{pagination.total} products</p>}
+      {/* Products section — hidden when category has subcategories and no products/filters */}
+      {showProducts && (
+        <div className="flex gap-6">
+          {/* Desktop filter sidebar */}
+          <aside className="hidden lg:block w-56 shrink-0">
+            <div className="card p-4 sticky top-20">
+              <FilterPanel
+                filters={{ minPrice, maxPrice, minRating, inStock }}
+                onChange={setParam}
+                onClear={clearFilters}
+              />
             </div>
-            <select className="input text-sm py-1.5 pr-8 w-auto" value={sort} onChange={(e) => setParam('sort', e.target.value)}>
-              {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
+          </aside>
 
-          {/* Mobile filter panel */}
-          {showFilters && (
-            <div className="lg:hidden card p-4 mb-4">
-              <FilterPanel filters={{ minPrice, maxPrice, minRating, inStock }} onChange={setParam} onClear={clearFilters} />
-            </div>
-          )}
-
-          {/* Active filter chips */}
-          {activeFilterCount > 0 && (
-            <div className="flex gap-2 flex-wrap mb-4">
-              {minPrice && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">Min &#8377;{minPrice} <button onClick={() => setParam('minPrice', '')}><X size={10} /></button></span>}
-              {maxPrice && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">Max &#8377;{maxPrice} <button onClick={() => setParam('maxPrice', '')}><X size={10} /></button></span>}
-              {minRating && (
-                <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">
-                  <StarRow filled={Number(minRating)} empty={0} />+ <button onClick={() => setParam('minRating', '')}><X size={10} /></button>
-                </span>
-              )}
-              {inStock && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">In Stock <button onClick={() => setParam('inStock', '')}><X size={10} /></button></span>}
-            </div>
-          )}
-
-          {isLoading ? (
-            <div className="flex justify-center py-20"><Spinner size="lg" /></div>
-          ) : products.length === 0 ? (
-            <div className="card p-16 text-center text-secondary-400">
-              <p className="font-medium text-lg">No products found</p>
-              <button onClick={clearFilters} className="btn-primary mt-4">Clear filters</button>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-                {products.map((p) => <ProductCard key={p._id} product={p} />)}
+          <div className="flex-1 min-w-0">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowFilters((o) => !o)} className="lg:hidden flex items-center gap-1.5 text-sm font-medium border border-secondary-200 rounded-lg px-3 py-1.5 hover:bg-secondary-50">
+                  <SlidersHorizontal size={14} /> Filters
+                  {activeFilterCount > 0 && <span className="bg-primary-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{activeFilterCount}</span>}
+                </button>
+                {pagination.total > 0 && <p className="text-sm text-secondary-500">{pagination.total} products</p>}
               </div>
+              <select className="input text-sm py-1.5 pr-8 w-auto" value={sort} onChange={(e) => setParam('sort', e.target.value)}>
+                {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
 
-              {pagination.pages > 1 && (
-                <div className="flex justify-center gap-1 mt-8">
-                  <button disabled={page <= 1} onClick={() => setParam('page', page - 1)} className="px-3 py-1.5 rounded text-sm font-medium hover:bg-secondary-100 disabled:opacity-40 flex items-center gap-1">
-                    <ChevronLeft size={14} /> Prev
-                  </button>
-                  {Array.from({ length: Math.min(pagination.pages, 7) }, (_, i) => i + 1).map((p) => (
-                    <button key={p} onClick={() => setParam('page', p)} className={`w-8 h-8 rounded text-sm font-medium ${p === page ? 'bg-primary-600 text-white' : 'hover:bg-secondary-100'}`}>{p}</button>
-                  ))}
-                  <button disabled={page >= pagination.pages} onClick={() => setParam('page', page + 1)} className="px-3 py-1.5 rounded text-sm font-medium hover:bg-secondary-100 disabled:opacity-40 flex items-center gap-1">
-                    Next <ChevronRight size={14} />
-                  </button>
+            {/* Mobile filter panel */}
+            {showFilters && (
+              <div className="lg:hidden card p-4 mb-4">
+                <FilterPanel filters={{ minPrice, maxPrice, minRating, inStock }} onChange={setParam} onClear={clearFilters} />
+              </div>
+            )}
+
+            {/* Active filter chips */}
+            {activeFilterCount > 0 && (
+              <div className="flex gap-2 flex-wrap mb-4">
+                {minPrice && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">Min &#8377;{minPrice} <button onClick={() => setParam('minPrice', '')}><X size={10} /></button></span>}
+                {maxPrice && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">Max &#8377;{maxPrice} <button onClick={() => setParam('maxPrice', '')}><X size={10} /></button></span>}
+                {minRating && (
+                  <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">
+                    <StarRow filled={Number(minRating)} empty={0} />+ <button onClick={() => setParam('minRating', '')}><X size={10} /></button>
+                  </span>
+                )}
+                {inStock && <span className="flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">In Stock <button onClick={() => setParam('inStock', '')}><X size={10} /></button></span>}
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+            ) : products.length === 0 ? (
+              <div className="card p-16 text-center text-secondary-400">
+                <p className="font-medium text-lg">No products found</p>
+                <button onClick={clearFilters} className="btn-primary mt-4">Clear filters</button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {products.map((p) => <ProductCard key={p._id} product={p} />)}
                 </div>
-              )}
-            </>
-          )}
+
+                {pagination.pages > 1 && (
+                  <div className="flex justify-center gap-1 mt-8">
+                    <button disabled={page <= 1} onClick={() => setParam('page', page - 1)} className="px-3 py-1.5 rounded text-sm font-medium hover:bg-secondary-100 disabled:opacity-40 flex items-center gap-1">
+                      <ChevronLeft size={14} /> Prev
+                    </button>
+                    {Array.from({ length: Math.min(pagination.pages, 7) }, (_, i) => i + 1).map((p) => (
+                      <button key={p} onClick={() => setParam('page', p)} className={`w-8 h-8 rounded text-sm font-medium ${p === page ? 'bg-primary-600 text-white' : 'hover:bg-secondary-100'}`}>{p}</button>
+                    ))}
+                    <button disabled={page >= pagination.pages} onClick={() => setParam('page', page + 1)} className="px-3 py-1.5 rounded text-sm font-medium hover:bg-secondary-100 disabled:opacity-40 flex items-center gap-1">
+                      Next <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

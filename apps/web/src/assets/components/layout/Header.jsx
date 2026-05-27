@@ -208,6 +208,12 @@ export default function Header() {
                 <span className="text-xs font-semibold hidden md:block text-secondary-700">Cart</span>
               </button>
 
+              {/* Mobile search icon */}
+              <button className="md:hidden p-2 text-secondary-700 hover:text-primary-600 transition-colors"
+                onClick={() => { setMenuOpen(true); setTimeout(() => document.getElementById('mobile-search')?.focus(), 100); }}>
+                <Search size={20} />
+              </button>
+
               {/* Mobile hamburger */}
               <button className="md:hidden p-2 text-secondary-700" onClick={() => setMenuOpen(!menuOpen)}>
                 {menuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -245,7 +251,8 @@ export default function Header() {
             <form onSubmit={handleSearch}>
               <div className="flex">
                 <input
-                  className="flex-1 h-10 px-4 text-sm bg-white text-secondary-900 placeholder-secondary-400 rounded-l-lg border-0 focus:outline-none"
+                  id="mobile-search"
+                  className="flex-1 h-10 px-4 text-sm bg-secondary-50 text-secondary-900 placeholder-secondary-400 rounded-l-lg border border-secondary-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
