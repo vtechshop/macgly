@@ -1,6 +1,8 @@
 const router = require('express').Router();
-const User = require('../../models/User');
-const AppError = require('../../utils/AppError');
+const User   = require('../../models/User');
+const AppError          = require('../../utils/AppError');
+const notificationHelper = require('../../utils/notificationHelper');
+const emailService       = require('../../services/emailService');
 
 router.get('/', async (req, res, next) => {
   try {
@@ -46,6 +48,47 @@ router.post('/:id/reset-password', async (req, res, next) => {
     const user = await User.findByIdAndUpdate(req.params.id, { password: hashed }, { new: true });
     if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
     res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// POST /admin/users/:id/message  — send in-app notification + email to any user
+router.post('/:id/message', async (req, res, next) => {
+  try {
+    const { subject, message } = req.body;
+    if (!message?.trim()) throw new AppError('Message body is required', 400, 'MISSING_MESSAGE');
+
+    const user = await User.findById(req.params.id).select('name email role').lean();
+    if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
+
+    const title = subject?.trim() || 'Message from Macgly Admin';
+
+    // In-app bell notification
+    await notificationHelper.createNotification({
+      userId:  user._id,
+      type:    'system',
+      title,
+      message: message.trim(),
+      data:    { fromAdmin: true, adminId: req.user._id },
+      link:    null,
+    });
+
+    // Email (fails silently if no key configured)
+    if (user.email) {
+      await emailService.sendEmail({
+        to:      user.email,
+        subject: title,
+        html: `
+          <div style="font-family:sans-serif;max-width:520px;margin:auto">
+            <h2 style="color:#1a1a1a">${title}</h2>
+            <div style="color:#444;line-height:1.6">${message.trim().replace(/\n/g, '<br>')}</div>
+            <hr style="border:none;border-top:1px solid #eee;margin:20px 0">
+            <p style="color:#999;font-size:12px">— Macgly Admin Team</p>
+          </div>
+        `,
+      }).catch((e) => console.error('[AdminMsg] Email error:', e.message));
+    }
+
+    res.json({ success: true, message: `Message sent to ${user.name}` });
   } catch (err) { next(err); }
 });
 

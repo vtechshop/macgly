@@ -1,260 +1,486 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Package, Clock, CreditCard, Box, Truck,
+  Navigation, CheckCircle, XCircle, RotateCcw,
+  Wallet, Search, RefreshCw, Eye,
+  ChevronDown, ChevronUp, Settings,
+} from 'lucide-react';
 import api from '../../../../utils/api';
-import { formatCurrency, formatDate } from '../../../../utils/format';
-import { useFetch, useAction } from '../../../../hooks';
-import Spinner from '../../../components/common/Spinner';
+import { useFetch } from '../../../../hooks';
+import { formatCurrency, formatRelativeTime, normalizeImageUrl } from '../../../../utils/format';
 import toast from 'react-hot-toast';
 
-function AffiliateAttribution({ order, onDone }) {
-  const [selectedCode, setSelectedCode] = useState('');
-  const [saving, setSaving] = useState(false);
+// ── status meta ───────────────────────────────────────────────────────────────
 
-  const { data: affiliatesData } = useFetch(
-    ['admin-affiliates-list'],
-    () => api.get('/admin/users?role=affiliate&limit=100').then((r) => r.data)
-  );
-  const affiliates = (affiliatesData?.users || []).filter((a) => a.affiliateProfile?.referralCode);
-
-  async function handleSet() {
-    if (!selectedCode) return;
-    setSaving(true);
-    try {
-      const { data } = await api.put(`/admin/orders/${order._id}/affiliate`, { affiliateCode: selectedCode });
-      toast.success(`Attributed to ${data.affiliate.name} — commission ${formatCurrency(data.affiliate.commission)}`);
-      setSelectedCode('');
-      onDone();
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed to set affiliate');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="text-sm space-y-1.5">
-      {order.affiliateId ? (
-        <p className="font-medium text-green-700">Attributed ✓</p>
-      ) : (
-        <p className="text-secondary-400 italic text-xs">No affiliate</p>
-      )}
-      {order.affiliateCommission > 0 && (
-        <p className="text-secondary-600 text-xs">Commission: <span className="font-semibold">{formatCurrency(order.affiliateCommission)}</span></p>
-      )}
-      <div className="flex gap-1.5 mt-2">
-        <select
-          className="input text-xs py-1 flex-1"
-          value={selectedCode}
-          onChange={(e) => setSelectedCode(e.target.value)}
-        >
-          <option value="">Select affiliate…</option>
-          {affiliates.map((a) => (
-            <option key={a._id} value={a.affiliateProfile.referralCode}>
-              {a.name} ({a.affiliateProfile.referralCode})
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={handleSet}
-          disabled={saving || !selectedCode}
-          className="text-xs px-2 py-1 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50 font-medium shrink-0"
-        >
-          {saving ? '…' : 'Set'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function TrackingPanel({ order, onSave }) {
-  const [form, setForm] = useState({
-    carrier: order.tracking?.carrier || '',
-    trackingId: order.tracking?.trackingId || '',
-    url: order.tracking?.url || '',
-  });
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  return (
-    <div className="mt-4 border-t border-secondary-200 pt-4">
-      <p className="text-xs font-bold text-secondary-500 uppercase mb-2">Tracking Info</p>
-      {order.tracking?.history?.length > 0 && (
-        <div className="mb-3 space-y-1">
-          {[...order.tracking.history].reverse().map((h, i) => (
-            <div key={i} className="flex gap-2 text-xs text-secondary-600">
-              <span className="font-semibold capitalize w-24 shrink-0">{h.status}</span>
-              <span className="text-secondary-400">{new Date(h.timestamp).toLocaleString('en-IN')}</span>
-              {h.description && <span>— {h.description}</span>}
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="grid grid-cols-3 gap-2">
-        <input className="input text-xs py-1" placeholder="Carrier (e.g. Delhivery)" value={form.carrier} onChange={set('carrier')} />
-        <input className="input text-xs py-1" placeholder="Tracking ID" value={form.trackingId} onChange={set('trackingId')} />
-        <input className="input text-xs py-1" placeholder="Tracking URL" value={form.url} onChange={set('url')} />
-      </div>
-      <button
-        onClick={() => onSave({ carrier: form.carrier, trackingId: form.trackingId, url: form.url })}
-        className="mt-2 text-xs px-3 py-1.5 bg-primary-600 text-white rounded hover:bg-primary-700 font-medium"
-      >
-        Save Tracking
-      </button>
-    </div>
-  );
-}
-
-const STATUS_COLORS = {
-  pending:    'bg-yellow-100 text-yellow-700',
-  confirmed:  'bg-blue-100 text-blue-700',
-  processing: 'bg-indigo-100 text-indigo-700',
-  shipped:    'bg-purple-100 text-purple-700',
-  delivered:  'bg-green-100 text-green-700',
-  cancelled:  'bg-red-100 text-red-700',
-  returned:   'bg-secondary-100 text-secondary-600',
+const STATUS_META = {
+  pending:          { label: 'Pending',           bg: 'bg-secondary-100',  text: 'text-secondary-600' },
+  pending_payment:  { label: 'Awaiting Payment',  bg: 'bg-yellow-100',     text: 'text-yellow-700' },
+  placed:           { label: 'Placed',            bg: 'bg-blue-50',        text: 'text-blue-600' },
+  paid:             { label: 'Paid',              bg: 'bg-blue-100',       text: 'text-blue-700' },
+  confirmed:        { label: 'Confirmed',         bg: 'bg-blue-100',       text: 'text-blue-700' },
+  processing:       { label: 'Processing',        bg: 'bg-indigo-100',     text: 'text-indigo-700' },
+  packed:           { label: 'Packed',            bg: 'bg-indigo-100',     text: 'text-indigo-700' },
+  shipped:          { label: 'Shipped',           bg: 'bg-purple-100',     text: 'text-purple-700' },
+  out_for_delivery: { label: 'Out for Delivery',  bg: 'bg-orange-100',     text: 'text-orange-700' },
+  delivered:        { label: 'Delivered',         bg: 'bg-green-100',      text: 'text-green-700' },
+  cancelled:        { label: 'Cancelled',         bg: 'bg-red-100',        text: 'text-red-700' },
+  returned:         { label: 'Returned',          bg: 'bg-secondary-100',  text: 'text-secondary-500' },
 };
 
-const STATUSES = ['pending','confirmed','processing','shipped','delivered','cancelled','returned'];
+const TABS = [
+  { value: '',                label: 'All Orders',       Icon: Package,     countKey: 'total',             activeClass: 'bg-primary-600 text-white' },
+  { value: 'pending',         label: 'Pending',          Icon: Clock,       countKey: 'pending',           activeClass: 'bg-secondary-700 text-white' },
+  { value: 'pending_payment', label: 'Awaiting Payment', Icon: Wallet,      countKey: 'pending_payment',   activeClass: 'bg-yellow-500 text-white' },
+  { value: 'paid',            label: 'Paid',             Icon: CreditCard,  countKey: 'paid',              activeClass: 'bg-blue-600 text-white' },
+  { value: 'packed',          label: 'Packed',           Icon: Box,         countKey: 'packed',            activeClass: 'bg-indigo-600 text-white' },
+  { value: 'shipped',         label: 'Shipped',          Icon: Truck,       countKey: 'shipped',           activeClass: 'bg-purple-600 text-white' },
+  { value: 'out_for_delivery',label: 'Out for Delivery', Icon: Navigation,  countKey: 'out_for_delivery',  activeClass: 'bg-orange-500 text-white' },
+  { value: 'delivered',       label: 'Delivered',        Icon: CheckCircle, countKey: 'delivered',         activeClass: 'bg-green-600 text-white' },
+  { value: 'cancelled',       label: 'Cancelled',        Icon: XCircle,     countKey: 'cancelled',         activeClass: 'bg-red-600 text-white' },
+  { value: 'returned',        label: 'Refunded',         Icon: RotateCcw,   countKey: 'returned',          activeClass: 'bg-secondary-600 text-white' },
+];
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function playNewOrder() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+  } catch { /* silent */ }
+}
+
+function isNew(createdAt) {
+  return Date.now() - new Date(createdAt).getTime() < 5 * 60 * 1000;
+}
+
+// ── sub-components ────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }) {
+  const meta = STATUS_META[status] || { label: status, bg: 'bg-secondary-100', text: 'text-secondary-600' };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${meta.bg} ${meta.text}`}>
+      {meta.label}
+    </span>
+  );
+}
+
+function ThumbnailStack({ items = [] }) {
+  const imgs = items.slice(0, 3).map((i) => i.image).filter(Boolean);
+  const rest = Math.max(0, items.length - 3);
+  return (
+    <div className="flex items-center gap-1">
+      <div className="flex -space-x-1">
+        {imgs.map((img, i) => (
+          <div key={i} className="w-9 h-9 rounded-lg border-2 border-white bg-secondary-100 overflow-hidden shadow-sm flex-shrink-0">
+            <img
+              src={normalizeImageUrl(img)}
+              alt=""
+              className="w-full h-full object-contain"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          </div>
+        ))}
+        {imgs.length === 0 && (
+          <div className="w-9 h-9 rounded-lg bg-secondary-100 flex items-center justify-center">
+            <Package size={14} className="text-secondary-400" />
+          </div>
+        )}
+      </div>
+      {rest > 0 && <span className="text-xs text-secondary-400 ml-1">+{rest}</span>}
+      <span className="text-xs text-secondary-500 ml-1.5">
+        {items.length} item{items.length !== 1 ? 's' : ''}
+      </span>
+    </div>
+  );
+}
+
+function ExpandedPanel({ order, onManage }) {
+  return (
+    <div className="bg-secondary-50/80 border-t border-secondary-200 px-5 py-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* Order Items */}
+        <div>
+          <p className="text-xs font-bold text-secondary-500 uppercase tracking-wide mb-3">Order Items</p>
+          <div className="space-y-2">
+            {order.items?.map((item, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg border border-secondary-200 bg-white overflow-hidden flex-shrink-0 flex items-center justify-center">
+                  {item.image ? (
+                    <img
+                      src={normalizeImageUrl(item.image)}
+                      alt=""
+                      className="w-full h-full object-contain"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <Package size={13} className="text-secondary-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-secondary-800 truncate">{item.title}</p>
+                  <p className="text-xs text-secondary-400">
+                    {item.quantity} × {formatCurrency(item.price)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Shipping Address */}
+        <div>
+          <p className="text-xs font-bold text-secondary-500 uppercase tracking-wide mb-3">Shipping Address</p>
+          {order.shippingAddress ? (
+            <address className="text-sm not-italic space-y-0.5 leading-relaxed">
+              <p className="font-semibold text-secondary-800">{order.shippingAddress.name}</p>
+              <p className="text-secondary-500">
+                {[order.shippingAddress.line1, order.shippingAddress.line2].filter(Boolean).join(', ')}
+              </p>
+              <p className="text-secondary-500">
+                {order.shippingAddress.city}, {order.shippingAddress.state} — {order.shippingAddress.pincode}
+              </p>
+              {order.shippingAddress.phone && (
+                <p className="text-secondary-500">📞 {order.shippingAddress.phone}</p>
+              )}
+            </address>
+          ) : (
+            <p className="text-sm text-secondary-400">—</p>
+          )}
+        </div>
+
+        {/* Order Summary */}
+        <div>
+          <p className="text-xs font-bold text-secondary-500 uppercase tracking-wide mb-3">Order Summary</p>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between text-secondary-600">
+              <span>Subtotal</span>
+              <span>{formatCurrency(order.subtotal ?? order.totalAmount)}</span>
+            </div>
+            <div className="flex justify-between text-secondary-600">
+              <span>Shipping</span>
+              <span>{formatCurrency(order.shippingCharge ?? 0)}</span>
+            </div>
+            <div className="flex justify-between text-secondary-600">
+              <span>Tax</span>
+              <span>{formatCurrency(order.gstAmount ?? 0)}</span>
+            </div>
+            {order.discount > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Discount</span>
+                <span>−{formatCurrency(order.discount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold text-secondary-900 border-t border-secondary-200 pt-1.5 mt-1">
+              <span>Total</span>
+              <span>{formatCurrency(order.totalAmount)}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => onManage(order._id)}
+            className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
+          >
+            <Settings size={14} /> Manage Order
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ── main component ────────────────────────────────────────────────────────────
 
 export default function AdminOrders() {
-  const [page, setPage] = useState(1);
-  const [rev, setRev] = useState(0);
+  const navigate   = useNavigate();
+  const [page, setPage]               = useState(1);
+  const [rev, setRev]                 = useState(0);
   const [statusFilter, setStatusFilter] = useState('');
-  const [expanded, setExpanded] = useState(null);
+  const [search, setSearch]           = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [expandedId, setExpandedId]   = useState(null);
+  const [countsRev, setCountsRev]     = useState(0);
 
+  const prevPaidRef = useRef(null);
+
+  // Auto-refresh counts every 30 s
+  useEffect(() => {
+    const id = setInterval(() => setCountsRev((r) => r + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Fetch counts
+  const { data: counts } = useFetch(
+    ['admin-orders-counts', countsRev],
+    () => api.get('/admin/orders/counts').then((r) => r.data),
+  );
+
+  // New-order sound when paid count increases
+  useEffect(() => {
+    if (!counts) return;
+    const paid = counts.paid ?? 0;
+    if (prevPaidRef.current !== null && paid > prevPaidRef.current) {
+      playNewOrder();
+    }
+    prevPaidRef.current = paid;
+  }, [counts]);
+
+  // Fetch orders list
   const { data, isLoading } = useFetch(
-    ['admin-orders', page, rev, statusFilter],
-    () => api.get('/admin/orders', { params: { page, limit: 20, status: statusFilter || undefined } }).then((r) => r.data)
+    ['admin-orders', page, rev, statusFilter, search],
+    () =>
+      api.get('/admin/orders', {
+        params: {
+          page,
+          limit: 20,
+          status: statusFilter || undefined,
+          search: search || undefined,
+        },
+      }).then((r) => r.data),
+    { keepPrevious: true },
   );
-
-  const [statusNote, setStatusNote] = useState({});
-
-  const { mutate: updateStatus } = useAction(
-    ({ id, status }) => api.put(`/admin/orders/${id}`, { status, note: statusNote[id] || '' }),
-    {
-      onSuccess: (_, { id }) => { setRev((r) => r + 1); setStatusNote((n) => ({ ...n, [id]: '' })); toast.success('Status updated'); },
-      onError: () => toast.error('Failed to update'),
-    }
-  );
-
-  const { mutate: updateTracking } = useAction(
-    ({ id, tracking }) => api.put(`/admin/orders/${id}`, { tracking }),
-    {
-      onSuccess: () => { setRev((r) => r + 1); toast.success('Tracking updated'); },
-      onError: () => toast.error('Failed to update tracking'),
-    }
-  );
-
-  if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
 
   const orders = data?.orders || [];
+  const pagination = data?.pagination;
+
+  // Search
+  function handleSearch(e) {
+    e.preventDefault();
+    setSearch(searchInput);
+    setPage(1);
+  }
+
+  function clearSearch() {
+    setSearchInput('');
+    setSearch('');
+    setPage(1);
+  }
+
+  function refresh() {
+    setRev((r) => r + 1);
+    setCountsRev((r) => r + 1);
+    toast.success('Refreshed');
+  }
+
+  function switchTab(value) {
+    setStatusFilter(value);
+    setPage(1);
+    setExpandedId(null);
+  }
+
+  function toggleExpand(id) {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
+
+  const getCount = useCallback((key) => {
+    if (!counts || !key) return counts?.total ?? '…';
+    return counts[key] ?? 0;
+  }, [counts]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Orders</h1>
+    <div className="p-4 md:p-6 space-y-5">
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-xl font-bold text-secondary-900">Order Management</h1>
+          <p className="text-sm text-secondary-500 mt-0.5">View and manage all customer orders</p>
+        </div>
         <div className="flex items-center gap-2">
-          <select className="input w-auto text-sm" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
-            <option value="">All Statuses</option>
-            {STATUSES.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
-          </select>
-          <span className="text-sm text-secondary-500">{data?.pagination?.total || 0} orders</span>
+          <form onSubmit={handleSearch} className="relative flex items-center">
+            <Search size={14} className="absolute left-3 text-secondary-400" />
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search order ID, email…"
+              className="pl-9 pr-3 py-2 border border-secondary-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 w-56"
+            />
+            {searchInput && (
+              <button type="button" onClick={clearSearch}
+                className="absolute right-2 text-secondary-400 hover:text-secondary-600">
+                ×
+              </button>
+            )}
+          </form>
+          <button
+            onClick={refresh}
+            title="Refresh"
+            className="p-2 border border-secondary-200 rounded-lg text-secondary-500 hover:bg-secondary-50 transition-colors"
+          >
+            <RefreshCw size={15} />
+          </button>
         </div>
       </div>
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary-50 border-b border-secondary-200">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-secondary-600">Order ID</th>
-              <th className="text-left px-4 py-3 font-medium text-secondary-600">Customer</th>
-              <th className="text-left px-4 py-3 font-medium text-secondary-600">Date</th>
-              <th className="text-left px-4 py-3 font-medium text-secondary-600">Total</th>
-              <th className="text-left px-4 py-3 font-medium text-secondary-600">Payment</th>
-              <th className="text-left px-4 py-3 font-medium text-secondary-600">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-secondary-100">
-            {!orders.length ? (
-              <tr><td colSpan={6} className="text-center py-12 text-secondary-400">No orders found</td></tr>
-            ) : orders.map((o) => (
-              <React.Fragment key={o._id}>
-                <tr className="hover:bg-secondary-50 cursor-pointer" onClick={() => setExpanded(expanded === o._id ? null : o._id)}>
-                  <td className="px-4 py-3"><Link to={`/dashboard/admin/orders/${o._id}`} className="font-medium text-primary-600 hover:underline" onClick={(e) => e.stopPropagation()}>{o.orderId}</Link></td>
-                  <td className="px-4 py-3">
-                    <p className="font-medium">{o.user?.name || 'Guest'}</p>
-                    <p className="text-xs text-secondary-400">{o.user?.email}</p>
-                  </td>
-                  <td className="px-4 py-3 text-secondary-500">{formatDate(o.createdAt)}</td>
-                  <td className="px-4 py-3 font-semibold">{formatCurrency(o.totalAmount)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${o.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {o.paymentStatus}
+      {/* Status Tabs */}
+      <div className="bg-white rounded-xl border border-secondary-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <div className="flex border-b border-secondary-200 min-w-max">
+            {TABS.map(({ value, label, Icon, countKey, activeClass }) => {
+              const count = getCount(countKey || value || 'total');
+              const isActive = statusFilter === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => switchTab(value)}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
+                    isActive
+                      ? 'border-primary-600 text-primary-700 bg-primary-50/50'
+                      : 'border-transparent text-secondary-500 hover:text-secondary-800 hover:bg-secondary-50'
+                  }`}
+                >
+                  <Icon size={14} className={isActive ? 'text-primary-600' : ''} />
+                  {label}
+                  {count !== undefined && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold leading-none ${
+                      isActive
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-secondary-100 text-secondary-600'
+                    }`}>
+                      {count}
                     </span>
-                  </td>
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    <div className="space-y-1">
-                      <select
-                        className={`text-xs rounded px-2 py-1.5 border font-semibold cursor-pointer w-full ${STATUS_COLORS[o.status] || ''}`}
-                        value={o.status}
-                        onChange={(e) => updateStatus({ id: o._id, status: e.target.value })}
-                      >
-                        {STATUSES.map((s) => <option key={s} value={s} className="bg-white text-secondary-900 capitalize">{s}</option>)}
-                      </select>
-                      <input
-                        type="text"
-                        placeholder="Note (optional)"
-                        className="input text-xs py-1 w-full"
-                        value={statusNote[o._id] || ''}
-                        onChange={(e) => setStatusNote((n) => ({ ...n, [o._id]: e.target.value }))}
-                      />
-                    </div>
-                  </td>
-                </tr>
-                {expanded === o._id && (
-                  <tr>
-                    <td colSpan={6} className="bg-secondary-50 px-6 py-4">
-                      <div className="grid grid-cols-3 gap-6">
-                        <div>
-                          <p className="text-xs font-bold text-secondary-500 uppercase mb-2">Items</p>
-                          <div className="space-y-1">
-                            {o.items?.map((item, i) => (
-                              <div key={i} className="flex justify-between text-sm">
-                                <span>{item.title} × {item.quantity}</span>
-                                <span className="font-medium">{formatCurrency(item.price * item.quantity)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-secondary-500 uppercase mb-2">Shipping Address</p>
-                          {o.shippingAddress ? (
-                            <address className="text-sm not-italic text-secondary-600 leading-relaxed">
-                              {o.shippingAddress.name}<br />
-                              {o.shippingAddress.line1}{o.shippingAddress.line2 ? `, ${o.shippingAddress.line2}` : ''}<br />
-                              {o.shippingAddress.city}, {o.shippingAddress.state} — {o.shippingAddress.pincode}<br />
-                              📞 {o.shippingAddress.phone}
-                            </address>
-                          ) : <p className="text-sm text-secondary-400">—</p>}
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-secondary-500 uppercase mb-2">Affiliate</p>
-                          <AffiliateAttribution order={o} onDone={() => setRev((r) => r + 1)} />
-                        </div>
-                      </div>
-                      <TrackingPanel order={o} onSave={(tracking) => updateTracking({ id: o._id, tracking })} />
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        {data?.pagination?.pages > 1 && (
-          <div className="flex justify-center gap-1 px-4 py-3 border-t border-secondary-100">
-            {Array.from({ length: data.pagination.pages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={`w-8 h-8 rounded text-xs font-medium ${p === page ? 'bg-primary-600 text-white' : 'hover:bg-secondary-100'}`}>{p}</button>
+        {/* Orders List */}
+        {isLoading && !orders.length ? (
+          <div className="flex items-center justify-center py-14 text-secondary-400 gap-2">
+            <div className="w-5 h-5 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin" />
+            Loading orders…
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="text-center py-14 text-secondary-400">
+            <Package size={36} className="mx-auto mb-2 opacity-25" />
+            {search ? 'No orders matching your search' : 'No orders found'}
+          </div>
+        ) : (
+          <div className="divide-y divide-secondary-100">
+            {orders.map((order) => (
+              <div key={order._id}>
+                {/* Order row */}
+                <div className={`flex items-center gap-4 px-5 py-3.5 hover:bg-secondary-50/60 transition-colors ${isNew(order.createdAt) ? 'bg-green-50/50' : ''}`}>
+
+                  {/* Left: ID + status + customer */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="font-bold text-secondary-900 text-sm">
+                        #{order.orderId}
+                      </span>
+                      <StatusBadge status={order.status} />
+                      {order.paymentMethod === 'cod' && (
+                        <span className="text-xs px-2 py-0.5 bg-secondary-800 text-white rounded-full font-medium">
+                          COD
+                        </span>
+                      )}
+                      {isNew(order.createdAt) && (
+                        <span className="text-xs px-2 py-0.5 bg-green-500 text-white rounded-full font-bold animate-pulse">
+                          NEW
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-secondary-500 flex-wrap">
+                      <span>🕐 {formatRelativeTime(order.createdAt)}</span>
+                      <span>👤 {order.user?.name || 'Guest'}</span>
+                      <span className="text-secondary-400">{order.user?.email || order.guestEmail || ''}</span>
+                    </div>
+                  </div>
+
+                  {/* Center: thumbnails */}
+                  <div className="hidden sm:block flex-shrink-0">
+                    <ThumbnailStack items={order.items || []} />
+                  </div>
+
+                  {/* Right: amount + actions */}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="text-right">
+                      <p className="font-bold text-secondary-900 text-sm">
+                        {formatCurrency(order.totalAmount)}
+                      </p>
+                      <p className="text-xs text-secondary-400">
+                        Tax: {formatCurrency(order.gstAmount ?? 0)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/dashboard/admin/orders/${order._id}`)}
+                      title="View order detail"
+                      className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button
+                      onClick={() => toggleExpand(order._id)}
+                      title="Expand"
+                      className="p-1.5 text-secondary-400 hover:bg-secondary-100 rounded-lg transition-colors"
+                    >
+                      {expandedId === order._id
+                        ? <ChevronUp size={16} />
+                        : <ChevronDown size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded panel */}
+                {expandedId === order._id && (
+                  <ExpandedPanel
+                    order={order}
+                    onManage={(id) => navigate(`/dashboard/admin/orders/${id}`)}
+                  />
+                )}
+              </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination?.pages > 1 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-secondary-100">
+            <p className="text-xs text-secondary-500">
+              Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, pagination.total)} of {pagination.total} orders
+            </p>
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(pagination.pages, 7) }, (_, i) => {
+                // Show first, last, and pages around current
+                const totalPages = pagination.pages;
+                let p;
+                if (totalPages <= 7) {
+                  p = i + 1;
+                } else if (i === 0) {
+                  p = 1;
+                } else if (i === 6) {
+                  p = totalPages;
+                } else {
+                  p = Math.max(2, Math.min(page - 1, totalPages - 5)) + (i - 1);
+                }
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                      p === page
+                        ? 'bg-primary-600 text-white'
+                        : 'hover:bg-secondary-100 text-secondary-600'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

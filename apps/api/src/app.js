@@ -121,7 +121,6 @@ app.use('/api/affiliates', require('./routes/affiliates'));
 app.use('/api/tickets', require('./routes/tickets'));
 app.use('/api/contact', require('./routes/contact'));
 app.use('/api/warranties', require('./routes/warranties'));
-app.use('/api/loyalty', require('./routes/loyalty'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/flash-sales', require('./routes/flash-sales'));
 app.use('/api/newsletter', require('./routes/newsletter'));
@@ -133,7 +132,6 @@ app.use('/api/gdpr', require('./routes/gdpr'));
 app.use('/api/config', require('./routes/config'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/upload', require('./routes/upload'));
-app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/referrals', require('./routes/referrals'));
 app.get('/sitemap.xml', require('./routes/sitemap'));
 app.get('/robots.txt', (req, res) => {

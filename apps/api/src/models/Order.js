@@ -26,7 +26,10 @@ const addressSchema = new mongoose.Schema({
 
 const orderSchema = new mongoose.Schema({
   orderId: { type: String, required: true, unique: true },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },   // null for walk-in / manual orders
+  customerName:  String,   // for manual orders without a registered user
+  customerPhone: String,
+  source: { type: String, enum: ['online', 'in-store', 'phone'], default: 'online' },
   items: [orderItemSchema],
   shippingAddress: addressSchema,
 
@@ -38,14 +41,23 @@ const orderSchema = new mongoose.Schema({
 
   coupon: { code: String, discount: Number },
 
-  paymentMethod: { type: String, enum: ['razorpay', 'cod'], default: 'razorpay' },
+  paymentMethod: {
+    type: String,
+    enum: ['razorpay', 'cod', 'cash', 'upi', 'card', 'bank_transfer', 'other'],
+    default: 'razorpay',
+  },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
   razorpayOrderId: String,
   razorpayPaymentId: String,
 
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'],
+    enum: [
+      'pending', 'pending_payment', 'placed', 'paid',
+      'confirmed', 'processing', 'packed',
+      'shipped', 'out_for_delivery',
+      'delivered', 'cancelled', 'returned',
+    ],
     default: 'pending',
   },
 
@@ -63,6 +75,13 @@ const orderSchema = new mongoose.Schema({
 
   deliveredAt: Date,
   notes: String,
+  internalNotes: String,
+
+  cancellation: {
+    reason:      String,
+    cancelledAt: Date,
+    cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  },
 }, { timestamps: true });
 
 orderSchema.index({ user: 1, createdAt: -1 });

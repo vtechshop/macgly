@@ -5,15 +5,18 @@ const Product = require('../../models/Product');
 const AppError = require('../../utils/AppError');
 const { slugify, generateSKU } = require('../../utils/helpers');
 const { invalidateCache } = require('../../middleware/cache');
+const notif = require('../../utils/notificationHelper');
 
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
 router.get('/', async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search, published } = req.query;
+    const { page = 1, limit = 20, search, published, categoryId, notInCategoryId } = req.query;
     const filter = {};
     if (search) filter.$text = { $search: search };
     if (published !== undefined) filter.published = published === 'true';
+    if (categoryId) filter.categoryIds = categoryId;
+    if (notInCategoryId) filter.categoryIds = { $nin: [notInCategoryId] };
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [products, total] = await Promise.all([
       Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
@@ -34,6 +37,28 @@ router.post('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// POST /admin/products/assign-category — add products to a category
+router.post('/assign-category', async (req, res, next) => {
+  try {
+    const { productIds, categoryId } = req.body;
+    if (!productIds?.length || !categoryId) throw new AppError('productIds and categoryId required', 400, 'MISSING_FIELDS');
+    await Product.updateMany({ _id: { $in: productIds } }, { $addToSet: { categoryIds: categoryId } });
+    await invalidateCache('cache:/api/catalog*');
+    res.json({ success: true, updated: productIds.length });
+  } catch (err) { next(err); }
+});
+
+// POST /admin/products/remove-from-category — remove a product from a category
+router.post('/remove-from-category', async (req, res, next) => {
+  try {
+    const { productId, categoryId } = req.body;
+    if (!productId || !categoryId) throw new AppError('productId and categoryId required', 400, 'MISSING_FIELDS');
+    await Product.findByIdAndUpdate(productId, { $pull: { categoryIds: categoryId } });
+    await invalidateCache('cache:/api/catalog*');
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 router.get('/:id', async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -44,9 +69,32 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
+    const prev = await Product.findById(req.params.id).select('published vendorId').lean();
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!product) throw new AppError('Product not found', 404, 'NOT_FOUND');
     await invalidateCache('cache:/api/catalog*');
+
+    // Notify vendor when their product gets published (approved) or unpublished (rejected)
+    if (product.vendorId && prev) {
+      const nowPublished   = product.published === true;
+      const wasPublished   = prev.published === true;
+      const publishChange  = req.body.published !== undefined;
+      if (publishChange && nowPublished && !wasPublished) {
+        notif.notifyVendorProductStatus({
+          vendorUserId: product.vendorId,
+          product,
+          status: 'approved',
+        }).catch(() => {});
+      } else if (publishChange && !nowPublished && wasPublished) {
+        notif.notifyVendorProductStatus({
+          vendorUserId: product.vendorId,
+          product,
+          status: 'rejected',
+          rejectionReason: req.body.rejectionReason || '',
+        }).catch(() => {});
+      }
+    }
+
     res.json({ product });
   } catch (err) { next(err); }
 });

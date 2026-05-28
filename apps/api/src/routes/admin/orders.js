@@ -1,20 +1,213 @@
 const router = require('express').Router();
-const Order = require('../../models/Order');
-const User = require('../../models/User');
+const Order   = require('../../models/Order');
+const User    = require('../../models/User');
 const Product = require('../../models/Product');
 const AppError = require('../../utils/AppError');
 const { createShipment } = require('../../services/shippingService');
+const notif   = require('../../utils/notificationHelper');
 
-// Individual order detail
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+async function applyEarnings(order, newStatus) {
+  const prev = order.status;
+  const nowDelivered = newStatus === 'delivered';
+  const wasDelivered = prev === 'delivered';
+  const nowReversed  = ['cancelled', 'returned'].includes(newStatus);
+
+  // Affiliate earnings
+  if (order.affiliateId && order.affiliateCommission > 0) {
+    if (!wasDelivered && nowDelivered) {
+      await User.findByIdAndUpdate(order.affiliateId, {
+        $inc: { 'affiliateProfile.totalEarnings': order.affiliateCommission },
+      });
+    } else if (wasDelivered && nowReversed) {
+      await User.findByIdAndUpdate(order.affiliateId, {
+        $inc: { 'affiliateProfile.totalEarnings': -order.affiliateCommission },
+      });
+    }
+  }
+
+  // Vendor earnings
+  const vendorItems = (order.items || []).filter((i) => i.vendorId && i.vendorEarning > 0);
+  if (vendorItems.length > 0) {
+    if (!wasDelivered && nowDelivered) {
+      await Promise.all(vendorItems.map((item) =>
+        User.findByIdAndUpdate(item.vendorId, {
+          $inc: { 'vendorProfile.totalEarnings': item.vendorEarning },
+        }),
+      ));
+    } else if (wasDelivered && nowReversed) {
+      await Promise.all(vendorItems.map((item) =>
+        User.findByIdAndUpdate(item.vendorId, {
+          $inc: { 'vendorProfile.totalEarnings': -item.vendorEarning },
+        }),
+      ));
+    }
+  }
+}
+
+// ── GET /admin/orders/counts — tab badge numbers ──────────────────────────────
+// MUST be defined BEFORE /:id to avoid 'counts' being treated as an ID.
+router.get('/counts', async (req, res, next) => {
+  try {
+    const [groups, total] = await Promise.all([
+      Order.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Order.countDocuments(),
+    ]);
+    const result = { total };
+    groups.forEach(({ _id, count }) => { if (_id) result[_id] = count; });
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
+// ── GET /admin/orders/stats ───────────────────────────────────────────────────
+router.get('/stats', async (req, res, next) => {
+  try {
+    const [products, orders, users, revenueResult] = await Promise.all([
+      Product.countDocuments(),
+      Order.countDocuments(),
+      User.countDocuments(),
+      Order.aggregate([
+        { $match: { paymentStatus: 'paid' } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      ]),
+    ]);
+    res.json({ stats: { products, orders, users, revenue: revenueResult[0]?.total || 0 } });
+  } catch (err) { next(err); }
+});
+
+// ── GET /admin/orders — paginated list ────────────────────────────────────────
+router.get('/', async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, status, vendorId, search } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (search) {
+      const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [
+        { orderId: re },
+        { 'shippingAddress.name': re },
+        { guestEmail: re },
+      ];
+    }
+    if (vendorId) filter['items.vendorId'] = vendorId;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const [orders, total] = await Promise.all([
+      Order.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('user', 'name email phone')
+        .lean(),
+      Order.countDocuments(filter),
+    ]);
+    res.json({
+      orders,
+      pagination: {
+        page: parseInt(page), limit: parseInt(limit), total,
+        pages: Math.ceil(total / parseInt(limit)),
+      },
+    });
+  } catch (err) { next(err); }
+});
+
+// ── GET /admin/orders/:id — full detail ───────────────────────────────────────
 router.get('/:id', async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id).populate('user', 'name email phone');
+    const order = await Order.findById(req.params.id)
+      .populate('user', 'name email phone')
+      .lean();
     if (!order) return next(new AppError('Order not found', 404));
     res.json({ order });
   } catch (err) { next(err); }
 });
 
-// Quick status update
+// ── PUT /admin/orders/:id/status ──────────────────────────────────────────────
+router.put('/:id/status', async (req, res, next) => {
+  try {
+    const { status, description } = req.body;
+    if (!status) throw new AppError('status is required', 400, 'MISSING_STATUS');
+
+    const prev = await Order.findById(req.params.id);
+    if (!prev) throw new AppError('Order not found', 404, 'NOT_FOUND');
+
+    const update = { status };
+    if (status === 'delivered' && prev.status !== 'delivered') {
+      if (prev.paymentMethod === 'cod') update.paymentStatus = 'paid';
+      update.deliveredAt = new Date();
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...update,
+        $push: {
+          'tracking.history': {
+            status,
+            timestamp: new Date(),
+            description: description || '',
+          },
+        },
+      },
+      { new: true },
+    ).populate('user', 'name email phone');
+
+    // Apply affiliate / vendor earning logic
+    await applyEarnings(prev, status).catch((e) =>
+      console.error('[Orders] earnings error:', e.message),
+    );
+
+    // Notify customer of status change
+    if (order.user) {
+      notif.notifyCustomerOrderStatus({ userId: order.user, order, status }).catch(() => {});
+    }
+
+    res.json({ order });
+  } catch (err) { next(err); }
+});
+
+// ── PUT /admin/orders/:id/address ─────────────────────────────────────────────
+router.put('/:id/address', async (req, res, next) => {
+  try {
+    const fields = ['name', 'phone', 'line1', 'line2', 'city', 'state', 'pincode', 'country'];
+    const update = {};
+    fields.forEach((f) => { if (req.body[f] !== undefined) update[`shippingAddress.${f}`] = req.body[f]; });
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: update,
+        $push: {
+          'tracking.history': {
+            status: 'address_updated',
+            timestamp: new Date(),
+            description: 'Shipping address updated by admin',
+          },
+        },
+      },
+      { new: true },
+    ).populate('user', 'name email phone');
+
+    if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
+    res.json({ order });
+  } catch (err) { next(err); }
+});
+
+// ── PATCH /admin/orders/:id/tracking ─────────────────────────────────────────
+router.patch('/:id/tracking', async (req, res, next) => {
+  try {
+    const { carrier, trackingId, url } = req.body;
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { $set: { 'tracking.carrier': carrier, 'tracking.trackingId': trackingId, 'tracking.url': url } },
+      { new: true },
+    );
+    if (!order) return next(new AppError('Order not found', 404));
+    res.json({ order });
+  } catch (err) { next(err); }
+});
+
+// ── PATCH /admin/orders/:id/status (legacy alias) ────────────────────────────
 router.patch('/:id/status', async (req, res, next) => {
   try {
     const { status, note } = req.body;
@@ -29,104 +222,48 @@ router.patch('/:id/status', async (req, res, next) => {
     const order = await Order.findByIdAndUpdate(
       req.params.id,
       { ...update, $push: { 'tracking.history': { status, timestamp: new Date(), description: note || '' } } },
-      { new: true }
+      { new: true },
     );
     res.json({ order });
   } catch (err) { next(err); }
 });
 
-// Update tracking info
-router.patch('/:id/tracking', async (req, res, next) => {
-  try {
-    const { carrier, trackingId, url } = req.body;
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { $set: { 'tracking.carrier': carrier, 'tracking.trackingId': trackingId, 'tracking.url': url } },
-      { new: true }
-    );
-    if (!order) return next(new AppError('Order not found', 404));
-    res.json({ order });
-  } catch (err) { next(err); }
-});
-
-router.get('/', async (req, res, next) => {
-  try {
-    const { page = 1, limit = 20, status } = req.query;
-    const filter = {};
-    if (status) filter.status = status;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const [orders, total] = await Promise.all([
-      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit))
-        .populate('user', 'name email'),
-      Order.countDocuments(filter),
-    ]);
-    res.json({ orders, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) } });
-  } catch (err) { next(err); }
-});
-
+// ── PUT /admin/orders/:id (general update — kept for backwards compat) ────────
 router.put('/:id', async (req, res, next) => {
   try {
-    const allowed = ['status', 'paymentStatus', 'tracking'];
+    const allowed = ['status', 'paymentStatus', 'tracking', 'internalNotes'];
     const update = {};
     allowed.forEach((k) => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
 
     const prev = await Order.findById(req.params.id);
     if (!prev) throw new AppError('Order not found', 404, 'NOT_FOUND');
 
-    // Auto-mark COD orders as paid when delivered; record delivery timestamp
     if (update.status === 'delivered' && prev.status !== 'delivered') {
       if (prev.paymentMethod === 'cod') update.paymentStatus = 'paid';
       update.deliveredAt = new Date();
     }
 
-    // Append status change to tracking history
     const historyEntry = update.status && update.status !== prev.status
       ? { status: update.status, timestamp: new Date(), description: req.body.note || '' }
       : null;
 
     const order = await Order.findByIdAndUpdate(
       req.params.id,
-      {
-        ...update,
-        ...(historyEntry && { $push: { 'tracking.history': historyEntry } }),
-      },
-      { new: true }
+      { ...update, ...(historyEntry && { $push: { 'tracking.history': historyEntry } }) },
+      { new: true },
     );
 
     if (update.status) {
-      const wasDelivered = prev.status === 'delivered';
-      const nowDelivered = order.status === 'delivered';
-      const nowReversed = ['cancelled', 'returned'].includes(order.status);
-
-      // Affiliate earnings
-      if (order.affiliateId && order.affiliateCommission > 0) {
-        if (!wasDelivered && nowDelivered) {
-          await User.findByIdAndUpdate(order.affiliateId, { $inc: { 'affiliateProfile.totalEarnings': order.affiliateCommission } });
-        } else if (wasDelivered && nowReversed) {
-          await User.findByIdAndUpdate(order.affiliateId, { $inc: { 'affiliateProfile.totalEarnings': -order.affiliateCommission } });
-        }
-      }
-
-      // Vendor earnings — credit each vendor their net earning on delivery, reverse on return
-      const vendorItems = order.items.filter((i) => i.vendorId && i.vendorEarning > 0);
-      if (vendorItems.length > 0) {
-        if (!wasDelivered && nowDelivered) {
-          await Promise.all(vendorItems.map((item) =>
-            User.findByIdAndUpdate(item.vendorId, { $inc: { 'vendorProfile.totalEarnings': item.vendorEarning } })
-          ));
-        } else if (wasDelivered && nowReversed) {
-          await Promise.all(vendorItems.map((item) =>
-            User.findByIdAndUpdate(item.vendorId, { $inc: { 'vendorProfile.totalEarnings': -item.vendorEarning } })
-          ));
-        }
-      }
+      await applyEarnings(prev, update.status).catch((e) =>
+        console.error('[Orders] earnings error:', e.message),
+      );
     }
 
     res.json({ order });
   } catch (err) { next(err); }
 });
 
-// Create shipment via carrier (Shiprocket / Delhivery / Mock)
+// ── POST /admin/orders/:id/ship ───────────────────────────────────────────────
 router.post('/:id/ship', async (req, res, next) => {
   try {
     const { carrier = 'auto', waybill } = req.body;
@@ -143,21 +280,30 @@ router.post('/:id/ship', async (req, res, next) => {
         'tracking.carrier': result.carrier,
         'tracking.trackingId': result.trackingId,
         'tracking.url': result.url,
-        $push: { 'tracking.history': { status: 'shipped', timestamp: new Date(), description: `Shipped via ${result.carrier}${result.trackingId ? ' · AWB: ' + result.trackingId : ''}` } },
+        $push: {
+          'tracking.history': {
+            status: 'shipped',
+            timestamp: new Date(),
+            description: `Shipped via ${result.carrier}${result.trackingId ? ' · AWB: ' + result.trackingId : ''}`,
+          },
+        },
       },
-      { new: true }
+      { new: true },
     );
     res.json({ order: updated, shipment: result });
   } catch (err) { next(err); }
 });
 
-// Manually attribute an order to an affiliate (by referral code)
+// ── PUT /admin/orders/:id/affiliate ──────────────────────────────────────────
 router.put('/:id/affiliate', async (req, res, next) => {
   try {
     const { affiliateCode } = req.body;
     if (!affiliateCode) throw new AppError('affiliateCode required', 400, 'MISSING_FIELDS');
 
-    const affiliate = await User.findOne({ 'affiliateProfile.referralCode': affiliateCode.toUpperCase().trim(), role: 'affiliate' });
+    const affiliate = await User.findOne({
+      'affiliateProfile.referralCode': affiliateCode.toUpperCase().trim(),
+      role: 'affiliate',
+    });
     if (!affiliate) throw new AppError('Affiliate not found for that code', 404, 'NOT_FOUND');
 
     const order = await Order.findById(req.params.id);
@@ -169,37 +315,23 @@ router.put('/:id/affiliate', async (req, res, next) => {
     const wasAlreadyAttributed = !!order.affiliateId;
     const wasDelivered = order.status === 'delivered';
 
-    // If previously attributed to someone else and was delivered, reverse old earnings
     if (wasAlreadyAttributed && wasDelivered && order.affiliateCommission > 0) {
-      await User.findByIdAndUpdate(order.affiliateId, { $inc: { 'affiliateProfile.totalEarnings': -order.affiliateCommission } });
+      await User.findByIdAndUpdate(order.affiliateId, {
+        $inc: { 'affiliateProfile.totalEarnings': -order.affiliateCommission },
+      });
     }
 
     order.affiliateId = affiliate._id;
     order.affiliateCommission = commission;
     await order.save();
 
-    // If already delivered, credit immediately
     if (wasDelivered) {
-      await User.findByIdAndUpdate(affiliate._id, { $inc: { 'affiliateProfile.totalEarnings': commission } });
+      await User.findByIdAndUpdate(affiliate._id, {
+        $inc: { 'affiliateProfile.totalEarnings': commission },
+      });
     }
 
     res.json({ order, affiliate: { name: affiliate.name, commission } });
-  } catch (err) { next(err); }
-});
-
-// Stats endpoint
-router.get('/stats', async (req, res, next) => {
-  try {
-    const [products, orders, users, revenueResult] = await Promise.all([
-      Product.countDocuments(),
-      Order.countDocuments(),
-      User.countDocuments(),
-      Order.aggregate([
-        { $match: { paymentStatus: 'paid' } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
-      ]),
-    ]);
-    res.json({ stats: { products, orders, users, revenue: revenueResult[0]?.total || 0 } });
   } catch (err) { next(err); }
 });
 

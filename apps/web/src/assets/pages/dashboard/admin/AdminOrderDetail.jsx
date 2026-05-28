@@ -1,241 +1,602 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Package, Truck, FileText, RotateCcw, Send } from 'lucide-react';
+import {
+  ArrowLeft, Package, Truck, FileText,
+  RotateCcw, Edit2, Check, X, ChevronDown,
+  Clock, CheckCircle,
+} from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
 import { formatCurrency, normalizeImageUrl } from '../../../../utils/format';
-import Spinner from '../../../components/common/Spinner';
 import toast from 'react-hot-toast';
 
-function fmtDate(iso) { return iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'â€”'; }
+// ── constants ─────────────────────────────────────────────────────────────────
 
-const STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'];
-const STATUS_COLORS = {
-  pending: 'bg-yellow-100 text-yellow-700', confirmed: 'bg-blue-100 text-blue-700',
-  processing: 'bg-indigo-100 text-indigo-700', shipped: 'bg-purple-100 text-purple-700',
-  delivered: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700',
-  returned: 'bg-secondary-100 text-secondary-500',
+const STATUS_OPTIONS = [
+  { value: 'pending',          label: 'Pending' },
+  { value: 'pending_payment',  label: 'Pending Payment' },
+  { value: 'paid',             label: 'Paid' },
+  { value: 'packed',           label: 'Packed' },
+  { value: 'shipped',          label: 'Shipped' },
+  { value: 'out_for_delivery', label: 'Out for Delivery' },
+  { value: 'delivered',        label: 'Delivered' },
+  { value: 'cancelled',        label: 'Cancelled' },
+  { value: 'returned',         label: 'Returned' },
+];
+
+const CARRIERS = [
+  { value: 'Shiprocket',  label: 'Shiprocket' },
+  { value: 'Delhivery',  label: 'Delhivery' },
+  { value: 'BlueDart',   label: 'BlueDart' },
+  { value: 'DTDC',       label: 'DTDC' },
+  { value: 'Ekart',      label: 'Ekart' },
+  { value: 'Other',      label: 'Other' },
+];
+
+const STATUS_META = {
+  pending:          { label: 'Pending',           color: 'text-secondary-600',  dot: 'bg-secondary-400' },
+  pending_payment:  { label: 'Pending Payment',   color: 'text-yellow-700',     dot: 'bg-yellow-500' },
+  placed:           { label: 'Placed',            color: 'text-blue-600',       dot: 'bg-blue-500' },
+  paid:             { label: 'Paid',              color: 'text-blue-700',       dot: 'bg-blue-600' },
+  confirmed:        { label: 'Confirmed',         color: 'text-blue-700',       dot: 'bg-blue-600' },
+  processing:       { label: 'Processing',        color: 'text-indigo-700',     dot: 'bg-indigo-500' },
+  packed:           { label: 'Packed',            color: 'text-indigo-700',     dot: 'bg-indigo-500' },
+  shipped:          { label: 'Shipped',           color: 'text-purple-700',     dot: 'bg-purple-500' },
+  out_for_delivery: { label: 'Out for Delivery',  color: 'text-orange-700',     dot: 'bg-orange-500' },
+  delivered:        { label: 'Delivered',         color: 'text-green-700',      dot: 'bg-green-500' },
+  cancelled:        { label: 'Cancelled',         color: 'text-red-700',        dot: 'bg-red-500' },
+  returned:         { label: 'Returned',          color: 'text-secondary-600',  dot: 'bg-secondary-400' },
 };
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function fmtDate(iso) {
+  return iso
+    ? new Date(iso).toLocaleDateString('en-IN', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+    : '—';
+}
+
+// ── sub-components ────────────────────────────────────────────────────────────
+
+function InfoCard({ title, children }) {
+  return (
+    <div className="bg-white rounded-xl border border-secondary-200 p-4">
+      <p className="text-xs font-bold text-secondary-500 uppercase tracking-wide mb-3">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function StatusCard({ title, value, subtext, colorClass = 'text-secondary-900' }) {
+  return (
+    <div className="bg-white rounded-xl border border-secondary-200 p-4">
+      <p className="text-xs text-secondary-500 mb-1">{title}</p>
+      <p className={`text-lg font-bold ${colorClass}`}>{value}</p>
+      {subtext && <p className="text-xs text-secondary-400 mt-0.5">{subtext}</p>}
+    </div>
+  );
+}
+
+// ── address edit ──────────────────────────────────────────────────────────────
+
+function AddressEditForm({ addr, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    name:    addr?.name    || '',
+    phone:   addr?.phone   || '',
+    line1:   addr?.line1   || '',
+    line2:   addr?.line2   || '',
+    city:    addr?.city    || '',
+    state:   addr?.state   || '',
+    pincode: addr?.pincode || '',
+    country: addr?.country || 'India',
+  });
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  return (
+    <div className="mt-4 space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-medium text-secondary-600 mb-1 block">Full Name</label>
+          <input value={form.name} onChange={set('name')} className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-secondary-600 mb-1 block">Phone</label>
+          <input value={form.phone} onChange={set('phone')} className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+        </div>
+      </div>
+      <div>
+        <label className="text-xs font-medium text-secondary-600 mb-1 block">Address Line 1</label>
+        <input value={form.line1} onChange={set('line1')} className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+      </div>
+      <div>
+        <label className="text-xs font-medium text-secondary-600 mb-1 block">Address Line 2 (optional)</label>
+        <input value={form.line2} onChange={set('line2')} className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="text-xs font-medium text-secondary-600 mb-1 block">City</label>
+          <input value={form.city} onChange={set('city')} className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-secondary-600 mb-1 block">State</label>
+          <input value={form.state} onChange={set('state')} className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-secondary-600 mb-1 block">Pincode</label>
+          <input value={form.pincode} onChange={set('pincode')} className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+        </div>
+      </div>
+      <div className="flex gap-2 justify-end pt-1">
+        <button onClick={onCancel} className="px-4 py-2 border border-secondary-200 rounded-lg text-sm text-secondary-700 hover:bg-secondary-50 transition-colors">
+          Cancel
+        </button>
+        <button
+          onClick={() => onSave(form)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+        >
+          <Check size={14} /> Save Address
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── main component ────────────────────────────────────────────────────────────
 
 export default function AdminOrderDetail() {
   const { id } = useParams();
   const [rev, setRev] = useState(0);
-  const [statusUpdating, setStatusUpdating] = useState(false);
-  const [trackingForm, setTrackingForm] = useState(false);
-  const [tracking, setTracking] = useState({ carrier: '', trackingId: '', url: '' });
-  const [shipModal, setShipModal] = useState(false);
-  const [shipCarrier, setShipCarrier] = useState('auto');
-  const [shipping, setShipping] = useState(false);
+
+  // Assign Carrier
+  const [carrierTab, setCarrierTab]   = useState('manual');
+  const [carrier, setCarrier]         = useState('Shiprocket');
+  const [awb, setAwb]                 = useState('');
+  const [assigningCarrier, setAssigningCarrier] = useState(false);
+
+  // Status update
+  const [newStatus, setNewStatus]     = useState('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // Address edit
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [savingAddress, setSavingAddress]   = useState(false);
 
   const { data, isLoading } = useFetch(
-    ['admin-order', id, rev],
-    () => api.get(`/admin/orders/${id}`).then((r) => r.data)
+    ['admin-order-detail', id, rev],
+    () => api.get(`/admin/orders/${id}`).then((r) => r.data),
   );
 
   const order = data?.order;
 
-  async function updateStatus(newStatus) {
-    if (!confirm(`Change status to "${newStatus}"?`)) return;
-    setStatusUpdating(true);
-    try {
-      await api.patch(`/admin/orders/${id}/status`, { status: newStatus });
-      toast.success('Status updated');
-      setRev((r) => r + 1);
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed');
-    } finally { setStatusUpdating(false); }
-  }
+  // ── actions ──────────────────────────────────────────────────────────────
 
-  async function saveTracking(e) {
-    e.preventDefault();
+  async function handleAssignCarrier() {
+    if (!awb.trim()) return toast.error('AWB / Tracking Number is required');
+    setAssigningCarrier(true);
     try {
-      await api.patch(`/admin/orders/${id}/tracking`, tracking);
-      toast.success('Tracking saved');
-      setTrackingForm(false);
+      await api.patch(`/admin/orders/${id}/tracking`, {
+        carrier,
+        trackingId: awb.trim(),
+        url: '',
+      });
+      // Also update status to shipped if not already
+      if (!['shipped', 'out_for_delivery', 'delivered'].includes(order.status)) {
+        await api.put(`/admin/orders/${id}/status`, {
+          status: 'shipped',
+          description: `Shipped via ${carrier} · AWB: ${awb.trim()}`,
+        });
+      }
+      toast.success(`Carrier assigned · AWB: ${awb}`);
+      setAwb('');
       setRev((r) => r + 1);
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Failed');
-    }
-  }
-
-  async function createShipment() {
-    setShipping(true);
-    try {
-      const { data: res } = await api.post(`/admin/orders/${id}/ship`, { carrier: shipCarrier });
-      toast.success(`Shipped via ${res.shipment.carrier}${res.shipment.trackingId ? ' · AWB: ' + res.shipment.trackingId : ''}`);
-      setShipModal(false);
-      setRev((r) => r + 1);
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Shipment creation failed');
+      toast.error(err?.response?.data?.message || 'Failed to assign carrier');
     } finally {
-      setShipping(false);
+      setAssigningCarrier(false);
     }
   }
 
-  if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
-  if (!order) return (
-    <div className="text-center py-20 text-secondary-400">
-      <p className="font-medium">Order not found</p>
-      <Link to="/dashboard/admin/orders" className="btn-primary mt-4 inline-block">Back to Orders</Link>
-    </div>
-  );
+  async function handleUpdateStatus() {
+    if (!newStatus) return toast.error('Select a status');
+    if (newStatus === order.status) return toast.error('Order is already in this status');
+    setUpdatingStatus(true);
+    try {
+      await api.put(`/admin/orders/${id}/status`, { status: newStatus });
+      toast.success(`Status updated to "${newStatus}"`);
+      setNewStatus('');
+      setRev((r) => r + 1);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update status');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }
+
+  async function handleSaveAddress(form) {
+    setSavingAddress(true);
+    try {
+      await api.put(`/admin/orders/${id}/address`, form);
+      toast.success('Address updated');
+      setEditingAddress(false);
+      setRev((r) => r + 1);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update address');
+    } finally {
+      setSavingAddress(false);
+    }
+  }
+
+  // ── loading / error ───────────────────────────────────────────────────────
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-secondary-400 gap-2">
+        <div className="w-6 h-6 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin" />
+        Loading order…
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="text-center py-20 text-secondary-400">
+        <Package size={40} className="mx-auto mb-3 opacity-25" />
+        <p className="font-medium">Order not found</p>
+        <Link to="/dashboard/admin/orders" className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors">
+          <ArrowLeft size={14} /> Back to Orders
+        </Link>
+      </div>
+    );
+  }
+
+  const statusMeta = STATUS_META[order.status] || { label: order.status, color: 'text-secondary-900', dot: 'bg-secondary-400' };
+  const paymentMeta = order.paymentStatus === 'paid'
+    ? { label: 'Paid', color: 'text-green-700' }
+    : { label: order.paymentStatus?.charAt(0).toUpperCase() + order.paymentStatus?.slice(1) || 'Pending', color: 'text-yellow-700' };
 
   return (
-    <div className="space-y-5 w-full">
-      <div className="flex items-center gap-3">
-        <Link to="/dashboard/admin/orders" className="text-secondary-500 hover:text-secondary-800"><ArrowLeft size={20} /></Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">Order {order.orderId}</h1>
-          <p className="text-sm text-secondary-400">Placed {fmtDate(order.createdAt)}</p>
-        </div>
-        <span className={`px-3 py-1 rounded-full text-sm font-semibold capitalize ${STATUS_COLORS[order.status] || ''}`}>{order.status}</span>
-      </div>
+    <div className="p-4 md:p-6 space-y-5">
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Customer */}
-        <div className="card p-4">
-          <p className="text-xs font-bold uppercase text-secondary-400 mb-2">Customer</p>
-          <p className="font-semibold">{order.user?.name || 'â€”'}</p>
-          <p className="text-sm text-secondary-500">{order.user?.email}</p>
-          <p className="text-sm text-secondary-500">{order.user?.phone}</p>
+      {/* ─── Header ───────────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <Link to="/dashboard/admin/orders" className="p-1.5 text-secondary-400 hover:text-secondary-700 hover:bg-secondary-100 rounded-lg transition-colors">
+              <ArrowLeft size={18} />
+            </Link>
+            <h1 className="text-xl font-bold text-secondary-900">Order #{order.orderId}</h1>
+          </div>
+          <p className="text-sm text-secondary-500 pl-9">Placed on {fmtDate(order.createdAt)}</p>
         </div>
-        {/* Shipping */}
-        <div className="card p-4">
-          <p className="text-xs font-bold uppercase text-secondary-400 mb-2">Ship To</p>
-          {order.shippingAddress ? (
-            <>
-              <p className="font-semibold">{order.shippingAddress.name}</p>
-              <p className="text-sm text-secondary-500">{order.shippingAddress.line1}</p>
-              <p className="text-sm text-secondary-500">{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.pincode}</p>
-              <p className="text-sm text-secondary-500">{order.shippingAddress.phone}</p>
-            </>
-          ) : <p className="text-sm text-secondary-400">â€”</p>}
-        </div>
-        {/* Payment */}
-        <div className="card p-4">
-          <p className="text-xs font-bold uppercase text-secondary-400 mb-2">Payment</p>
-          <p className="font-semibold">{formatCurrency(order.totalAmount)}</p>
-          <p className="text-sm text-secondary-500 capitalize">{order.paymentMethod || 'â€”'}</p>
-          <p className={`text-sm font-medium mt-1 capitalize ${order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'}`}>{order.paymentStatus}</p>
-          {order.discount > 0 && <p className="text-sm text-green-600 mt-0.5">Discount: {formatCurrency(order.discount)}</p>}
+        <div className="flex items-center gap-2">
+          <a
+            href={`${import.meta.env.VITE_API_URL}/api/invoices/${order._id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-2 border border-secondary-200 rounded-lg text-sm text-secondary-700 hover:bg-secondary-50 transition-colors"
+          >
+            <FileText size={14} /> Download Invoice
+          </a>
+          <Link
+            to="/dashboard/admin/orders"
+            className="flex items-center gap-2 px-3 py-2 border border-secondary-200 rounded-lg text-sm text-secondary-700 hover:bg-secondary-50 transition-colors"
+          >
+            Back to Orders
+          </Link>
         </div>
       </div>
 
-      {/* Status control */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-          <h2 className="font-bold">Update Status</h2>
-          {statusUpdating && <Spinner size="sm" />}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {STATUS_OPTIONS.map((s) => (
-            <button key={s} onClick={() => updateStatus(s)} disabled={order.status === s || statusUpdating}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${order.status === s ? 'bg-secondary-800 text-white cursor-default' : 'border border-secondary-200 hover:bg-secondary-50'}`}>
-              {s}
-            </button>
-          ))}
-        </div>
+      {/* ─── Status Cards ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatusCard
+          title="Order Status"
+          value={statusMeta.label}
+          colorClass={statusMeta.color}
+        />
+        <StatusCard
+          title="Total Amount"
+          value={formatCurrency(order.totalAmount ?? 0)}
+          subtext={order.gstAmount ? `incl. tax ${formatCurrency(order.gstAmount)}` : undefined}
+          colorClass="text-secondary-900"
+        />
+        <StatusCard
+          title="Payment Status"
+          value={paymentMeta.label}
+          subtext={order.paymentMethod ? order.paymentMethod.toUpperCase() : undefined}
+          colorClass={paymentMeta.color}
+        />
       </div>
 
-      {/* Ship via Carrier */}
-      {!['delivered', 'cancelled', 'returned', 'shipped'].includes(order.status) && (
-        <div className="card p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-bold flex items-center gap-2"><Send size={16} /> Create Shipment</h2>
-              <p className="text-xs text-secondary-400 mt-0.5">Push this order to Shiprocket / Delhivery and mark as shipped automatically</p>
+      {/* ─── Items + Customer/Shipping ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        {/* Order Items */}
+        <InfoCard title="Order Items">
+          <div className="space-y-3">
+            {order.items?.map((item, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl border border-secondary-100 bg-secondary-50 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                  {item.image ? (
+                    <img
+                      src={normalizeImageUrl(item.image)}
+                      alt=""
+                      className="w-full h-full object-contain"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <Package size={18} className="text-secondary-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-secondary-800 line-clamp-1">{item.title}</p>
+                  <p className="text-xs text-secondary-500">
+                    Quantity: {item.quantity}
+                  </p>
+                  <p className="text-xs font-medium text-primary-600">{formatCurrency(item.price ?? 0)}</p>
+                </div>
+                <p className="text-sm font-bold text-secondary-800 flex-shrink-0">
+                  {formatCurrency((item.price ?? 0) * (item.quantity ?? 1))}
+                </p>
+              </div>
+            ))}
+          </div>
+        </InfoCard>
+
+        {/* Customer + Shipping */}
+        <div className="space-y-4">
+          <InfoCard title="Customer Information">
+            <p className="font-semibold text-secondary-800">{order.user?.name || 'Guest'}</p>
+            {order.user?.email && (
+              <p className="text-sm text-secondary-500 mt-0.5">Email: {order.user.email}</p>
+            )}
+            {order.user?.phone && (
+              <p className="text-sm text-secondary-500">Phone: {order.user.phone}</p>
+            )}
+          </InfoCard>
+
+          <div className="bg-white rounded-xl border border-secondary-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-secondary-500 uppercase tracking-wide">Shipping Address</p>
+              {!editingAddress && (
+                <button
+                  onClick={() => setEditingAddress(true)}
+                  className="text-xs text-primary-600 hover:underline flex items-center gap-1"
+                >
+                  <Edit2 size={11} /> Edit
+                </button>
+              )}
             </div>
-            <button onClick={() => setShipModal((o) => !o)} className="text-sm text-primary-600 hover:underline">
-              {shipModal ? 'Cancel' : 'Ship Now'}
+            {editingAddress ? (
+              <AddressEditForm
+                addr={order.shippingAddress}
+                onSave={handleSaveAddress}
+                onCancel={() => setEditingAddress(false)}
+              />
+            ) : order.shippingAddress ? (
+              <address className="text-sm not-italic space-y-0.5 leading-relaxed">
+                <p className="font-semibold text-secondary-800">{order.shippingAddress.name}</p>
+                <p className="text-secondary-500">
+                  {[order.shippingAddress.line1, order.shippingAddress.line2].filter(Boolean).join(', ')}
+                </p>
+                <p className="text-secondary-500">
+                  {order.shippingAddress.city}, {order.shippingAddress.state}
+                </p>
+                <p className="text-secondary-500">{order.shippingAddress.country} — {order.shippingAddress.pincode}</p>
+                {order.shippingAddress.phone && (
+                  <p className="text-secondary-500">Phone: {order.shippingAddress.phone}</p>
+                )}
+              </address>
+            ) : (
+              <p className="text-sm text-secondary-400">No address on file</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Assign Delivery Carrier ──────────────────────────────────────── */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+        <h2 className="font-bold text-secondary-900 mb-4 flex items-center gap-2">
+          <Truck size={16} className="text-blue-600" /> Assign Delivery Carrier
+        </h2>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setCarrierTab('manual')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              carrierTab === 'manual'
+                ? 'bg-primary-600 text-white'
+                : 'bg-white border border-secondary-200 text-secondary-700 hover:bg-secondary-50'
+            }`}
+          >
+            Manual Entry
+          </button>
+          <button
+            onClick={() => setCarrierTab('api')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              carrierTab === 'api'
+                ? 'bg-primary-600 text-white'
+                : 'bg-white border border-secondary-200 text-secondary-700 hover:bg-secondary-50'
+            }`}
+          >
+            Auto (API)
+          </button>
+        </div>
+
+        {carrierTab === 'manual' ? (
+          <div className="space-y-3">
+            <p className="text-sm text-secondary-600">Enter the courier name and tracking number manually.</p>
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-1">
+                Delivery Carrier <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={carrier}
+                  onChange={(e) => setCarrier(e.target.value)}
+                  className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white appearance-none"
+                >
+                  {CARRIERS.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 pointer-events-none" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-1">
+                AWB / Tracking Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={awb}
+                onChange={(e) => setAwb(e.target.value)}
+                placeholder="Enter tracking number"
+                className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+              />
+            </div>
+            <button
+              onClick={handleAssignCarrier}
+              disabled={assigningCarrier}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 transition-colors"
+            >
+              {assigningCarrier ? (
+                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Assigning…</>
+              ) : (
+                <><Truck size={15} /> Assign Carrier</>
+              )}
             </button>
           </div>
-          {shipModal && (
-            <div className="mt-4 flex items-end gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-secondary-600">Carrier</label>
-                <select className="input text-sm" value={shipCarrier} onChange={(e) => setShipCarrier(e.target.value)}>
-                  <option value="auto">Auto (best available)</option>
-                  <option value="shiprocket">Shiprocket</option>
-                  <option value="delhivery">Delhivery</option>
-                  <option value="mock">Mock (test)</option>
-                </select>
-              </div>
-              <button
-                onClick={createShipment}
-                disabled={shipping}
-                className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60 flex items-center gap-2"
-              >
-                {shipping ? <Spinner size="xs" /> : <Send size={14} />} Create Shipment
-              </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-secondary-600">
+              Push this order to Shiprocket automatically and get an AWB number.
+            </p>
+            <button
+              onClick={async () => {
+                try {
+                  const { data: res } = await api.post(`/admin/orders/${id}/ship`, { carrier: 'shiprocket' });
+                  toast.success(`Shipped via ${res.shipment.carrier}${res.shipment.trackingId ? ' · AWB: ' + res.shipment.trackingId : ''}`);
+                  setRev((r) => r + 1);
+                } catch (err) {
+                  toast.error(err?.response?.data?.message || 'Shipment creation failed');
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
+            >
+              <Truck size={15} /> Create Shipment via Shiprocket
+            </button>
+          </div>
+        )}
+
+        {/* Existing tracking info */}
+        {order.tracking?.trackingId && (
+          <div className="mt-4 p-3 bg-white rounded-xl border border-blue-100">
+            <p className="text-xs font-bold text-secondary-500 uppercase mb-1.5">Current Tracking</p>
+            <div className="text-sm space-y-0.5">
+              <p><span className="font-medium text-secondary-700">Carrier:</span> {order.tracking.carrier || '—'}</p>
+              <p><span className="font-medium text-secondary-700">AWB:</span> {order.tracking.trackingId}</p>
+              {order.tracking.url && (
+                <a href={order.tracking.url} target="_blank" rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline text-xs mt-0.5 block">
+                  Track shipment →
+                </a>
+              )}
             </div>
-          )}
+          </div>
+        )}
+      </div>
+
+      {/* ─── Update Order Status ──────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-secondary-200 p-5">
+        <h2 className="font-bold text-secondary-900 mb-4 flex items-center gap-2">
+          <Clock size={16} className="text-secondary-500" /> Update Order Status
+        </h2>
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <select
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value)}
+              className="w-full border border-secondary-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white appearance-none"
+            >
+              <option value="">Select new status…</option>
+              {STATUS_OPTIONS.filter((s) => s.value !== order.status).map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 pointer-events-none" />
+          </div>
+          <button
+            onClick={handleUpdateStatus}
+            disabled={updatingStatus || !newStatus}
+            className="px-5 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center gap-2 whitespace-nowrap"
+          >
+            {updatingStatus ? (
+              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Updating…</>
+            ) : (
+              <><CheckCircle size={14} /> Update Status</>
+            )}
+          </button>
+        </div>
+
+        {/* Current status pill */}
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-xs text-secondary-500">Current:</span>
+          <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${statusMeta.color}`}>
+            <span className={`w-2 h-2 rounded-full ${statusMeta.dot}`} />
+            {statusMeta.label}
+          </span>
+        </div>
+      </div>
+
+      {/* ─── Order Timeline ────────────────────────────────────────────────── */}
+      {order.tracking?.history?.length > 0 && (
+        <div className="bg-white rounded-xl border border-secondary-200 p-5">
+          <h2 className="font-bold text-secondary-900 mb-4 flex items-center gap-2">
+            <Clock size={16} className="text-secondary-500" /> Order Timeline
+          </h2>
+          <div className="relative pl-5">
+            <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-secondary-100" />
+            <div className="space-y-4">
+              {[...order.tracking.history].reverse().map((h, i) => (
+                <div key={i} className="relative flex items-start gap-3">
+                  <div className={`absolute -left-5 mt-0.5 w-3 h-3 rounded-full border-2 border-white ${i === 0 ? 'bg-primary-600' : 'bg-secondary-300'}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-secondary-800 capitalize">
+                        {h.status?.replace(/_/g, ' ')}
+                      </p>
+                      <p className="text-xs text-secondary-400">
+                        {new Date(h.timestamp).toLocaleString('en-IN', {
+                          day: 'numeric', month: 'short', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    {h.description && (
+                      <p className="text-xs text-secondary-500 mt-0.5">{h.description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Tracking */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold flex items-center gap-2"><Truck size={16} /> Tracking</h2>
-          <button onClick={() => { setTracking({ carrier: order.tracking?.carrier || '', trackingId: order.tracking?.trackingId || '', url: order.tracking?.url || '' }); setTrackingForm((o) => !o); }}
-            className="text-sm text-primary-600 hover:underline">
-            {trackingForm ? 'Cancel' : 'Edit'}
-          </button>
-        </div>
-        {trackingForm ? (
-          <form onSubmit={saveTracking} className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div><label className="block text-xs font-medium mb-1">Carrier</label><input className="input w-full" placeholder="Delhivery, FedExâ€¦" value={tracking.carrier} onChange={(e) => setTracking((t) => ({ ...t, carrier: e.target.value }))} /></div>
-              <div><label className="block text-xs font-medium mb-1">AWB / Tracking ID</label><input className="input w-full" value={tracking.trackingId} onChange={(e) => setTracking((t) => ({ ...t, trackingId: e.target.value }))} /></div>
-              <div><label className="block text-xs font-medium mb-1">Tracking URL</label><input className="input w-full" placeholder="https://â€¦" value={tracking.url} onChange={(e) => setTracking((t) => ({ ...t, url: e.target.value }))} /></div>
-            </div>
-            <button type="submit" className="btn-primary">Save Tracking</button>
-          </form>
-        ) : order.tracking?.trackingId ? (
-          <div className="text-sm space-y-1">
-            <p><span className="font-medium">Carrier:</span> {order.tracking.carrier || 'â€”'}</p>
-            <p><span className="font-medium">AWB:</span> {order.tracking.trackingId}</p>
-            {order.tracking.url && <a href={order.tracking.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Track on carrier â†’</a>}
-          </div>
-        ) : <p className="text-sm text-secondary-400">No tracking info added yet.</p>}
-      </div>
-
-      {/* Items */}
-      <div className="card overflow-hidden">
-        <div className="px-5 py-3 border-b border-secondary-100 font-semibold">Order Items</div>
-        <div className="divide-y divide-secondary-100">
-          {order.items?.map((item, i) => (
-            <div key={i} className="flex items-center gap-4 px-5 py-3">
-              <div className="w-12 h-12 rounded border border-secondary-100 bg-secondary-50 overflow-hidden shrink-0 flex items-center justify-center">
-                {item.image ? <img src={normalizeImageUrl(item.image)} alt="" className="w-full h-full object-contain" onError={(e) => e.target.style.display = 'none'} /> : <Package size={18} className="text-secondary-300" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm line-clamp-1">{item.title}</p>
-                <p className="text-xs text-secondary-400">Qty: {item.quantity} Ã— {formatCurrency(item.price)}</p>
-                {item.vendor && <p className="text-xs text-secondary-400">Vendor: {item.vendor.name || item.vendor}</p>}
-              </div>
-              <p className="font-semibold text-sm shrink-0">{formatCurrency(item.price * item.quantity)}</p>
-            </div>
-          ))}
-        </div>
-        <div className="px-5 py-3 bg-secondary-50 border-t border-secondary-100 flex justify-between font-bold">
-          <span>Total</span>
-          <span>{formatCurrency(order.totalAmount)}</span>
-        </div>
-      </div>
-
-      {/* Actions */}
+      {/* ─── Actions ─────────────────────────────────────────────────────────*/}
       <div className="flex gap-3 flex-wrap">
-        <a href={`${import.meta.env.VITE_API_URL}/api/invoices/${order._id}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm font-medium border border-secondary-300 hover:bg-secondary-50 px-4 py-2 rounded-lg">
-          <FileText size={14} /> Invoice
-        </a>
         {order.status === 'delivered' && (
-          <button onClick={() => toast('Refund via Payments page', { icon: 'â„¹ï¸' })}
-            className="flex items-center gap-2 text-sm font-medium text-orange-600 border border-orange-200 hover:bg-orange-50 px-4 py-2 rounded-lg">
+          <button
+            onClick={() => toast('Use the Payments page to initiate a refund', { icon: 'ℹ️' })}
+            className="flex items-center gap-2 text-sm font-medium text-orange-600 border border-orange-200 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors"
+          >
             <RotateCcw size={14} /> Initiate Refund
           </button>
         )}
       </div>
+
     </div>
   );
 }

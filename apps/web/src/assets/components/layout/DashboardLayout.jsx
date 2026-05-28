@@ -9,6 +9,7 @@ import {
   RotateCcw, Megaphone, Zap, BarChart2, PenTool, TrendingUp,
 } from 'lucide-react';
 import VendorOnboarding from '../../pages/dashboard/vendor/VendorOnboarding';
+import NotificationBell from '../common/NotificationBell';
 import api from '../../../utils/api';
 import { clearUser } from '../../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +36,8 @@ const navsByRole = {
     { type: 'item', to: '/dashboard/admin/affiliates', label: 'Affiliates', icon: UserCheck },
     { type: 'section', label: 'Finance' },
     { type: 'item', to: '/dashboard/admin/payments', label: 'Payments', icon: CreditCard },
-    { type: 'item', to: '/dashboard/admin/commissions', label: 'Commissions', icon: IndianRupee },
+    { type: 'item', to: '/dashboard/admin/commissions', label: 'Vendor Commissions', icon: IndianRupee, badge: 'vendorComm' },
+    { type: 'item', to: '/dashboard/admin/affiliate-commissions', label: 'Affiliate Commissions', icon: IndianRupee, badge: 'affiliateComm' },
     { type: 'item', to: '/dashboard/admin/returns', label: 'Returns', icon: RotateCcw },
     { type: 'item', to: '/dashboard/admin/kyc', label: 'KYC Review', icon: ShieldCheck },
     { type: 'section', label: 'Quality' },
@@ -54,8 +56,6 @@ const navsByRole = {
     { type: 'item', to: '/dashboard/admin/blog', label: 'Blog', icon: BookOpen },
     { type: 'item', to: '/dashboard/admin/cms', label: 'CMS Pages', icon: LayoutTemplate },
     { type: 'item', to: '/dashboard/admin/carousel', label: 'Carousel', icon: Image },
-    { type: 'section', label: 'Gamification' },
-    { type: 'item', to: '/dashboard/admin/gamification', label: 'Spin / Quiz / Loyalty', icon: Zap },
     { type: 'section', label: 'Config' },
     { type: 'item', to: '/dashboard/admin/settings', label: 'App Settings', icon: Sliders },
   ],
@@ -101,7 +101,7 @@ const navsByRole = {
   ],
 };
 
-function SidebarContent({ navItems, user, activeOrderCount, onNav, onLogout }) {
+function SidebarContent({ navItems, user, activeOrderCount, badgeCounts, onNav, onLogout }) {
   return (
     <>
       <div className="px-4 py-3 border-b border-white/10 flex justify-center shrink-0 bg-white">
@@ -145,6 +145,11 @@ function SidebarContent({ navItems, user, activeOrderCount, onNav, onLogout }) {
                   {activeOrderCount > 99 ? '99+' : activeOrderCount}
                 </span>
               )}
+              {item.badge && item.badge !== 'orders' && (badgeCounts?.[item.badge] || 0) > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
+                  {badgeCounts[item.badge] > 99 ? '99+' : badgeCounts[item.badge]}
+                </span>
+              )}
             </NavLink>
           )
         )}
@@ -173,11 +178,13 @@ export default function DashboardLayout({ requiredRole }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeOrderCount, setActiveOrderCount] = useState(0);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [badgeCounts,      setBadgeCounts]      = useState({});
+  const [sidebarOpen,      setSidebarOpen]      = useState(false);
 
   // Close mobile sidebar on route change
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
+  // Customer: active order count
   useEffect(() => {
     if (user?.role !== 'customer') return;
     api.get('/orders', { params: { limit: 50 } })
@@ -186,6 +193,22 @@ export default function DashboardLayout({ requiredRole }) {
           (o) => !['delivered', 'cancelled', 'returned'].includes(o.status)
         );
         setActiveOrderCount(active.length);
+      })
+      .catch(() => {});
+  }, [user?._id, user?.role]);
+
+  // Admin: commission pending counts for sidebar badges
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    Promise.all([
+      api.get('/admin/commissions/stats', { params: { type: 'vendor' } }),
+      api.get('/admin/commissions/stats', { params: { type: 'affiliate' } }),
+    ])
+      .then(([v, a]) => {
+        setBadgeCounts({
+          vendorComm:    v.data.pendingCount    || 0,
+          affiliateComm: a.data.pendingCount || 0,
+        });
       })
       .catch(() => {});
   }, [user?._id, user?.role]);
@@ -216,7 +239,7 @@ export default function DashboardLayout({ requiredRole }) {
     }
   }
 
-  const sidebarProps = { navItems, user, activeOrderCount, onNav: () => setSidebarOpen(false), onLogout: handleLogout };
+  const sidebarProps = { navItems, user, activeOrderCount, badgeCounts, onNav: () => setSidebarOpen(false), onLogout: handleLogout };
 
   return (
     <div className="h-screen flex bg-secondary-50 overflow-hidden">
@@ -249,14 +272,31 @@ export default function DashboardLayout({ requiredRole }) {
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
 
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-secondary-200 shrink-0 sticky top-0 z-30">
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#0f1117] border-b border-white/10 shrink-0 sticky top-0 z-30">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-1.5 text-secondary-600 hover:bg-secondary-100 rounded-lg"
+            className="p-1.5 text-gray-400 hover:bg-white/10 hover:text-white rounded-lg"
           >
             <Menu size={22} />
           </button>
-          <span className="font-bold text-secondary-800 text-base">{currentNavLabel}</span>
+          <span className="font-bold text-white text-base flex-1">{currentNavLabel}</span>
+          <NotificationBell />
+        </div>
+
+        {/* Desktop top bar */}
+        <div className="hidden md:flex items-center justify-between px-6 py-3 bg-white border-b border-secondary-200 shrink-0 sticky top-0 z-30">
+          <h2 className="font-bold text-secondary-800 text-base">{currentNavLabel}</h2>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-bold uppercase select-none">
+              {user?.name?.[0] || 'A'}
+            </div>
+            <div className="hidden lg:block text-right">
+              <p className="text-xs font-semibold text-secondary-800 leading-none">{user?.name}</p>
+              <p className="text-[10px] text-secondary-400 mt-0.5">{user?.role}</p>
+            </div>
+            <div className="w-px h-6 bg-secondary-200 mx-1" />
+            <NotificationBell variant="light" />
+          </div>
         </div>
 
         <div className="flex-1 p-4 md:p-6">

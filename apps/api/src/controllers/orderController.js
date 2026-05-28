@@ -7,6 +7,7 @@ const AppError = require('../utils/AppError');
 const { generateOrderId } = require('../utils/helpers');
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config/env');
 const { sendOrderConfirmation } = require('../services/emailService');
+const notif = require('../utils/notificationHelper');
 
 const razorpay = RAZORPAY_KEY_ID
   ? new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET })
@@ -164,6 +165,29 @@ async function createOrder(req, res, next) {
       });
     }
 
+    // Fire notifications async — don't block response
+    (async () => {
+      try {
+        // Notify all admins of the new order
+        await notif.notifyAdminNewOrder({ order });
+
+        // Notify each unique vendor with their items
+        const vendorItemsMap = {};
+        for (const item of order.items) {
+          if (item.vendorId) {
+            const key = item.vendorId.toString();
+            if (!vendorItemsMap[key]) vendorItemsMap[key] = [];
+            vendorItemsMap[key].push(item);
+          }
+        }
+        for (const [vendorId, vendorItems] of Object.entries(vendorItemsMap)) {
+          await notif.notifyVendorNewOrder({ vendorUserId: vendorId, order, items: vendorItems });
+        }
+      } catch (e) {
+        console.error('[createOrder] notification error:', e.message);
+      }
+    })();
+
     // Clear cart
     await Cart.deleteOne({ user: req.user._id });
 
@@ -193,11 +217,18 @@ async function verifyPayment(req, res, next) {
     );
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
 
-    // Send confirmation email async — don't block response
+    // Send confirmation email + fire notifications async — don't block response
     const User = require('../models/User');
     User.findById(order.user).then((user) => {
       if (user) sendOrderConfirmation({ order, user }).catch(console.error);
     });
+
+    // Payment success notification to customer
+    if (order.user) {
+      notif.notifyUserPaymentSuccess({ userId: order.user, order, amount: order.totalAmount }).catch(() => {});
+    }
+    // Notify admins order is paid
+    notif.notifyAdminNewOrder({ order }).catch(() => {});
 
     res.json({ order });
   } catch (err) { next(err); }

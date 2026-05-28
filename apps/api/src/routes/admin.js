@@ -38,6 +38,10 @@ router.use('/contact-submissions', require('./admin/contact-submissions'));
 router.use('/settings', require('./admin/settings'));
 // CMS pages
 router.use('/cms', require('./admin/cms'));
+// Vendor management (dedicated CRUD + approve/suspend/commission)
+router.use('/vendors', require('./admin/vendors'));
+// Affiliate management (dedicated CRUD + approve/payout)
+router.use('/affiliates', require('./admin/affiliates'));
 // Manual orders
 router.use('/manual-orders', require('./admin/manual-orders'));
 // CRM
@@ -50,6 +54,8 @@ router.use('/inventory', require('./admin/inventory'));
 router.use('/share-catalog', require('./admin/share-catalog'));
 // Commissions (vendor + affiliate)
 router.use('/commissions', require('./admin/commissions'));
+// Payouts
+router.use('/payouts', require('./admin/payouts'));
 // Flash sales
 router.use('/flash-sales', require('./admin/flash-sales'));
 // Warranty claims
@@ -62,8 +68,6 @@ router.use('/newsletter', require('./admin/newsletter'));
 router.use('/ads', require('./admin/ads'));
 // Carousel slides
 router.use('/carousel', require('./admin/carousel'));
-// Gamification (spin, quiz, loyalty config)
-router.use('/gamification', require('./admin/gamification'));
 // Analytics
 router.use('/analytics', require('./admin/analytics'));
 

@@ -7,6 +7,7 @@ const AppError = require('../utils/AppError');
 const { slugify, generateSKU } = require('../utils/helpers');
 const { invalidateCache } = require('../middleware/cache');
 const { uploadFile } = require('../services/storageService');
+const notif = require('../utils/notificationHelper');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -51,7 +52,17 @@ router.put('/profile', async (req, res, next) => {
       'vendorProfile.onboardingComplete': true,
     };
 
+    const wasComplete = req.user.vendorProfile?.onboardingComplete;
     const updated = await require('../models/User').findByIdAndUpdate(req.user._id, update, { new: true });
+
+    // Notify admins on first-time onboarding submission
+    if (!wasComplete) {
+      notif.notifyAdminNewVendor({
+        vendor:    updated.vendorProfile,
+        userEmail: updated.email,
+      }).catch(() => {});
+    }
+
     res.json({ vendor: updated.toSafeObject() });
   } catch (err) { next(err); }
 });
@@ -113,6 +124,13 @@ router.post('/products', requireApproved, async (req, res, next) => {
     if (!data.sku) data.sku = generateSKU('VND');
     const product = await Product.create(data);
     await invalidateCache('cache:/api/catalog*');
+
+    // Notify admins of new product submission
+    notif.notifyAdminNewProduct({
+      product,
+      vendorName: req.user.vendorProfile?.businessName || req.user.name,
+    }).catch(() => {});
+
     res.status(201).json({ product });
   } catch (err) { next(err); }
 });

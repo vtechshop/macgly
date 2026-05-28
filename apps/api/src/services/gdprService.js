@@ -2,17 +2,15 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const Review = require('../models/Review');
 const Ticket = require('../models/Ticket');
-const Loyalty = require('../models/Loyalty');
 const Notification = require('../models/Notification');
 const Return = require('../models/Return');
 
 async function exportUserData(userId) {
-  const [user, orders, reviews, tickets, loyalty] = await Promise.all([
+  const [user, orders, reviews, tickets] = await Promise.all([
     User.findById(userId).select('-password -refreshTokens -passwordResetToken'),
     Order.find({ user: userId }).select('-__v'),
     Review.find({ user: userId }),
     Ticket.find({ user: userId }).select('-__v'),
-    Loyalty.findOne({ user: userId }),
   ]);
 
   return {
@@ -21,7 +19,6 @@ async function exportUserData(userId) {
     orders: orders.map((o) => o.toObject()),
     reviews: reviews.map((r) => r.toObject()),
     tickets: tickets.map((t) => t.toObject()),
-    loyalty: loyalty ? { balance: loyalty.balance, totalEarned: loyalty.totalEarned, totalRedeemed: loyalty.totalRedeemed } : null,
   };
 }
 
@@ -46,7 +43,6 @@ async function deleteAccount(userId) {
       refreshTokens: [],
     }),
     Notification.deleteMany({ user: userId }),
-    Loyalty.deleteOne({ user: userId }),
   ]);
 
   return { deleted: true };

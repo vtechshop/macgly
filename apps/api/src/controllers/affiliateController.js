@@ -4,6 +4,7 @@ const Order = require('../models/Order');
 const AffiliateClick = require('../models/AffiliateClick');
 const AppError = require('../utils/AppError');
 const { FRONTEND_URL } = require('../config/env');
+const notif = require('../utils/notificationHelper');
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -187,6 +188,13 @@ async function submitKyc(req, res, next) {
       },
       { new: true }
     );
+
+    // Notify admins of new affiliate KYC submission
+    notif.notifyAdminNewAffiliate({
+      affiliate: updated.affiliateProfile,
+      userEmail: updated.email,
+    }).catch(() => {});
+
     res.json({ user: updated.toSafeObject() });
   } catch (err) { next(err); }
 }

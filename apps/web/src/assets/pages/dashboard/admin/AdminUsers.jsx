@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Search, RefreshCw, Download, Eye, Trash2,
+  Search, RefreshCw, Download, Eye, EyeOff, Trash2,
   Users, ShoppingBag, Store, UserCheck, ShieldCheck, X,
   Lock, Unlock, KeyRound,
 } from 'lucide-react';
@@ -30,15 +30,18 @@ function timeAgo(date) {
   return `${Math.floor(days / 30)} month${Math.floor(days / 30) > 1 ? 's' : ''} ago`;
 }
 
-function Avatar({ name }) {
+const AVATAR_COLORS = [
+  'bg-violet-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500',
+  'bg-pink-500', 'bg-teal-500', 'bg-red-500', 'bg-indigo-500',
+];
+
+function Avatar({ name, size = 'sm' }) {
   const initial = (name || '?')[0].toUpperCase();
-  const colors = ['bg-primary-500', 'bg-secondary-600', 'bg-green-500', 'bg-orange-500', 'bg-primary-400', 'bg-primary-500'];
-  const color = colors[initial.charCodeAt(0) % colors.length];
-  return (
-    <div className={`w-9 h-9 rounded-full ${color} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
-      {initial}
-    </div>
-  );
+  const color = AVATAR_COLORS[initial.charCodeAt(0) % AVATAR_COLORS.length];
+  const cls = size === 'lg'
+    ? `w-16 h-16 rounded-full ${color} flex items-center justify-center text-white text-2xl font-bold shrink-0`
+    : `w-9 h-9 rounded-full ${color} flex items-center justify-center text-white text-sm font-bold shrink-0`;
+  return <div className={cls}>{initial}</div>;
 }
 
 export default function AdminUsers() {
@@ -51,6 +54,8 @@ export default function AdminUsers() {
   const [resetTarget, setResetTarget] = useState(null);
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const { data, isLoading } = useFetch(
     ['admin-users', page, roleFilter, search, rev],
@@ -76,7 +81,7 @@ export default function AdminUsers() {
   const { mutate: doReset, isPending: resetting } = useAction(
     ({ id, password }) => api.post(`/admin/users/${id}/reset-password`, { password }),
     {
-      onSuccess: () => { toast.success('Password reset successfully'); setResetTarget(null); setNewPass(''); setConfirmPass(''); },
+      onSuccess: () => { toast.success('Password reset successfully'); setResetTarget(null); setNewPass(''); setConfirmPass(''); setShowNewPass(false); setShowConfirmPass(false); },
       onError: () => toast.error('Failed to reset password'),
     }
   );
@@ -321,25 +326,54 @@ export default function AdminUsers() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-secondary-700 mb-1.5">New Password</label>
-                <input
-                  type="password"
-                  className="input w-full"
-                  placeholder="Enter new password (min 8 characters)"
-                  value={newPass}
-                  onChange={(e) => setNewPass(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPass ? 'text' : 'password'}
+                    className="input w-full pr-10"
+                    placeholder="Enter new password (min 8 characters)"
+                    value={newPass}
+                    onChange={(e) => setNewPass(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPass((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-secondary-700 mb-1.5">Confirm Password</label>
-                <input
-                  type="password"
-                  className="input w-full"
-                  placeholder="Confirm new password"
-                  value={confirmPass}
-                  onChange={(e) => setConfirmPass(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPass ? 'text' : 'password'}
+                    className="input w-full pr-10"
+                    placeholder="Confirm new password"
+                    value={confirmPass}
+                    onChange={(e) => setConfirmPass(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPass((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-secondary-600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
                 {confirmPass && newPass !== confirmPass && (
-                  <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                  <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
+                    Passwords do not match
+                  </p>
+                )}
+                {confirmPass && newPass === confirmPass && newPass.length >= 8 && (
+                  <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-green-500 inline-block" />
+                    Passwords match
+                  </p>
                 )}
               </div>
               <div className="flex gap-3 pt-1">
@@ -359,54 +393,167 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* View modal */}
+      {/* User Details — right-side drawer */}
       {viewUser && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setViewUser(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-100">
-              <h3 className="font-bold text-secondary-900">User Details</h3>
-              <button onClick={() => setViewUser(null)} className="p-1.5 hover:bg-secondary-100 rounded-lg"><X size={16} /></button>
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setViewUser(null)}
+          />
+          {/* Drawer */}
+          <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-100 shrink-0">
+              <h3 className="font-bold text-secondary-900 text-base">User Details</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setResetTarget(viewUser); setViewUser(null); setNewPass(''); setConfirmPass(''); }}
+                  className="px-3 py-1.5 text-sm font-semibold border border-secondary-200 rounded-lg hover:bg-secondary-50 text-secondary-700 transition-colors"
+                >
+                  Edit
+                </button>
+                <button onClick={() => setViewUser(null)} className="p-1.5 hover:bg-secondary-100 rounded-lg">
+                  <X size={16} />
+                </button>
+              </div>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar name={viewUser.name} />
+
+            <div className="flex-1 p-6 space-y-6">
+              {/* Avatar + name */}
+              <div className="flex flex-col items-center text-center gap-3 pb-2">
+                <Avatar name={viewUser.name} size="lg" />
                 <div>
-                  <p className="font-bold text-lg">{viewUser.name}</p>
-                  <p className="text-sm text-secondary-500">{viewUser.email}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {[
-                  { label: 'Role',           value: viewUser.role },
-                  { label: 'Status',         value: viewUser.isActive ? 'Active' : 'Inactive' },
-                  { label: 'Last Login',     value: timeAgo(viewUser.lastLogin) || 'Never' },
-                  { label: 'Joined',         value: formatDate(viewUser.createdAt) },
-                  { label: 'Phone',          value: viewUser.phone || '—' },
-                  { label: 'Email Verified', value: viewUser.emailVerified ? 'Yes' : 'No' },
-                ].map((r) => (
-                  <div key={r.label} className="bg-secondary-50 rounded-lg p-3">
-                    <p className="text-xs text-secondary-400">{r.label}</p>
-                    <p className="font-semibold text-secondary-800 capitalize mt-0.5">{r.value}</p>
+                  <p className="font-bold text-xl text-secondary-900">{viewUser.name}</p>
+                  <p className="text-sm text-secondary-400 mt-0.5">{viewUser.email}</p>
+                  <div className="flex items-center justify-center gap-2 mt-2.5">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${ROLE_COLORS[viewUser.role] || 'bg-secondary-100 text-secondary-600'}`}>
+                      {viewUser.role}
+                    </span>
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${viewUser.isActive ? 'bg-green-100 text-green-700' : 'bg-secondary-100 text-secondary-500'}`}>
+                      {viewUser.isActive ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
-                ))}
+                </div>
               </div>
+
+              {/* Account Information */}
+              <div>
+                <h4 className="text-sm font-bold text-secondary-800 mb-3 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-secondary-400 inline-block" />
+                  Account Information
+                </h4>
+                <div className="space-y-3">
+                  {[
+                    { label: 'User ID',        value: viewUser._id, mono: true },
+                    { label: 'Phone',          value: viewUser.phone || 'Not provided' },
+                    { label: 'Joined',         value: formatDate(viewUser.createdAt) },
+                    { label: 'Last Login',     value: timeAgo(viewUser.lastLogin) || 'Never' },
+                    { label: 'Email Verified', value: viewUser.emailVerified ? 'Yes' : 'No', highlight: !viewUser.emailVerified },
+                  ].map((r) => (
+                    <div key={r.label} className="flex items-start justify-between gap-4">
+                      <span className="text-sm text-secondary-400 shrink-0 w-32">{r.label}</span>
+                      <span className={`text-sm font-medium text-right break-all ${r.mono ? 'font-mono text-xs text-secondary-500' : r.highlight ? 'text-red-500' : 'text-secondary-800'}`}>
+                        {r.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Vendor / Affiliate extra info */}
               {viewUser.role === 'vendor' && viewUser.vendorProfile?.businessName && (
-                <div className="bg-purple-50 rounded-lg p-3 text-sm">
-                  <p className="text-xs text-purple-400 mb-1">Vendor Info</p>
-                  <p className="font-semibold">{viewUser.vendorProfile.businessName}</p>
-                  {viewUser.vendorProfile.gstin && <p className="text-xs text-secondary-500 mt-0.5">GSTIN: {viewUser.vendorProfile.gstin}</p>}
+                <div>
+                  <h4 className="text-sm font-bold text-secondary-800 mb-3 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block" />
+                    Vendor Info
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-sm text-secondary-400 w-32">Business</span>
+                      <span className="text-sm font-medium text-secondary-800">{viewUser.vendorProfile.businessName}</span>
+                    </div>
+                    {viewUser.vendorProfile.gstin && (
+                      <div className="flex items-start justify-between gap-4">
+                        <span className="text-sm text-secondary-400 w-32">GSTIN</span>
+                        <span className="text-sm font-mono text-secondary-600">{viewUser.vendorProfile.gstin}</span>
+                      </div>
+                    )}
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-sm text-secondary-400 w-32">Approved</span>
+                      <span className={`text-sm font-medium ${viewUser.vendorProfile.approved ? 'text-green-600' : 'text-amber-500'}`}>
+                        {viewUser.vendorProfile.approved ? 'Yes' : 'Pending'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
+
               {viewUser.role === 'affiliate' && viewUser.affiliateProfile?.referralCode && (
-                <div className="bg-orange-50 rounded-lg p-3 text-sm">
-                  <p className="text-xs text-orange-400 mb-1">Affiliate Info</p>
-                  <p className="font-mono font-bold">{viewUser.affiliateProfile.referralCode}</p>
-                  <p className="text-xs text-secondary-500 mt-0.5">Earnings: ₹{viewUser.affiliateProfile.totalEarnings || 0}</p>
+                <div>
+                  <h4 className="text-sm font-bold text-secondary-800 mb-3 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                    Affiliate Info
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-sm text-secondary-400 w-32">Referral Code</span>
+                      <span className="text-sm font-mono font-bold text-orange-600">{viewUser.affiliateProfile.referralCode}</span>
+                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-sm text-secondary-400 w-32">Total Earnings</span>
+                      <span className="text-sm font-medium text-secondary-800">₹{viewUser.affiliateProfile.totalEarnings || 0}</span>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {/* Recent Activity */}
+              <div>
+                <h4 className="text-sm font-bold text-secondary-800 mb-3 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block" />
+                  Recent Activity
+                </h4>
+                <div className="space-y-3 pl-3 border-l-2 border-secondary-100">
+                  <div className="relative">
+                    <span className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-blue-400 border-2 border-white" />
+                    <p className="text-sm font-medium text-secondary-800">Account Created</p>
+                    <p className="text-xs text-secondary-400 mt-0.5">{formatDate(viewUser.createdAt)}</p>
+                  </div>
+                  {viewUser.lastLogin && (
+                    <div className="relative">
+                      <span className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-green-400 border-2 border-white" />
+                      <p className="text-sm font-medium text-secondary-800">Last Login</p>
+                      <p className="text-xs text-secondary-400 mt-0.5">{timeAgo(viewUser.lastLogin)}</p>
+                    </div>
+                  )}
+                  {viewUser.emailVerified && (
+                    <div className="relative">
+                      <span className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-teal-400 border-2 border-white" />
+                      <p className="text-sm font-medium text-secondary-800">Email Verified</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="pt-2 border-t border-secondary-100 space-y-2">
+                <button
+                  onClick={() => { toggleSuspend({ id: viewUser._id, isActive: !viewUser.isActive }); toast.success(viewUser.isActive ? 'User suspended' : 'User activated'); setViewUser(null); }}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${viewUser.isActive ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200' : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'}`}
+                >
+                  {viewUser.isActive ? <><Lock size={14} /> Suspend User</> : <><Unlock size={14} /> Activate User</>}
+                </button>
+                <button
+                  onClick={() => handleDelete(viewUser)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
+                >
+                  <Trash2 size={14} /> Delete User
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

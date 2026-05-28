@@ -60,7 +60,6 @@ const AdminSettings         = lazy(() => import('./assets/pages/dashboard/admin/
 const AdminShareCatalog     = lazy(() => import('./assets/pages/dashboard/admin/AdminShareCatalog'));
 const AdminOrderDetail      = lazy(() => import('./assets/pages/dashboard/admin/AdminOrderDetail'));
 const AdminCarousel         = lazy(() => import('./assets/pages/dashboard/admin/AdminCarousel'));
-const AdminGamification     = lazy(() => import('./assets/pages/dashboard/admin/AdminGamification'));
 const AdminCommissions      = lazy(() => import('./assets/pages/dashboard/admin/AdminCommissions'));
 const AdminFlashSales       = lazy(() => import('./assets/pages/dashboard/admin/AdminFlashSales'));
 const AdminReturns          = lazy(() => import('./assets/pages/dashboard/admin/AdminReturns'));
@@ -207,8 +206,8 @@ export default function App() {
               <Route path="share-catalog" element={<AdminShareCatalog />} />
               <Route path="orders/:id" element={<AdminOrderDetail />} />
               <Route path="carousel" element={<AdminCarousel />} />
-              <Route path="gamification" element={<AdminGamification />} />
-              <Route path="commissions" element={<AdminCommissions />} />
+              <Route path="commissions" element={<AdminCommissions defaultType="vendor" />} />
+              <Route path="affiliate-commissions" element={<AdminCommissions defaultType="affiliate" />} />
               <Route path="flash-sales" element={<AdminFlashSales />} />
               <Route path="returns" element={<AdminReturns />} />
               <Route path="newsletter" element={<AdminNewsletter />} />

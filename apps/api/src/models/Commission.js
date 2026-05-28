@@ -10,9 +10,13 @@ const commissionSchema = new mongoose.Schema({
   commissionAmount: { type: Number, required: true },
   platformFee: { type: Number, default: 0 },
   status: { type: String, enum: ['pending', 'approved', 'paid', 'cancelled'], default: 'pending' },
-  paidAt: Date,
-  payoutId: String, // Razorpay payout ID
-  note: String,
+  approvedAt:   Date,
+  rejectedAt:   Date,
+  paidAt:       Date,
+  payoutId:     String,
+  paymentRef:   String, // UTR or transaction ID
+  paymentProof: String, // screenshot URL
+  note:         String,
 }, { timestamps: true });
 
 commissionSchema.index({ user: 1, status: 1 });

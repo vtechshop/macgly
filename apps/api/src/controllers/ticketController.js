@@ -1,5 +1,6 @@
 const Ticket = require('../models/Ticket');
 const AppError = require('../utils/AppError');
+const notif = require('../utils/notificationHelper');
 
 async function createTicket(req, res, next) {
   try {
@@ -14,6 +15,13 @@ async function createTicket(req, res, next) {
       priority: priority || 'medium',
       messages: [{ senderRole: 'user', content: message.trim() }],
     });
+
+    // Notify admins of new ticket
+    notif.notifyAdminNewTicket({
+      ticket,
+      userEmail: req.user.email,
+    }).catch(() => {});
+
     res.status(201).json({ ticket });
   } catch (err) { next(err); }
 }
@@ -79,8 +87,11 @@ async function adminGetTicket(req, res, next) {
 async function adminReply(req, res, next) {
   try {
     const { message, status } = req.body;
-    const ticket = await Ticket.findById(req.params.id);
+    const ticket = await Ticket.findById(req.params.id).populate('user', '_id email name');
     if (!ticket) throw new AppError('Ticket not found', 404, 'NOT_FOUND');
+
+    const prevStatus = ticket.status;
+
     if (message?.trim()) {
       ticket.messages.push({ senderRole: 'support', content: message.trim() });
     }
@@ -88,6 +99,25 @@ async function adminReply(req, res, next) {
       ticket.status = status;
     }
     await ticket.save();
+
+    // Notify ticket owner of the reply and/or status change
+    if (ticket.user?._id) {
+      if (message?.trim()) {
+        notif.notifyUserTicketReply({
+          userId:     ticket.user._id,
+          ticket,
+          repliedBy:  req.user?.name || 'Support',
+        }).catch(() => {});
+      }
+      if (status && status !== prevStatus) {
+        notif.notifyUserTicketStatusChange({
+          userId: ticket.user._id,
+          ticket,
+          status,
+        }).catch(() => {});
+      }
+    }
+
     res.json({ ticket });
   } catch (err) { next(err); }
 }
