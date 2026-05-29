@@ -151,12 +151,6 @@ async function createOrder(req, res, next) {
       throw new AppError('One or more items went out of stock. Please review your cart.', 409, 'OUT_OF_STOCK');
     }
 
-    // Increment coupon usage counter
-    if (cart.coupon?.code) {
-      const Coupon = require('../models/Coupon');
-      await Coupon.findOneAndUpdate({ code: cart.coupon.code }, { $inc: { usedCount: 1 } });
-    }
-
     // Send COD confirmation email async
     if (paymentMethod === 'cod') {
       const User = require('../models/User');

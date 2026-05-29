@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
   Package, ShoppingBag, Users, TrendingUp, TrendingDown, AlertTriangle,
-  Clock, Tag, Image, Ticket, ArrowRight, CheckCircle, Store, UserCheck,
+  Clock, Tag, Image, ArrowRight, CheckCircle, Store, UserCheck,
   IndianRupee, ShoppingCart, Star, Bell, MessageSquare, Zap,
   BarChart3, RefreshCw, ArrowUpRight, ArrowDownRight, Minus,
 } from 'lucide-react';
@@ -410,7 +410,6 @@ export default function AdminDashboard() {
               { label: 'Manage Orders',        to: '/dashboard/admin/orders',     icon: ShoppingBag, color: 'text-green-600 bg-green-50'  },
               { label: 'Manage Categories',    to: '/dashboard/admin/categories', icon: Tag,         color: 'text-orange-600 bg-orange-50'},
               { label: 'Edit Banners',         to: '/dashboard/admin/banners',    icon: Image,       color: 'text-pink-600 bg-pink-50'    },
-              { label: 'Create Coupon',        to: '/dashboard/admin/coupons',    icon: Ticket,      color: 'text-yellow-600 bg-yellow-50'},
               { label: 'Review Vendors',       to: '/dashboard/admin/vendors',    icon: Store,       color: 'text-violet-600 bg-violet-50'},
               { label: 'Manage Affiliates',    to: '/dashboard/admin/affiliates', icon: UserCheck,   color: 'text-pink-600 bg-pink-50'    },
               { label: 'Support Tickets',      to: '/dashboard/admin/tickets',    icon: MessageSquare, color: 'text-rose-600 bg-rose-50'  },

@@ -42,6 +42,22 @@ const userSchema = new mongoose.Schema({
     commissionRate:    { type: Number, default: 10 },
     commissionRules:   [{ category: String, percentage: Number }],
     totalEarnings:     { type: Number, default: 0 },
+    // KYC fields
+    businessAddress:   String,
+    kycStatus:         { type: String, enum: ['not_submitted', 'pending', 'approved', 'rejected'], default: 'not_submitted' },
+    gstVerified:       { type: Boolean, default: false },
+    gstDetails: {
+      tradeName: String, legalName: String, gstNumber: String, status: String, address: String,
+    },
+    kycDocuments: [{
+      type:       { type: String, enum: ['id_proof', 'address_proof', 'business_license', 'tax_certificate'] },
+      url:        String,
+      filename:   String,
+      uploadedAt: { type: Date, default: Date.now },
+    }],
+    kycRejectionReason: String,
+    kycVerifiedAt:      Date,
+    kycVerifiedBy:      mongoose.Schema.Types.ObjectId,
   },
 
   // Affiliate-specific

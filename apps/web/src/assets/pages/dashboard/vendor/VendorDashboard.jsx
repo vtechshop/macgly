@@ -1,193 +1,282 @@
-import { useSelector } from 'react-redux';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, ShoppingBag, IndianRupee, TrendingUp, Plus, AlertTriangle, ArrowRight, Eye, RefreshCw, Clock } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import VendorOnboarding from './VendorOnboarding';
+import {
+  Package, ShoppingBag, IndianRupee, TrendingUp, TrendingDown,
+  AlertTriangle, ArrowRight, RefreshCw, Box, Megaphone,
+} from 'lucide-react';
+import {
+  ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip,
+} from 'recharts';
 import { formatCurrency } from '../../../../utils/format';
 import { useFetch } from '../../../../hooks';
 import api from '../../../../utils/api';
 import Spinner from '../../../components/common/Spinner';
 
-const STATUS_COLORS = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-blue-100 text-blue-700',
-  processing: 'bg-purple-100 text-purple-700',
-  shipped: 'bg-indigo-100 text-indigo-700',
-  delivered: 'bg-green-100 text-green-700',
-  cancelled: 'bg-red-100 text-red-700',
-};
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const PERIODS = [
+  { id: 'today',   label: 'Today'     },
+  { id: '7days',   label: '7 Days'    },
+  { id: '30days',  label: '30 Days'   },
+  { id: 'month',   label: 'This Month'},
+];
+
+const MOCK_CHART = [
+  { name: 'Mon', sales: 1200 },
+  { name: 'Tue', sales: 1900 },
+  { name: 'Wed', sales: 1500 },
+  { name: 'Thu', sales: 2100 },
+  { name: 'Fri', sales: 2400 },
+  { name: 'Sat', sales: 2800 },
+  { name: 'Sun', sales: 2200 },
+];
+
+// ─── TrendIndicator ───────────────────────────────────────────────────────────
+
+function TrendIndicator({ current, previous }) {
+  if (!previous || previous === 0) return null;
+  const change = ((current - previous) / previous) * 100;
+  const up = change >= 0;
+  const Icon = up ? TrendingUp : TrendingDown;
+  return (
+    <span className={`flex items-center gap-0.5 text-xs font-semibold ${up ? 'text-green-600' : 'text-red-500'}`}>
+      <Icon size={12} />
+      {up ? '+' : ''}{change.toFixed(1)}%
+    </span>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function VendorDashboard() {
   const { user } = useSelector((s) => s.auth);
+  const [period, setPeriod] = useState('30days');
+  const [rev, setRev] = useState(0);
 
-  const { data: productsData, isLoading: loadingP } = useFetch(
-    ['vendor-products-dash'],
-    () => api.get('/vendors/products', { params: { page: 1, limit: 100 } }).then((r) => r.data)
-  );
-  const { data: ordersData, isLoading: loadingO } = useFetch(
-    ['vendor-orders-dash'],
-    () => api.get('/vendors/orders', { params: { page: 1, limit: 50 } }).then((r) => r.data)
-  );
-  const { data: statsData } = useFetch(
-    ['vendor-stats'],
-    () => api.get('/vendors/stats').then((r) => r.data)
+  if (!user?.vendorProfile?.onboardingComplete) return <VendorOnboarding />;
+
+  const { data: raw, isLoading } = useFetch(
+    ['vendor-stats', user?._id, period, rev],
+    () => api.get(`/vendors/dashboard/stats?period=${period}`).then((r) => r.data),
+    { staleTime: 5 * 60 * 1000, cacheTime: 10 * 60 * 1000 },
   );
 
-  const products = productsData?.products || [];
-  const orders = ordersData?.orders || [];
-  const totalProducts = productsData?.pagination?.total ?? 0;
-  const totalOrders = ordersData?.pagination?.total ?? 0;
+  const stats = raw?.data || {};
+  const prev = stats.previousPeriod || {};
 
-  const confirmedEarnings = statsData?.confirmedEarnings ?? 0;
-  const pendingEarnings = statsData?.pendingEarnings ?? 0;
-  const commissionRate = statsData?.commissionRate ?? 10;
+  const totalPendingActions = (stats.pendingOrders || 0) + (stats.lowStockProducts || 0) + (stats.pendingReviews || 0);
+  const chartData = stats.salesChart?.length ? stats.salesChart : MOCK_CHART;
 
-  const pendingOrders = orders.filter((o) => o.status === 'pending').length;
-  const lowStock = products.filter((p) => p.stock <= 10);
-  const publishedProducts = products.filter((p) => p.published).length;
-  const draftProducts = products.filter((p) => !p.published).length;
-
-  if (loadingP || loadingO) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
-
-  const isApproved = user?.vendorProfile?.approved;
+  const statCards = [
+    {
+      label: 'Total Products',
+      value: stats.totalProducts ?? 0,
+      sub: `+${stats.activeProducts ?? 0} active`,
+      icon: Box,
+      iconColor: 'text-blue-500',
+      iconBg: 'bg-blue-50',
+      trend: { current: stats.totalProducts, previous: prev.totalProducts },
+    },
+    {
+      label: 'Total Orders',
+      value: stats.totalOrders ?? 0,
+      sub: stats.pendingOrders > 0 ? `${stats.pendingOrders} pending` : 'All caught up',
+      subColor: stats.pendingOrders > 0 ? 'text-orange-500' : 'text-green-600',
+      icon: ShoppingBag,
+      iconColor: 'text-green-600',
+      iconBg: 'bg-green-50',
+      trend: { current: stats.totalOrders, previous: prev.totalOrders },
+    },
+    {
+      label: 'Total Sales',
+      value: formatCurrency(stats.totalSales ?? 0),
+      sub: 'This period',
+      icon: IndianRupee,
+      iconColor: 'text-purple-600',
+      iconBg: 'bg-purple-50',
+      trend: { current: stats.totalSales, previous: prev.totalSales },
+    },
+    {
+      label: 'Earnings',
+      value: formatCurrency(stats.totalEarnings ?? 0),
+      sub: 'Total earnings',
+      icon: IndianRupee,
+      iconColor: 'text-amber-600',
+      iconBg: 'bg-amber-50',
+      trend: { current: stats.totalEarnings, previous: prev.totalEarnings },
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Pending approval banner */}
-      {!isApproved && (
-        <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
-          <Clock size={18} className="text-yellow-600 shrink-0 mt-0.5" />
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-secondary-900">Vendor Dashboard</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setRev((r) => r + 1)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-secondary-200 rounded-lg hover:bg-secondary-50"
+          >
+            <RefreshCw size={14} /> Refresh
+          </button>
+          {PERIODS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
+              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                period === p.id
+                  ? 'bg-primary-600 text-white'
+                  : 'text-secondary-600 hover:bg-secondary-100'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Alert banner */}
+      {totalPendingActions > 0 && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <AlertTriangle size={18} className="text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-yellow-800">Account pending approval</p>
-            <p className="text-xs text-yellow-700 mt-0.5">Our team will review your vendor account within 1 business day. You can add products now — they'll go live once you're approved.</p>
+            <p className="text-sm font-semibold text-amber-800">
+              You have {totalPendingActions} item{totalPendingActions > 1 ? 's' : ''} that need attention
+            </p>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {stats.pendingOrders > 0 && (
+                <Link
+                  to="/vendor-dashboard/orders?status=pending"
+                  className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-full transition-colors"
+                >
+                  📦 {stats.pendingOrders} orders to ship
+                  <ArrowRight size={11} />
+                </Link>
+              )}
+              {stats.lowStockProducts > 0 && (
+                <Link
+                  to="/vendor-dashboard/inventory?filter=low-stock"
+                  className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-full transition-colors"
+                >
+                  ⚠️ {stats.lowStockProducts} low stock items
+                  <ArrowRight size={11} />
+                </Link>
+              )}
+              {stats.pendingReviews > 0 && (
+                <Link
+                  to="/vendor-dashboard/reviews"
+                  className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-full transition-colors"
+                >
+                  ⭐ {stats.pendingReviews} reviews to respond
+                  <ArrowRight size={11} />
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Vendor Dashboard</h1>
-          <p className="text-secondary-500 text-sm mt-0.5">Welcome back, {user?.name}</p>
-        </div>
-        <Link to="/dashboard/vendor/products" className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded text-sm font-semibold transition-colors">
-          <Plus size={16} /> Add Product
-        </Link>
-      </div>
-
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Products', value: totalProducts, icon: Package, color: 'bg-primary-500', sub: `${publishedProducts} live · ${draftProducts} draft` },
-          { label: 'Total Orders', value: totalOrders, icon: ShoppingBag, color: 'bg-orange-500', sub: `${pendingOrders} pending` },
-          { label: 'Confirmed Earnings', value: formatCurrency(confirmedEarnings), icon: IndianRupee, color: 'bg-green-500', sub: `After ${commissionRate}% platform fee` },
-          { label: 'Pending Earnings', value: formatCurrency(pendingEarnings), icon: TrendingUp, color: 'bg-yellow-500', sub: 'Awaiting delivery' },
-        ].map((s) => (
-          <div key={s.label} className="card p-5">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${s.color} mb-3`}>
-              <s.icon size={20} className="text-white" />
-            </div>
-            <p className="text-2xl font-black">{s.value}</p>
-            <p className="text-sm text-secondary-500 mt-0.5">{s.label}</p>
-            {s.sub && <p className="text-xs text-secondary-400 mt-0.5">{s.sub}</p>}
-          </div>
-        ))}
-      </div>
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Add New Product', to: '/dashboard/vendor/products', icon: Plus, color: 'bg-blue-50 text-blue-700 border-blue-200' },
-          { label: 'View All Orders', to: '/dashboard/vendor/orders', icon: ShoppingBag, color: 'bg-orange-50 text-orange-700 border-orange-200' },
-          { label: 'Manage Products', to: '/dashboard/vendor/products', icon: Package, color: 'bg-green-50 text-green-700 border-green-200' },
-          { label: 'Restock Alerts', to: '/dashboard/vendor/products', icon: AlertTriangle, color: 'bg-red-50 text-red-700 border-red-200' },
-        ].map((a) => (
-          <Link key={a.label} to={a.to} className={`card border p-4 flex items-center gap-3 font-semibold text-sm hover:shadow-md transition-shadow ${a.color}`}>
-            <a.icon size={18} /> {a.label}
-          </Link>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent orders */}
-        <div className="lg:col-span-2 card">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-secondary-100">
-            <h2 className="font-bold">Recent Orders</h2>
-            <Link to="/dashboard/vendor/orders" className="text-xs text-primary-600 hover:underline font-medium flex items-center gap-1">View all <ArrowRight size={12} /></Link>
-          </div>
-          {!orders.length ? (
-            <div className="text-center py-10 text-secondary-400">
-              <ShoppingBag size={32} className="mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No orders yet. Start by adding products.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-secondary-50">
-              {orders.slice(0, 6).map((o) => (
-                <div key={o._id} className="flex items-center justify-between px-5 py-3">
-                  <div>
-                    <p className="text-sm font-mono font-semibold text-primary-600">#{o._id.slice(-8).toUpperCase()}</p>
-                    <p className="text-xs text-secondary-500">{o.user?.name} · {new Date(o.createdAt).toLocaleDateString('en-IN')}</p>
+      {isLoading ? (
+        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {statCards.map((s) => (
+              <div key={s.label} className="card p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.iconBg}`}>
+                    <s.icon size={20} className={s.iconColor} />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold">{formatCurrency(o.totalAmount)}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_COLORS[o.status] || 'bg-secondary-100 text-secondary-600'}`}>{o.status}</span>
+                  <TrendIndicator current={s.trend.current} previous={s.trend.previous} />
+                </div>
+                <p className="text-2xl font-black text-secondary-900">{s.value}</p>
+                <p className="text-sm text-secondary-500 mt-0.5">{s.label}</p>
+                {s.sub && (
+                  <p className={`text-xs mt-0.5 ${s.subColor || 'text-secondary-400'}`}>{s.sub}</p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Sales Chart */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="font-bold text-secondary-900">Sales Overview</h2>
+                {prev.totalSales > 0 && (
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-xs text-secondary-400">vs previous period:</span>
+                    <TrendIndicator current={stats.totalSales} previous={prev.totalSales} />
+                  </div>
+                )}
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={60} tickFormatter={(v) => v === 0 ? '0' : `₹${(v / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(value) => [formatCurrency(value), 'Sales']} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }} />
+                <Line type="monotone" dataKey="sales" stroke="#2563eb" strokeWidth={2} dot={{ r: 3, fill: '#2563eb' }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Quick action cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              {
+                label: 'Manage Products',
+                desc: 'Add, edit, or remove products from your store',
+                to: '/dashboard/vendor/products',
+                icon: Package,
+              },
+              {
+                label: 'Process Orders',
+                desc: 'View and fulfill customer orders',
+                to: '/dashboard/vendor/orders',
+                icon: ShoppingBag,
+                badge: stats.pendingOrders || 0,
+              },
+              {
+                label: 'Sponsored Ads',
+                desc: 'Create campaigns to promote your products',
+                to: '/dashboard/vendor/ads',
+                icon: Megaphone,
+              },
+            ].map((a) => (
+              <Link
+                key={a.label}
+                to={a.to}
+                className="card p-5 flex items-center justify-between hover:shadow-md transition-shadow group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-secondary-100 flex items-center justify-center group-hover:bg-primary-50 transition-colors">
+                    <a.icon size={18} className="text-secondary-500 group-hover:text-primary-600 transition-colors" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-secondary-900 text-sm">{a.label}</p>
+                    <p className="text-xs text-secondary-400 mt-0.5">{a.desc}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right column */}
-        <div className="space-y-4">
-          {/* Low stock */}
-          <div className="card">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-secondary-100">
-              <h2 className="font-bold text-orange-600 flex items-center gap-2"><AlertTriangle size={15} /> Low Stock</h2>
-              <Link to="/dashboard/vendor/products" className="text-xs text-primary-600 hover:underline font-medium">Fix</Link>
-            </div>
-            {!lowStock.length ? (
-              <p className="text-center py-6 text-secondary-400 text-sm">All products well stocked ✓</p>
-            ) : (
-              <div className="divide-y divide-secondary-50">
-                {lowStock.slice(0, 5).map((p) => (
-                  <div key={p._id} className="flex items-center justify-between px-5 py-2.5">
-                    <p className="text-sm font-medium line-clamp-1 flex-1 mr-2">{p.title}</p>
-                    <span className={`text-xs font-bold shrink-0 ${p.stock === 0 ? 'text-red-600' : 'text-orange-600'}`}>
-                      {p.stock === 0 ? 'Out' : `${p.stock} left`}
+                <div className="flex items-center gap-2 shrink-0">
+                  {a.badge > 0 && (
+                    <span className="w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">
+                      {a.badge}
                     </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                  )}
+                  <ArrowRight size={16} className="text-secondary-300 group-hover:text-secondary-500 transition-colors" />
+                </div>
+              </Link>
+            ))}
           </div>
-
-          {/* Top products */}
-          <div className="card">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-secondary-100">
-              <h2 className="font-bold">Your Products</h2>
-              <Link to="/dashboard/vendor/products" className="text-xs text-primary-600 hover:underline font-medium flex items-center gap-1">Manage <ArrowRight size={12} /></Link>
-            </div>
-            {!products.length ? (
-              <div className="text-center py-6 text-secondary-400">
-                <p className="text-sm">No products yet</p>
-                <Link to="/dashboard/vendor/products" className="text-xs text-primary-600 font-semibold mt-1 block">+ Add your first product</Link>
-              </div>
-            ) : (
-              <div className="divide-y divide-secondary-50">
-                {products.slice(0, 4).map((p) => (
-                  <div key={p._id} className="flex items-center gap-3 px-5 py-2.5">
-                    {p.images?.[0] && <img src={p.images[0]} alt="" className="w-8 h-8 rounded object-cover bg-secondary-100" onError={(e) => e.target.style.display='none'} />}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium line-clamp-1">{p.title}</p>
-                      <p className="text-xs text-secondary-400">Stock: {p.stock}</p>
-                    </div>
-                    <p className="text-xs font-bold text-primary-700 shrink-0">{formatCurrency(p.price)}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

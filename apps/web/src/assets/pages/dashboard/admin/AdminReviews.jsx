@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  Star, RefreshCw, Download, MessageSquare, CheckCircle2,
-  ShieldCheck, TrendingUp, Search, X, Trash2, Check, Ban, PenLine,
+  Star, RefreshCw, Download, MessageSquare, CheckCircle2, ShieldCheck,
+  TrendingUp, Search, X, Trash2, Check, Ban, Eye, Send, ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import api from '../../../../utils/api';
 import { formatDate } from '../../../../utils/format';
@@ -9,162 +9,14 @@ import { useFetch, useAction } from '../../../../hooks';
 import Spinner from '../../../components/common/Spinner';
 import toast from 'react-hot-toast';
 
-function StarPicker({ value, onChange }) {
-  const [hover, setHover] = useState(0);
-  return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button key={n} type="button"
-          onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)}
-          onClick={() => onChange(n)}
-        >
-          <Star size={22} className={n <= (hover || value) ? 'fill-yellow-400 text-yellow-400' : 'text-secondary-200'} />
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function WriteReviewModal({ onClose, onSuccess }) {
-  const [productSearch, setProductSearch] = useState('');
-  const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [alreadyReviewed, setAlreadyReviewed] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function searchProducts(q) {
-    if (!q.trim()) { setProducts([]); return; }
-    setSearching(true);
-    try {
-      const { data } = await api.get('/products', { params: { search: q, limit: 8 } });
-      setProducts(data.products || []);
-    } catch { setProducts([]); }
-    finally { setSearching(false); }
-  }
-
-  async function selectProduct(p) {
-    setSelectedProduct(p);
-    setProducts([]);
-    setAlreadyReviewed(false);
-    try {
-      const { data } = await api.get(`/reviews/product/${p._id}`);
-      setAlreadyReviewed(!!data.hasReviewed);
-    } catch { /* ignore */ }
-  }
-
-  async function handleSubmit() {
-    if (!selectedProduct) { toast.error('Select a product'); return; }
-    if (!rating) { toast.error('Select a rating'); return; }
-    setSubmitting(true);
-    try {
-      await api.post('/reviews', { productId: selectedProduct._id, rating, title, body });
-      toast.success('Review submitted');
-      onSuccess();
-      onClose();
-    } catch (err) {
-      const msg = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to submit';
-      toast.error(msg);
-    } finally { setSubmitting(false); }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-100">
-          <h3 className="font-bold text-secondary-900">Write a Review (Admin)</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-secondary-100 rounded-lg"><X size={16} /></button>
-        </div>
-        <div className="p-6 space-y-4">
-          {/* Product search */}
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-1.5">Search Product</label>
-            {selectedProduct ? (
-              <div>
-                <div className="flex items-center gap-3 bg-secondary-50 rounded-xl p-3 border border-secondary-200">
-                  {selectedProduct.images?.[0] && <img src={selectedProduct.images[0]} alt="" className="w-10 h-10 rounded-lg object-cover" />}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{selectedProduct.title}</p>
-                    <p className="text-xs text-secondary-400">{selectedProduct.sku}</p>
-                  </div>
-                  <button onClick={() => { setSelectedProduct(null); setProductSearch(''); setAlreadyReviewed(false); }} className="text-secondary-400 hover:text-secondary-600"><X size={14} /></button>
-                </div>
-                {alreadyReviewed && (
-                  <p className="mt-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                    You already have a review for this product. Delete the existing one to submit a new one.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
-                <input
-                  className="input pl-8 w-full"
-                  placeholder="Type product name..."
-                  value={productSearch}
-                  onChange={(e) => { setProductSearch(e.target.value); searchProducts(e.target.value); }}
-                />
-                {products.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-secondary-200 rounded-xl shadow-lg mt-1 z-10 max-h-48 overflow-y-auto">
-                    {products.map((p) => (
-                      <button key={p._id} onClick={() => selectProduct(p)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-secondary-50 text-left">
-                        {p.images?.[0] && <img src={p.images[0]} alt="" className="w-8 h-8 rounded object-cover shrink-0" />}
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{p.title}</p>
-                          <p className="text-xs text-secondary-400">₹{p.price}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {searching && <p className="text-xs text-secondary-400 mt-1">Searching...</p>}
-              </div>
-            )}
-          </div>
-
-          {!alreadyReviewed && (
-            <>
-              {/* Rating */}
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1.5">Rating *</label>
-                <StarPicker value={rating} onChange={setRating} />
-              </div>
-
-              {/* Title + Body */}
-              <input className="input w-full" placeholder="Review title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} />
-              <textarea className="input w-full h-24 resize-none" placeholder="Write your review..." value={body} onChange={(e) => setBody(e.target.value)} />
-            </>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-secondary-200 rounded-xl text-sm font-semibold hover:bg-secondary-50">Cancel</button>
-            {!alreadyReviewed && (
-              <button onClick={handleSubmit} disabled={submitting} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
-                {submitting ? 'Submitting…' : 'Submit Review'}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const STATUS_STYLES = {
-  approved: 'bg-green-100 text-green-700',
-  pending:  'bg-yellow-100 text-yellow-700',
-  rejected: 'bg-red-100 text-red-700',
-};
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function Stars({ rating, size = 14 }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => (
-        <Star key={i} size={size} className={i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-secondary-200 fill-secondary-200'} />
+        <Star key={i} size={size}
+          className={i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-secondary-200 fill-secondary-200'} />
       ))}
     </div>
   );
@@ -172,56 +24,375 @@ function Stars({ rating, size = 14 }) {
 
 function RatingBar({ star, count, max }) {
   const pct = max > 0 ? (count / max) * 100 : 0;
+  const color = star >= 4 ? 'bg-green-400' : star === 3 ? 'bg-yellow-400' : 'bg-red-400';
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-gray-400 w-8 shrink-0">{star} star</span>
       <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-        <div className="h-full bg-yellow-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+        <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs text-gray-400 w-4 text-right shrink-0">{count}</span>
     </div>
   );
 }
 
+const STATUS_STYLES = {
+  approved: 'bg-green-100 text-green-700',
+  pending: 'bg-yellow-100 text-yellow-700',
+  rejected: 'bg-red-100 text-red-700',
+};
+
+const RESPONSE_TEMPLATES = [
+  { id: 'thanks', label: 'Thank You', text: 'Thank you for taking the time to leave a review! We really appreciate your feedback and are glad you had a positive experience with us.' },
+  { id: 'sorry', label: 'Apology', text: 'We sincerely apologize for the experience you had. This does not reflect our standard of service and we would love the opportunity to make it right.' },
+  { id: 'contact', label: 'Contact Us', text: 'Thank you for your feedback. Please contact our support team at support@vtechkitchen.com so we can resolve this for you as quickly as possible.' },
+  { id: 'resolved', label: 'Issue Resolved', text: 'We appreciate your patience while we addressed your concern. The issue has been resolved and we hope to serve you better going forward.' },
+];
+
+// ─── Review Detail Modal ───────────────────────────────────────────────────────
+
+function ReviewModal({ review: initialReview, onClose, onRefresh }) {
+  const [review, setReview] = useState(initialReview);
+  const [responseText, setResponseText] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function updateStatus(status, reason) {
+    setSaving(true);
+    try {
+      const { data } = await api.put(`/admin/reviews/${review._id}/status`, {
+        status,
+        ...(reason ? { rejectionReason: reason } : {}),
+      });
+      setReview(data.review);
+      toast.success(status === 'approved' ? 'Review approved' : 'Review rejected');
+      setRejecting(false);
+      onRefresh();
+    } catch {
+      toast.error('Failed to update status');
+    } finally { setSaving(false); }
+  }
+
+  async function submitResponse() {
+    if (responseText.trim().length < 10) {
+      toast.error('Response must be at least 10 characters');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data } = await api.put(`/admin/reviews/${review._id}/respond`, { text: responseText });
+      setReview(data.review);
+      setResponseText('');
+      toast.success('Response submitted');
+      onRefresh();
+    } catch {
+      toast.error('Failed to submit response');
+    } finally { setSaving(false); }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('Delete this review permanently?')) return;
+    setSaving(true);
+    try {
+      await api.delete(`/admin/reviews/${review._id}`);
+      toast.success('Review deleted');
+      onRefresh();
+      onClose();
+    } catch {
+      toast.error('Failed to delete review');
+    } finally { setSaving(false); }
+  }
+
+  const shortId = review._id?.slice(-8) || '';
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-100 shrink-0">
+          <h3 className="font-bold text-secondary-900">Review Details <span className="text-secondary-400 font-mono text-sm">#{shortId}</span></h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 p-6 space-y-5">
+          {/* Status + rating */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${STATUS_STYLES[review.status] || 'bg-secondary-100 text-secondary-600'}`}>
+              {review.status}
+            </span>
+            {review.verified && (
+              <span className="flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                <ShieldCheck size={11} /> Verified Purchase
+              </span>
+            )}
+            <div className="ml-auto">
+              <Stars rating={review.rating} size={20} />
+            </div>
+          </div>
+
+          {/* Product */}
+          {review.product && (
+            <div className="flex items-center gap-3 p-3 bg-secondary-50 rounded-xl border border-secondary-100">
+              {review.product.images?.[0] && (
+                <img src={review.product.images[0]} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+              )}
+              <div>
+                <p className="font-semibold text-sm text-secondary-900">{review.product.title}</p>
+                {review.product.slug && <p className="text-xs text-secondary-400">{review.product.slug}</p>}
+              </div>
+            </div>
+          )}
+
+          {/* Customer */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-secondary-900">{review.user?.name || '—'}</p>
+              <p className="text-xs text-secondary-400">{review.user?.email}</p>
+            </div>
+            <div className="flex items-center gap-3 text-sm text-secondary-500">
+              <span className="flex items-center gap-1"><ThumbsUp size={13} className="text-green-500" /> {review.helpfulCount || 0}</span>
+              <span className="flex items-center gap-1"><ThumbsDown size={13} className="text-red-400" /> {review.unhelpfulCount || 0}</span>
+            </div>
+          </div>
+
+          {/* Review title */}
+          {review.title && (
+            <p className="font-semibold text-secondary-800">"{review.title}"</p>
+          )}
+
+          {/* Comment */}
+          {(review.body || review.comment) && (
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <p className="text-sm text-secondary-700 whitespace-pre-wrap">{review.body || review.comment}</p>
+            </div>
+          )}
+
+          {/* Customer images */}
+          {review.images?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wide mb-2">Customer Photos</p>
+              <div className="flex gap-2 flex-wrap">
+                {review.images.map((img, i) => (
+                  <a key={i} href={img} target="_blank" rel="noreferrer">
+                    <img src={img} alt="" className="w-16 h-16 rounded-lg object-cover border border-secondary-200 hover:opacity-80 transition-opacity" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Rejection reason */}
+          {review.status === 'rejected' && review.rejectionReason && (
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl">
+              <p className="text-xs font-semibold text-red-600 mb-1">Rejection Reason</p>
+              <p className="text-sm text-red-700">{review.rejectionReason}</p>
+            </div>
+          )}
+
+          {/* Inline rejection reason input */}
+          {rejecting && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+              <p className="text-sm font-semibold text-amber-800">Provide a rejection reason (optional)</p>
+              <textarea
+                className="input w-full h-20 resize-none text-sm"
+                placeholder="Why is this review being rejected?"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => updateStatus('rejected', rejectionReason)}
+                  disabled={saving}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+                >
+                  Confirm Reject
+                </button>
+                <button
+                  onClick={() => { setRejecting(false); setRejectionReason(''); }}
+                  className="px-4 py-2 border border-secondary-200 rounded-lg text-sm font-medium hover:bg-secondary-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Admin response */}
+          {review.vendorResponse?.text ? (
+            <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
+              <p className="text-xs font-semibold text-green-700 mb-1">
+                Admin Response · {review.vendorResponse.respondedAt ? formatDate(review.vendorResponse.respondedAt) : ''}
+              </p>
+              <p className="text-sm text-green-800 whitespace-pre-wrap">{review.vendorResponse.text}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wide">Add Public Response</p>
+              <div className="flex gap-2 flex-wrap">
+                {RESPONSE_TEMPLATES.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setResponseText(t.text)}
+                    className="px-3 py-1.5 text-xs font-medium border border-secondary-200 rounded-lg hover:bg-secondary-50 transition-colors"
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                className="input w-full h-24 resize-none text-sm"
+                placeholder="Write a public response to this review… (min 10 characters)"
+                value={responseText}
+                onChange={(e) => setResponseText(e.target.value)}
+              />
+              <button
+                onClick={submitResponse}
+                disabled={saving || responseText.trim().length < 10}
+                className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50 transition-colors"
+              >
+                <Send size={13} /> Submit Response
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="flex items-center gap-2 px-6 py-4 border-t border-secondary-100 shrink-0">
+          {review.status === 'pending' && (
+            <>
+              <button
+                onClick={() => updateStatus('approved')}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+              >
+                <Check size={14} /> Approve
+              </button>
+              <button
+                onClick={() => setRejecting(true)}
+                disabled={saving || rejecting}
+                className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+              >
+                <Ban size={14} /> Reject
+              </button>
+            </>
+          )}
+          <div className="flex-1" />
+          <button
+            onClick={handleDelete}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-sm font-semibold disabled:opacity-50"
+          >
+            <Trash2 size={14} /> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
+
 export default function AdminReviews() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [ratingFilter, setRatingFilter] = useState('');
+  const [verifiedFilter, setVerifiedFilter] = useState('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
   const [rev, setRev] = useState(0);
-  const [showWriteModal, setShowWriteModal] = useState(false);
+  const [viewingReview, setViewingReview] = useState(null);
+
+  const { data: statsData } = useFetch(
+    ['admin-reviews-stats', rev],
+    () => api.get('/admin/reviews/stats').then((r) => r.data),
+  );
 
   const { data, isLoading } = useFetch(
-    ['admin-reviews', page, statusFilter, ratingFilter, search, rev],
+    ['admin-reviews', page, statusFilter, ratingFilter, verifiedFilter, search, rev],
     () => api.get('/admin/reviews', {
-      params: { page, limit: 20, status: statusFilter || undefined, rating: ratingFilter || undefined, search: search || undefined },
-    }).then((r) => r.data)
+      params: {
+        page,
+        limit: 20,
+        status: statusFilter || undefined,
+        rating: ratingFilter || undefined,
+        verified: verifiedFilter || undefined,
+        search: search || undefined,
+      },
+    }).then((r) => r.data),
   );
 
-  const { mutate: updateReview } = useAction(
-    ({ id, ...body }) => api.put(`/admin/reviews/${id}`, body),
-    { onSuccess: () => setRev((r) => r + 1), onError: () => toast.error('Failed') }
+  const { mutate: updateStatus } = useAction(
+    ({ id, status }) => api.put(`/admin/reviews/${id}/status`, { status }),
+    {
+      onSuccess: (_, { status }) => {
+        toast.success(status === 'approved' ? 'Approved' : 'Rejected');
+        refresh();
+      },
+      onError: () => toast.error('Failed'),
+    },
   );
+
   const { mutate: deleteReview } = useAction(
     (id) => api.delete(`/admin/reviews/${id}`),
-    { onSuccess: () => { toast.success('Review deleted'); setRev((r) => r + 1); setSelected((s) => s.filter((x) => x !== id)); }, onError: () => toast.error('Failed') }
+    {
+      onSuccess: (_, id) => {
+        toast.success('Review deleted');
+        setSelected((s) => s.filter((x) => x !== id));
+        refresh();
+      },
+      onError: () => toast.error('Failed to delete'),
+    },
   );
 
+  const { mutate: bulkUpdate, isLoading: bulkLoading } = useAction(
+    ({ ids, status }) => api.post('/admin/reviews/bulk-update', { ids, status }),
+    {
+      onSuccess: (_, { status }) => {
+        setSelected([]);
+        toast.success(status === 'delete' ? 'Reviews deleted' : `Reviews ${status}`);
+        refresh();
+      },
+      onError: () => toast.error('Bulk action failed'),
+    },
+  );
+
+  function refresh() { setRev((r) => r + 1); }
+
+  const stats = statsData || {};
   const reviews = data?.reviews || [];
-  const stats = data?.stats || {};
   const pagination = data?.pagination;
   const totalPages = Math.ceil((pagination?.total || 0) / (pagination?.limit || 20));
   const maxDist = Math.max(...[5, 4, 3, 2, 1].map((s) => stats.ratingDist?.[s] || 0), 1);
+  const hasFilters = statusFilter || ratingFilter || verifiedFilter || search;
 
-  function toggleSelect(id) { setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]); }
-  function toggleAll() { setSelected((s) => s.length === reviews.length ? [] : reviews.map((r) => r._id)); }
+  function toggleSelect(id) {
+    setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+  }
+  function toggleAll() {
+    setSelected((s) => s.length === reviews.length ? [] : reviews.map((r) => r._id));
+  }
 
   function exportCSV() {
     if (!reviews.length) return;
-    const rows = [['Product', 'Customer', 'Rating', 'Title', 'Comment', 'Status', 'Date']];
-    reviews.forEach((r) => rows.push([r.product?.title || '', r.user?.name || '', r.rating, r.title || '', r.body || '', r.status, new Date(r.createdAt).toLocaleDateString()]));
-    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const rows = [['Date', 'Product', 'Customer', 'Rating', 'Comment', 'Status', 'Verified', 'Helpful']];
+    reviews.forEach((r) => rows.push([
+      new Date(r.createdAt).toLocaleDateString(),
+      r.product?.title || '',
+      r.user?.name || '',
+      r.rating,
+      (r.body || r.comment || '').slice(0, 100),
+      r.status,
+      r.verified ? 'Yes' : 'No',
+      r.helpfulCount || 0,
+    ]));
+    const csv = rows.map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = `reviews-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -237,19 +408,22 @@ export default function AdminReviews() {
           <p className="text-sm text-secondary-500 mt-0.5">Manage and moderate customer reviews</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setRev((r) => r + 1)} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-secondary-200 rounded-lg hover:bg-secondary-50">
+          <button
+            onClick={refresh}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-secondary-200 rounded-lg hover:bg-secondary-50"
+          >
             <RefreshCw size={14} /> Refresh
           </button>
-          <button onClick={() => setShowWriteModal(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-secondary-200 rounded-lg hover:bg-secondary-50">
-            <PenLine size={14} /> Write Review
-          </button>
-          <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-primary-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-primary-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
             <Download size={14} /> Export CSV
           </button>
         </div>
       </div>
 
-      {/* Top row: Rating Overview + stat cards + insights */}
+      {/* Stats row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Rating Overview dark card */}
         <div className="rounded-2xl bg-[#0f1117] text-white p-5">
@@ -299,8 +473,8 @@ export default function AdminReviews() {
           </div>
           <div className="space-y-3">
             {[
-              { label: 'Response Rate', value: '0%', color: 'text-green-600' },
-              { label: 'Helpful Votes', value: 0, color: 'text-secondary-800' },
+              { label: 'Response Rate', value: `${stats.responseRate ?? 0}%`, color: 'text-green-600' },
+              { label: 'Helpful Votes', value: stats.totalHelpful ?? 0, color: 'text-secondary-800' },
               { label: 'This Week', value: stats.thisWeek ?? 0, color: 'text-blue-600' },
               { label: 'Positive (4-5 stars)', value: `${stats.positiveRate ?? 0}%`, color: 'text-green-600' },
             ].map((r) => (
@@ -330,16 +504,63 @@ export default function AdminReviews() {
           <option value="pending">Pending</option>
           <option value="rejected">Rejected</option>
         </select>
-        <select className="input w-36 text-sm" value={ratingFilter} onChange={(e) => { setRatingFilter(e.target.value); setPage(1); }}>
+        <select className="input w-32 text-sm" value={ratingFilter} onChange={(e) => { setRatingFilter(e.target.value); setPage(1); }}>
           <option value="">All Ratings</option>
           {[5, 4, 3, 2, 1].map((r) => <option key={r} value={r}>{r} Stars</option>)}
         </select>
-        {(statusFilter || ratingFilter || search) && (
-          <button onClick={() => { setStatusFilter(''); setRatingFilter(''); setSearch(''); setPage(1); }} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-secondary-200 rounded-lg hover:bg-secondary-50 text-secondary-600">
+        <select className="input w-36 text-sm" value={verifiedFilter} onChange={(e) => { setVerifiedFilter(e.target.value); setPage(1); }}>
+          <option value="">All Reviews</option>
+          <option value="true">Verified Only</option>
+          <option value="false">Unverified</option>
+        </select>
+        {hasFilters && (
+          <button
+            onClick={() => { setStatusFilter(''); setRatingFilter(''); setVerifiedFilter(''); setSearch(''); setPage(1); }}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-secondary-200 rounded-lg hover:bg-secondary-50 text-secondary-600"
+          >
             <X size={13} /> Clear Filters
           </button>
         )}
       </div>
+
+      {/* Bulk actions bar */}
+      {selected.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl">
+          <span className="text-sm font-semibold text-blue-700">{selected.length} selected</span>
+          <div className="h-4 w-px bg-blue-200" />
+          <button
+            onClick={() => bulkUpdate({ ids: selected, status: 'approved' })}
+            disabled={bulkLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg disabled:opacity-50"
+          >
+            <Check size={12} /> Approve All
+          </button>
+          <button
+            onClick={() => bulkUpdate({ ids: selected, status: 'rejected' })}
+            disabled={bulkLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded-lg disabled:opacity-50"
+          >
+            <Ban size={12} /> Reject All
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm(`Delete ${selected.length} reviews permanently?`)) {
+                bulkUpdate({ ids: selected, status: 'delete' });
+              }
+            }}
+            disabled={bulkLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-50"
+          >
+            <Trash2 size={12} /> Delete All
+          </button>
+          <button
+            onClick={() => setSelected([])}
+            className="ml-auto text-xs text-secondary-500 hover:text-secondary-700"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       {isLoading ? (
@@ -351,7 +572,12 @@ export default function AdminReviews() {
               <thead>
                 <tr className="bg-secondary-900 text-white">
                   <th className="w-10 px-4 py-3">
-                    <input type="checkbox" className="rounded border-secondary-600 bg-transparent" checked={reviews.length > 0 && selected.length === reviews.length} onChange={toggleAll} />
+                    <input
+                      type="checkbox"
+                      className="rounded border-secondary-600 bg-transparent"
+                      checked={reviews.length > 0 && selected.length === reviews.length}
+                      onChange={toggleAll}
+                    />
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide">Product</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide">Customer</th>
@@ -364,18 +590,35 @@ export default function AdminReviews() {
               </thead>
               <tbody className="divide-y divide-secondary-50">
                 {!reviews.length ? (
-                  <tr><td colSpan={8} className="text-center py-12 text-secondary-400">No reviews found</td></tr>
+                  <tr>
+                    <td colSpan={8} className="text-center py-12 text-secondary-400">No reviews found</td>
+                  </tr>
                 ) : reviews.map((r) => (
-                  <tr key={r._id} className={`hover:bg-secondary-50 transition-colors ${selected.includes(r._id) ? 'bg-blue-50/40' : ''}`}>
+                  <tr
+                    key={r._id}
+                    className={`hover:bg-secondary-50 transition-colors ${selected.includes(r._id) ? 'bg-blue-50/40' : ''}`}
+                  >
                     <td className="px-4 py-3">
-                      <input type="checkbox" className="rounded border-secondary-300" checked={selected.includes(r._id)} onChange={() => toggleSelect(r._id)} />
+                      <input
+                        type="checkbox"
+                        className="rounded border-secondary-300"
+                        checked={selected.includes(r._id)}
+                        onChange={() => toggleSelect(r._id)}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 min-w-0">
                         {r.product?.images?.[0] && (
-                          <img src={r.product.images[0]} alt="" className="w-8 h-8 rounded object-cover bg-secondary-100 shrink-0" onError={(e) => e.target.style.display='none'} />
+                          <img
+                            src={r.product.images[0]}
+                            alt=""
+                            className="w-8 h-8 rounded object-cover bg-secondary-100 shrink-0"
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
                         )}
-                        <p className="text-xs font-medium text-secondary-800 line-clamp-2 max-w-[140px]">{r.product?.title || '—'}</p>
+                        <p className="text-xs font-medium text-secondary-800 line-clamp-2 max-w-[140px]">
+                          {r.product?.title || <span className="text-secondary-400 italic">Deleted product</span>}
+                        </p>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -388,28 +631,58 @@ export default function AdminReviews() {
                     </td>
                     <td className="px-4 py-3 max-w-[220px]">
                       {r.title && <p className="text-xs font-semibold text-secondary-800 mb-0.5">{r.title}</p>}
-                      <p className="text-xs text-secondary-500 line-clamp-2">{r.body || <span className="italic text-secondary-300">No comment</span>}</p>
+                      <p className="text-xs text-secondary-500 line-clamp-2">
+                        {(r.body || r.comment) || <span className="italic text-secondary-300">No comment</span>}
+                      </p>
+                      {r.vendorResponse?.text && (
+                        <span className="inline-flex items-center gap-1 mt-1 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
+                          <MessageSquare size={9} /> Responded
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[r.status] || 'bg-secondary-100 text-secondary-600'}`}>
                         {r.status}
                       </span>
-                      {r.verified && <span className="ml-1 text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full font-semibold">Verified</span>}
+                      {r.verified && (
+                        <span className="ml-1 text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full font-semibold">
+                          Verified
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-secondary-400 text-xs">{formatDate(r.createdAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        {r.status !== 'approved' && (
-                          <button onClick={() => { updateReview({ id: r._id, status: 'approved' }); toast.success('Approved'); }} className="w-8 h-8 flex items-center justify-center rounded-lg text-green-500 hover:bg-green-50 transition-colors" title="Approve">
+                        <button
+                          onClick={() => setViewingReview(r)}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-blue-500 hover:bg-blue-50 transition-colors"
+                          title="View"
+                        >
+                          <Eye size={14} />
+                        </button>
+                        {r.status === 'pending' && (
+                          <button
+                            onClick={() => updateStatus({ id: r._id, status: 'approved' })}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-green-500 hover:bg-green-50 transition-colors"
+                            title="Approve"
+                          >
                             <Check size={14} />
                           </button>
                         )}
-                        {r.status !== 'rejected' && (
-                          <button onClick={() => { updateReview({ id: r._id, status: 'rejected' }); toast.success('Rejected'); }} className="w-8 h-8 flex items-center justify-center rounded-lg text-amber-500 hover:bg-amber-50 transition-colors" title="Reject">
+                        {r.status === 'pending' && (
+                          <button
+                            onClick={() => setViewingReview(r)}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-amber-500 hover:bg-amber-50 transition-colors"
+                            title="Reject"
+                          >
                             <Ban size={14} />
                           </button>
                         )}
-                        <button onClick={() => { if (window.confirm('Delete this review?')) deleteReview(r._id); }} className="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 transition-colors" title="Delete">
+                        <button
+                          onClick={() => { if (window.confirm('Delete this review?')) deleteReview(r._id); }}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 transition-colors"
+                          title="Delete"
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -424,22 +697,45 @@ export default function AdminReviews() {
             <div className="flex items-center justify-between px-5 py-3 border-t border-secondary-100">
               <span className="text-xs text-secondary-500">Page {page} of {totalPages} · {pagination?.total} reviews</span>
               <div className="flex gap-1">
-                <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-secondary-100 disabled:opacity-40">← Prev</button>
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(page - 1)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-secondary-100 disabled:opacity-40"
+                >
+                  ← Prev
+                </button>
                 {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  const p = totalPages <= 7 ? i + 1 : page <= 4 ? i + 1 : page >= totalPages - 3 ? totalPages - 6 + i : page - 3 + i;
-                  return <button key={p} onClick={() => setPage(p)} className={`w-8 h-8 rounded-lg text-xs font-medium ${p === page ? 'bg-primary-600 text-white' : 'hover:bg-secondary-100'}`}>{p}</button>;
+                  const p = totalPages <= 7 ? i + 1
+                    : page <= 4 ? i + 1
+                    : page >= totalPages - 3 ? totalPages - 6 + i
+                    : page - 3 + i;
+                  return (
+                    <button key={p} onClick={() => setPage(p)}
+                      className={`w-8 h-8 rounded-lg text-xs font-medium ${p === page ? 'bg-primary-600 text-white' : 'hover:bg-secondary-100'}`}
+                    >
+                      {p}
+                    </button>
+                  );
                 })}
-                <button disabled={page === totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-secondary-100 disabled:opacity-40">Next →</button>
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage(page + 1)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-secondary-100 disabled:opacity-40"
+                >
+                  Next →
+                </button>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {showWriteModal && (
-        <WriteReviewModal
-          onClose={() => setShowWriteModal(false)}
-          onSuccess={() => setRev((r) => r + 1)}
+      {/* Review detail modal */}
+      {viewingReview && (
+        <ReviewModal
+          review={viewingReview}
+          onClose={() => setViewingReview(null)}
+          onRefresh={refresh}
         />
       )}
     </div>

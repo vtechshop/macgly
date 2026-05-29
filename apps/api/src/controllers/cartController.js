@@ -1,6 +1,5 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
-const Coupon = require('../models/Coupon');
 const AppError = require('../utils/AppError');
 
 function cartFilter(req) {
@@ -124,38 +123,6 @@ async function removeItem(req, res, next) {
   } catch (err) { next(err); }
 }
 
-async function applyCoupon(req, res, next) {
-  try {
-    const { code } = req.body;
-    if (!code) throw new AppError('Coupon code required', 400, 'MISSING_FIELDS');
-
-    const coupon = await Coupon.findOne({ code: code.toUpperCase(), isActive: true });
-    if (!coupon) throw new AppError('Invalid or expired coupon', 400, 'INVALID_COUPON');
-
-    const now = new Date();
-    if (coupon.expiresAt && coupon.expiresAt < now) throw new AppError('Coupon expired', 400, 'COUPON_EXPIRED');
-    if (coupon.startsAt && coupon.startsAt > now) throw new AppError('Coupon not active yet', 400, 'COUPON_NOT_ACTIVE');
-    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) throw new AppError('Coupon usage limit reached', 400, 'COUPON_EXHAUSTED');
-
-    const cart = await resolveCart(req);
-    if (!cart) throw new AppError('Cart not found', 404, 'NOT_FOUND');
-
-    const subtotal = cart.items.reduce((s, i) => s + i.price * i.quantity, 0);
-    if (subtotal < coupon.minOrderAmount) {
-      throw new AppError(`Minimum order amount is ${coupon.minOrderAmount}`, 400, 'COUPON_MIN_NOT_MET');
-    }
-
-    let discount = coupon.discountType === 'percent'
-      ? (subtotal * coupon.discountValue) / 100
-      : coupon.discountValue;
-    if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
-
-    cart.coupon = { code: coupon.code, discount, type: coupon.discountType };
-    await cart.save();
-    res.json({ cart, discount });
-  } catch (err) { next(err); }
-}
-
 async function clearCart(req, res, next) {
   try {
     const cart = await resolveCart(req);
@@ -164,4 +131,4 @@ async function clearCart(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getCart, addItem, updateItem, removeItem, applyCoupon, clearCart };
+module.exports = { getCart, addItem, updateItem, removeItem, clearCart };

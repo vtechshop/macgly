@@ -94,7 +94,13 @@ router.put('/vendors/:id/approve', async (req, res, next) => {
 
     const updated = await User.findByIdAndUpdate(
       req.params.id,
-      { 'vendorProfile.approved': true, 'vendorProfile.rejectionReason': '' },
+      {
+        'vendorProfile.approved': true,
+        'vendorProfile.rejectionReason': '',
+        'vendorProfile.kycStatus': 'approved',
+        'vendorProfile.kycVerifiedAt': new Date(),
+        'vendorProfile.kycVerifiedBy': req.user._id,
+      },
       { new: true },
     );
     notif.notifyVendorApprovalStatus({ vendorUserId: updated._id, vendor: updated.vendorProfile, status: 'approved' }).catch(() => {});
@@ -107,7 +113,12 @@ router.put('/vendors/:id/reject', async (req, res, next) => {
     const { reason = '' } = req.body;
     const updated = await User.findOneAndUpdate(
       { _id: req.params.id, role: 'vendor' },
-      { 'vendorProfile.approved': false, 'vendorProfile.rejectionReason': reason.trim() },
+      {
+        'vendorProfile.approved': false,
+        'vendorProfile.rejectionReason': reason.trim(),
+        'vendorProfile.kycStatus': 'rejected',
+        'vendorProfile.kycRejectionReason': reason.trim(),
+      },
       { new: true },
     );
     if (!updated) throw new AppError('Vendor not found', 404, 'NOT_FOUND');

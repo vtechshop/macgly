@@ -42,7 +42,6 @@ const AdminOrders           = lazy(() => import('./assets/pages/dashboard/admin/
 const AdminUsers            = lazy(() => import('./assets/pages/dashboard/admin/AdminUsers'));
 const AdminCategories       = lazy(() => import('./assets/pages/dashboard/admin/AdminCategories'));
 const AdminBanners          = lazy(() => import('./assets/pages/dashboard/admin/AdminBanners'));
-const AdminCoupons          = lazy(() => import('./assets/pages/dashboard/admin/AdminCoupons'));
 const AdminVendors          = lazy(() => import('./assets/pages/dashboard/admin/AdminVendors'));
 const AdminAffiliates       = lazy(() => import('./assets/pages/dashboard/admin/AdminAffiliates'));
 const AdminTickets          = lazy(() => import('./assets/pages/dashboard/admin/AdminTickets'));
@@ -62,9 +61,7 @@ const AdminShareCatalog     = lazy(() => import('./assets/pages/dashboard/admin/
 const AdminOrderDetail      = lazy(() => import('./assets/pages/dashboard/admin/AdminOrderDetail'));
 const AdminCarousel         = lazy(() => import('./assets/pages/dashboard/admin/AdminCarousel'));
 const AdminCommissions      = lazy(() => import('./assets/pages/dashboard/admin/AdminCommissions'));
-const AdminFlashSales       = lazy(() => import('./assets/pages/dashboard/admin/AdminFlashSales'));
 const AdminReturns          = lazy(() => import('./assets/pages/dashboard/admin/AdminReturns'));
-const AdminNewsletter       = lazy(() => import('./assets/pages/dashboard/admin/AdminNewsletter'));
 const AdminAdsManagement    = lazy(() => import('./assets/pages/dashboard/admin/AdminAdsManagement'));
 const AdminAnalytics        = lazy(() => import('./assets/pages/dashboard/admin/AdminAnalytics'));
 
@@ -188,7 +185,6 @@ export default function App() {
               <Route path="users" element={<AdminUsers />} />
               <Route path="categories" element={<AdminCategories />} />
               <Route path="banners" element={<AdminBanners />} />
-              <Route path="coupons" element={<AdminCoupons />} />
               <Route path="vendors" element={<AdminVendors />} />
               <Route path="affiliates" element={<AdminAffiliates />} />
               <Route path="tickets" element={<AdminTickets />} />
@@ -209,9 +205,7 @@ export default function App() {
               <Route path="carousel" element={<AdminCarousel />} />
               <Route path="commissions" element={<AdminCommissions defaultType="vendor" />} />
               <Route path="affiliate-commissions" element={<AdminCommissions defaultType="affiliate" />} />
-              <Route path="flash-sales" element={<AdminFlashSales />} />
               <Route path="returns" element={<AdminReturns />} />
-              <Route path="newsletter" element={<AdminNewsletter />} />
               <Route path="ads" element={<AdminAdsManagement />} />
               <Route path="analytics" element={<AdminAnalytics />} />
             </Route>

@@ -14,7 +14,7 @@ const ticketSchema = new mongoose.Schema({
     enum: ['payment', 'commission', 'kyc', 'technical', 'links', 'approval', 'products', 'orders', 'other'],
     default: 'other',
   },
-  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+  priority: { type: String, enum: ['urgent', 'high', 'medium', 'low'], default: 'medium' },
   status: { type: String, enum: ['open', 'in_progress', 'resolved', 'closed'], default: 'open' },
   messages: [messageSchema],
 }, { timestamps: true });

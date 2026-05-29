@@ -3,10 +3,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Package, ShoppingBag, Users,
-  Tag, Image, Settings, LogOut, Ticket, MapPin, Heart,
+  Tag, Image, Settings, LogOut, MapPin, Heart,
   Store, UserCheck, IndianRupee, Link2, ShieldCheck, HelpCircle, Clock, CreditCard, Star, Menu, X,
   FileText, Inbox, Sliders, LayoutTemplate, ClipboardList, BookOpen, Share2, Mail, Warehouse,
-  RotateCcw, Megaphone, Zap, BarChart2, PenTool, TrendingUp,
+  RotateCcw, Megaphone, BarChart2, PenTool, TrendingUp,
 } from 'lucide-react';
 import VendorOnboarding from '../../pages/dashboard/vendor/VendorOnboarding';
 import NotificationBell from '../common/NotificationBell';
@@ -220,6 +220,7 @@ export default function DashboardLayout({ requiredRole }) {
   const needsOnboarding = isVendor && !user.vendorProfile?.onboardingComplete;
   const isUnapprovedVendor = isVendor && user.vendorProfile?.onboardingComplete && !user.vendorProfile?.approved;
   const isSupportPage = location.pathname.endsWith('/support');
+  const isOverviewPage = location.pathname === '/dashboard/vendor' || location.pathname === '/dashboard/vendor/';
   const navItems = navsByRole[requiredRole || user.role] || navsByRole.customer;
 
   const currentNavLabel = navItems.find(
@@ -296,28 +297,32 @@ export default function DashboardLayout({ requiredRole }) {
           </div>
         </div>
 
-        <div className="flex-1 p-4 md:p-6">
-          {(needsOnboarding && !isSupportPage) ? (
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+          {(needsOnboarding && !isSupportPage && isOverviewPage) ? (
             <VendorOnboarding />
-          ) : (isUnapprovedVendor && !isSupportPage) ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4 px-4">
-              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
-                <Clock size={32} className="text-yellow-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-secondary-900">Pending Approval</h2>
-              <p className="text-secondary-500 max-w-md">
-                Your vendor account is under review. Our team will approve it within 1 business day.
-                You'll get full access to your dashboard, products, and orders once approved.
-              </p>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-6 py-4 max-w-sm text-sm text-yellow-800 space-y-1">
-                <p className="font-semibold">What happens next?</p>
-                <p>1. Admin reviews your application</p>
-                <p>2. You receive approval notification</p>
-                <p>3. Full dashboard access unlocked</p>
-              </div>
-            </div>
           ) : (
-            <Outlet />
+            <div className="space-y-4">
+              {needsOnboarding && !isSupportPage && (
+                <div className="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+                  <Clock size={18} className="text-orange-500 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-orange-800">Complete your vendor profile</p>
+                    <p className="text-xs text-orange-700 mt-0.5">Fill in your business details and KYC to unlock full access.</p>
+                  </div>
+                  <a href="/dashboard/vendor" className="text-xs font-semibold text-orange-700 underline shrink-0">Complete now</a>
+                </div>
+              )}
+              {isUnapprovedVendor && !isSupportPage && (
+                <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
+                  <Clock size={18} className="text-yellow-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-800">Account pending approval</p>
+                    <p className="text-xs text-yellow-700 mt-0.5">Our team will review your vendor account within 1 business day. You can add products now — they'll go live once approved.</p>
+                  </div>
+                </div>
+              )}
+              <Outlet />
+            </div>
           )}
         </div>
       </div>

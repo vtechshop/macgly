@@ -16,8 +16,6 @@ router.use('/users', require('./admin/users'));
 router.use('/orders', require('./admin/orders'));
 // Stats
 router.use('/stats', require('./admin/stats'));
-// Coupons
-router.use('/coupons', require('./admin/coupons'));
 // Upload
 router.use('/upload', require('./admin/upload'));
 // Support tickets
@@ -56,14 +54,10 @@ router.use('/share-catalog', require('./admin/share-catalog'));
 router.use('/commissions', require('./admin/commissions'));
 // Payouts
 router.use('/payouts', require('./admin/payouts'));
-// Flash sales
-router.use('/flash-sales', require('./admin/flash-sales'));
 // Warranty claims
 router.use('/warranties', require('./admin/warranties'));
 // Returns / refunds
 router.use('/returns', require('./admin/returns'));
-// Newsletter subscribers
-router.use('/newsletter', require('./admin/newsletter'));
 // Ads management
 router.use('/ads', require('./admin/ads'));
 // Carousel slides
