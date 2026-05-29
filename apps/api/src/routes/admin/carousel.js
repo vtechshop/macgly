@@ -18,7 +18,7 @@ router.post('/', upload.single('image'), async (req, res, next) => {
     const { title, subtitle, link, buttonText, order, isActive, validFrom, validTo } = req.body;
     if (!title) return next(new AppError('Title is required', 400));
 
-    let image = req.body.imageUrl;
+    let image = req.body.imageUrl || req.body.image;
     if (req.file) image = await uploadFile(req.file, 'carousel');
     if (!image) return next(new AppError('Image is required', 400));
 

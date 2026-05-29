@@ -34,9 +34,10 @@ export default function AdminCarousel() {
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('file', file);
-      fd.append('folder', 'carousel');
-      const res = await api.post('/upload', fd);
+      fd.append('image', file);
+      const res = await api.post('/admin/upload/image?folder=carousel', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       set('image', res.data.url);
     } catch { toast.error('Upload failed'); }
     finally { setUploading(false); }
