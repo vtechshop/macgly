@@ -83,9 +83,43 @@ export default function Search() {
       </div>
 
       <div className="flex gap-6">
-        {showFilters && (
-          <aside className="w-56 shrink-0 space-y-6">
-            <div className="card p-4 space-y-4">
+        {/* Desktop filter sidebar — always visible */}
+        <aside className="hidden lg:block w-56 shrink-0">
+          <div className="card p-4 space-y-4 sticky top-20">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">Filters</h3>
+              <button className="text-xs text-primary-600 hover:underline" onClick={() => setParams({})}>Clear all</button>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-secondary-600 uppercase tracking-wide">Category</label>
+              <select className="input mt-1 text-sm" value={category} onChange={(e) => set('category', e.target.value)}>
+                <option value="">All</option>
+                {categoriesData?.categories?.filter(c => !c.parentId).map((c) => (
+                  <option key={c._id} value={c.slug}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-secondary-600 uppercase tracking-wide">Price Range</label>
+              <div className="flex gap-2 mt-1">
+                <input className="input text-sm" placeholder="Min" type="number" value={minPrice}
+                  onChange={(e) => set('minPrice', e.target.value)} />
+                <input className="input text-sm" placeholder="Max" type="number" value={maxPrice}
+                  onChange={(e) => set('maxPrice', e.target.value)} />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={featured === 'true'}
+                onChange={(e) => set('featured', e.target.checked ? 'true' : '')} />
+              Featured only
+            </label>
+          </div>
+        </aside>
+
+        <div className="flex-1 min-w-0">
+          {/* Mobile filter panel — toggle */}
+          {showFilters && (
+            <div className="lg:hidden card p-4 mb-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">Filters</h3>
                 <button onClick={() => setShowFilters(false)}><X size={14} /></button>
@@ -94,7 +128,7 @@ export default function Search() {
                 <label className="text-xs font-medium text-secondary-600 uppercase tracking-wide">Category</label>
                 <select className="input mt-1 text-sm" value={category} onChange={(e) => set('category', e.target.value)}>
                   <option value="">All</option>
-                  {categoriesData?.categories?.map((c) => (
+                  {categoriesData?.categories?.filter(c => !c.parentId).map((c) => (
                     <option key={c._id} value={c.slug}>{c.name}</option>
                   ))}
                 </select>
@@ -115,10 +149,8 @@ export default function Search() {
               </label>
               <button className="btn-outline w-full text-sm" onClick={() => setParams({})}>Clear all</button>
             </div>
-          </aside>
-        )}
+          )}
 
-        <div className="flex-1 min-w-0">
           <ProductGrid products={products} loading={isLoading} onAddToCart={handleAddToCart} />
 
           {pagination && pagination.pages > 1 && (
