@@ -32,6 +32,7 @@ const WarrantyCheck         = lazy(() => import('./assets/pages/WarrantyCheck'))
 const About                 = lazy(() => import('./assets/pages/info/About'));
 const Contact               = lazy(() => import('./assets/pages/info/Contact'));
 const Privacy               = lazy(() => import('./assets/pages/info/Privacy'));
+const NotFound              = lazy(() => import('./assets/pages/NotFound'));
 const Terms                 = lazy(() => import('./assets/pages/info/Terms'));
 
 // Admin pages — lazy loaded
@@ -252,7 +253,7 @@ export default function App() {
               <Route path="support" element={<AffiliateSupport />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </AuthInit>

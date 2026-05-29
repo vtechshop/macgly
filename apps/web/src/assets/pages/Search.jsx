@@ -64,9 +64,20 @@ export default function Search() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="section-title">
-            {search ? `Results for "${search}"` : category ? category.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'All Products'}
+            {search
+              ? `Results for "${search}"`
+              : featured === 'true'
+              ? 'New Arrivals'
+              : category
+              ? (categoriesData?.categories?.find(c => c.slug === category)?.name || category.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
+              : 'All Products'}
           </h1>
-          {pagination && <p className="text-sm text-secondary-500 mt-1">{pagination.total} products found</p>}
+          {pagination && (
+            <p className="text-sm text-secondary-500 mt-1">
+              {pagination.total} {pagination.total === 1 ? 'product' : 'products'} found
+              {search && <span className="text-secondary-400"> for "{search}"</span>}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <select className="input w-auto text-sm" value={sort} onChange={(e) => set('sort', e.target.value)}>

@@ -172,11 +172,11 @@ export default function Product() {
         <span className="text-secondary-800 truncate">{product.title}</span>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-8">
-        <div className="space-y-2">
-          <div className="rounded-xl overflow-hidden bg-white border border-secondary-200 shadow-sm" style={{ height: 520 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8">
+        <div className="space-y-3">
+          <div className="rounded-2xl overflow-hidden bg-white border border-secondary-200 shadow-sm" style={{ height: 580 }}>
             {product.images?.[activeImg] ? (
-              <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="w-full h-full object-contain p-6" />
+              <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="w-full h-full object-contain p-3" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-secondary-300"><ShoppingCart size={48} /></div>
             )}
