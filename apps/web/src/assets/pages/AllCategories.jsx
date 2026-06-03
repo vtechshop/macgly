@@ -37,7 +37,7 @@ export default function AllCategories() {
         <p className="text-sm text-secondary-400 mt-1">Browse all product categories</p>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
         {parents.map((cat) => {
           const Icon = CATEGORY_ICONS[cat.slug] || CATEGORY_ICONS.default;
           return (

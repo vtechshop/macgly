@@ -107,7 +107,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
             {topCats.map((cat) => {
               const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
               return (
