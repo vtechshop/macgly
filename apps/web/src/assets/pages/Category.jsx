@@ -194,7 +194,7 @@ export default function Category() {
                 to={`/category/${sub.slug}`}
                 className="flex flex-col rounded-xl border-2 border-secondary-200 bg-white hover:border-primary-300 hover:shadow-sm transition-all duration-150 group overflow-hidden"
               >
-                <div className="w-full aspect-square bg-secondary-50 flex items-center justify-center group-hover:bg-secondary-100 transition-colors">
+                <div className="w-full h-24 bg-secondary-50 flex items-center justify-center group-hover:bg-secondary-100 transition-colors">
                   {sub.image
                     ? <img src={normalizeImageUrl(sub.image)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
                     : <Package size={26} className="text-secondary-400 group-hover:text-primary-500 transition-colors" />
