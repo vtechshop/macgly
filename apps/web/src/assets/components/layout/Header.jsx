@@ -12,11 +12,11 @@ import toast from 'react-hot-toast';
 const NAV_LINKS = [
   { label: 'ALL PRODUCTS',     to: '/products' },
   { label: 'ALL CATEGORIES',   to: '/categories' },
-  { label: 'POWER TOOLS',      to: '/category/power-tools' },
-  { label: 'HAND TOOLS',       to: '/category/hand-tools' },
+  { label: 'AGRI & FARM',      to: '/category/agricultural-industry-farm-tools' },
+  { label: 'ENGINEERING',      to: '/category/engineering-workshop-kits' },
+  { label: 'HARDWARE',         to: '/category/hardware-tools' },
   { label: 'SPARE PARTS',      to: '/category/spare-parts' },
-  { label: 'MACHINES',         to: '/category/machines' },
-  { label: 'SAFETY EQUIPMENT', to: '/category/safety-equipment' },
+  { label: 'MACHINERIES',      to: '/category/general-machineries' },
   { label: 'NEW ARRIVALS',     to: '/products?featured=true', highlight: true },
 ];
 

@@ -1,19 +1,21 @@
 import { Link } from 'react-router-dom';
-import { Zap, Wrench, Settings, Hammer, HardHat, Package, Ruler, Flame, Scissors } from 'lucide-react';
+import { Sprout, Wrench, Hammer, Cpu, Settings, Package, Home as HomeIcon, Pipette, UtensilsCrossed, Trees } from 'lucide-react';
 import { useFetch } from '../../hooks';
 import api from '../../utils/api';
 import { normalizeImageUrl } from '../../utils/format';
 import Spinner from '../components/common/Spinner';
 
 const CATEGORY_ICONS = {
-  'power-tools': Zap,
-  'hand-tools': Wrench,
-  'spare-parts': Settings,
-  machines: Hammer,
-  safety: HardHat,
-  'measuring-tools': Ruler,
-  welding: Flame,
-  'cutting-tools': Scissors,
+  'agricultural-industry-farm-tools': Sprout,
+  'engineering-workshop-kits':        Wrench,
+  'hardware-tools':                   Hammer,
+  'electronics-instruments':          Cpu,
+  'general-machineries':              Settings,
+  'spare-parts':                      Package,
+  'household-cleaning-equipment':     HomeIcon,
+  'plumbing-hardware-construction':   Pipette,
+  'hotel-food-processing':            UtensilsCrossed,
+  'wood-carvings':                    Trees,
   default: Package,
 };
 
@@ -35,7 +37,7 @@ export default function AllCategories() {
         <p className="text-sm text-secondary-400 mt-1">Browse all product categories</p>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
         {parents.map((cat) => {
           const Icon = CATEGORY_ICONS[cat.slug] || CATEGORY_ICONS.default;
           return (
@@ -44,7 +46,7 @@ export default function AllCategories() {
               to={`/category/${cat.slug}`}
               className="flex flex-col rounded-xl border-2 border-secondary-200 bg-white hover:border-primary-300 hover:shadow-sm transition-all duration-150 group overflow-hidden"
             >
-              <div className="w-full aspect-square bg-secondary-50 flex items-center justify-center group-hover:bg-secondary-100 transition-colors">
+              <div className="w-full h-24 bg-secondary-50 flex items-center justify-center group-hover:bg-secondary-100 transition-colors">
                 {cat.image
                   ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-full h-full object-contain p-2" onError={(e) => { e.target.style.display = 'none'; }} />
                   : <div className="text-secondary-400 group-hover:text-primary-500 transition-colors"><Icon size={32} /></div>

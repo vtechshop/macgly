@@ -41,11 +41,11 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-bold text-white mb-3 uppercase tracking-wide">Categories</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/category/power-tools" className="hover:text-primary-400 transition-colors">Power Tools</Link></li>
-              <li><Link to="/category/hand-tools" className="hover:text-primary-400 transition-colors">Hand Tools</Link></li>
+              <li><Link to="/category/agricultural-industry-farm-tools" className="hover:text-primary-400 transition-colors">Agri & Farm Tools</Link></li>
+              <li><Link to="/category/engineering-workshop-kits" className="hover:text-primary-400 transition-colors">Engineering & Workshop</Link></li>
               <li><Link to="/category/spare-parts" className="hover:text-primary-400 transition-colors">Spare Parts</Link></li>
-              <li><Link to="/category/machines" className="hover:text-primary-400 transition-colors">Machines</Link></li>
-              <li><Link to="/category/safety-equipment" className="hover:text-primary-400 transition-colors">Safety Equipment</Link></li>
+              <li><Link to="/category/general-machineries" className="hover:text-primary-400 transition-colors">General Machineries</Link></li>
+              <li><Link to="/category/electronics-instruments" className="hover:text-primary-400 transition-colors">Electronics</Link></li>
               <li><Link to="/categories" className="hover:text-primary-400 transition-colors">All Categories</Link></li>
             </ul>
           </div>
