@@ -18,8 +18,8 @@ router.post('/', authenticate, upload.single('file'), async (req, res, next) => 
   try {
     if (!req.file) return next(new AppError('No file uploaded', 400));
     const folder = req.body.folder || 'uploads';
-    const url = await uploadFile(req.file, folder);
-    res.json({ url });
+    const result = await uploadFile(req.file, folder);
+    res.json(result);
   } catch (err) {
     next(err);
   }

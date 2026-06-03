@@ -48,10 +48,20 @@ function StatusBadge({ status }) {
   );
 }
 
-function KYCBadge({ approved }) {
-  return approved
-    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700"><ShieldCheck size={10} /> Approved</span>
-    : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700"><Clock size={10} /> Pending</span>;
+function KYCBadge({ kycStatus }) {
+  const map = {
+    approved:      { cls: 'bg-green-100 text-green-700',   label: 'Approved',     icon: ShieldCheck },
+    pending:       { cls: 'bg-blue-100 text-blue-700',     label: 'In Review',    icon: Clock },
+    rejected:      { cls: 'bg-red-100 text-red-700',       label: 'Rejected',     icon: XCircle },
+    not_submitted: { cls: 'bg-yellow-100 text-yellow-700', label: 'Not Submitted',icon: Clock },
+  };
+  const cfg = map[kycStatus] || map.not_submitted;
+  const Icon = cfg.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${cfg.cls}`}>
+      <Icon size={10} /> {cfg.label}
+    </span>
+  );
 }
 
 function AvatarCircle({ name, size = 'md' }) {
@@ -162,6 +172,141 @@ function CategoryCommissionRules({ vendorId, initialRules, onSaved }) {
   );
 }
 
+// ── KYC Review Section (embedded in vendor modal) ─────────────────────────────
+
+const KYC_REJECT_REASONS = [
+  'Invalid or unclear documents',
+  'Incomplete information provided',
+  'GST details do not match business name',
+  'Documents appear to be fraudulent',
+  'Address does not match documents',
+  'ID document has expired',
+  'Business could not be verified',
+];
+
+function KYCReviewSection({ vp, vendorId, onAction, onRefresh }) {
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const docs = vp.kycDocuments || [];
+  const checks = [
+    { label: 'Business Name',    ok: !!vp.businessName?.trim() },
+    { label: 'Business Type',    ok: !!vp.businessType },
+    { label: 'Business Address', ok: !!vp.businessAddress?.trim() },
+    { label: 'Phone Number',     ok: !!vp.businessPhone?.trim() },
+    { label: `GST Verified${vp.gstin ? ` (${vp.gstin})` : ''}`, ok: !!vp.gstVerified },
+    { label: 'ID Proof uploaded',      ok: docs.some((d) => d.type === 'id_proof') },
+    { label: 'Address Proof uploaded', ok: docs.some((d) => d.type === 'address_proof') },
+  ];
+  const allPassed = checks.every((c) => c.ok);
+
+  async function approveKYC() {
+    setBusy(true);
+    try {
+      await api.put(`/admin/kyc/vendors/${vendorId}/approve`, { force: true });
+      toast.success('KYC approved — vendor now has full access');
+      onRefresh();
+    } catch (e) {
+      toast.error(e.response?.data?.error?.message || 'KYC approval failed');
+    } finally { setBusy(false); }
+  }
+
+  async function rejectKYC() {
+    const reason = customReason.trim() || rejectReason;
+    if (!reason) { toast.error('Select or enter a rejection reason'); return; }
+    setBusy(true);
+    try {
+      await api.put(`/admin/kyc/vendors/${vendorId}/reject`, { reason });
+      toast.success('KYC rejected');
+      setRejecting(false);
+      onRefresh();
+    } catch (e) {
+      toast.error(e.response?.data?.error?.message || 'Failed to reject');
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="border border-blue-200 bg-blue-50 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <ShieldCheck size={16} className="text-blue-600" />
+        <p className="text-sm font-bold text-blue-800">KYC Review — Pending Admin Approval</p>
+      </div>
+
+      {/* Checklist */}
+      <div className="grid grid-cols-2 gap-1.5 mb-3">
+        {checks.map((c) => (
+          <div key={c.label} className="flex items-center gap-1.5 text-xs">
+            {c.ok
+              ? <CheckCircle size={13} className="text-green-500 shrink-0" />
+              : <XCircle size={13} className="text-red-400 shrink-0" />}
+            <span className={c.ok ? 'text-secondary-700' : 'text-red-600'}>{c.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Documents */}
+      {docs.length > 0 && (
+        <div className="mb-3 space-y-1">
+          <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wide">Documents</p>
+          {docs.map((d) => (
+            <a key={d._id} href={d.url} target="_blank" rel="noreferrer"
+              className="flex items-center gap-2 text-xs text-blue-600 hover:underline">
+              <ExternalLink size={11} />
+              <span className="capitalize">{d.type?.replace(/_/g, ' ')}</span>
+              <span className="text-secondary-400">— {d.filename}</span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {/* Reject reason UI */}
+      {rejecting && (
+        <div className="space-y-2 mb-3">
+          <select className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
+            value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); setCustomReason(''); }}>
+            <option value="">Select a reason…</option>
+            {KYC_REJECT_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <input className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+            placeholder="Or type a custom reason…"
+            value={customReason} onChange={(e) => { setCustomReason(e.target.value); setRejectReason(''); }} />
+          <div className="flex gap-2">
+            <button onClick={rejectKYC} disabled={busy}
+              className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 disabled:opacity-50">
+              {busy ? 'Rejecting…' : 'Confirm Reject'}
+            </button>
+            <button onClick={() => setRejecting(false)}
+              className="px-3 py-1.5 border border-secondary-200 rounded-lg text-xs hover:bg-white">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {!rejecting && (
+        <div className="flex gap-2">
+          <button onClick={approveKYC} disabled={busy || !allPassed}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors">
+            <CheckCircle size={12} /> Approve KYC
+          </button>
+          <button onClick={() => setRejecting(true)} disabled={busy}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors">
+            <XCircle size={12} /> Reject KYC
+          </button>
+          {!allPassed && (
+            <span className="text-xs text-secondary-400 self-center ml-1">
+              Approve disabled — {checks.filter((c) => !c.ok).length} requirement(s) missing
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Vendor details modal ──────────────────────────────────────────────────────
 
 function VendorDetailsModal({ vendor: initialVendor, onClose, onAction }) {
@@ -174,6 +319,12 @@ function VendorDetailsModal({ vendor: initialVendor, onClose, onAction }) {
   const vp     = vendor.vendorProfile || {};
   const status = vendor.vendorStatus  || 'incomplete';
   const tier   = performanceTier(vp.totalEarnings);
+
+  function refreshVendor() {
+    api.get(`/admin/vendors/${vendor._id}`)
+      .then(({ data }) => setVendor({ ...data.vendor, vendorStatus: data.vendor.vendorStatus }))
+      .catch(() => {});
+  }
 
   useEffect(() => {
     setDL(true);
@@ -266,14 +417,19 @@ function VendorDetailsModal({ vendor: initialVendor, onClose, onAction }) {
                   { label: 'Business Name',  value: vp.businessName || '—' },
                   { label: 'Business Type',  value: vp.businessType || '—' },
                   { label: 'Tax ID / PAN',   value: vp.panCard || vp.gstin || '—' },
-                  { label: 'KYC Status',     value: vp.approved ? 'Approved' : 'Pending', cls: vp.approved ? 'text-green-600 font-semibold' : 'text-yellow-600 font-semibold' },
-                  { label: 'Verified On',    value: vp.approvedAt ? formatDate(vp.approvedAt) : '—' },
+                  { label: 'KYC Status', value: { approved: 'Approved', pending: 'In Review', rejected: 'Rejected', not_submitted: 'Not Submitted' }[vp.kycStatus] || 'Not Submitted', cls: vp.kycStatus === 'approved' ? 'text-green-600 font-semibold' : vp.kycStatus === 'rejected' ? 'text-red-600 font-semibold' : 'text-yellow-600 font-semibold' },
+                  { label: 'Verified On',    value: vp.kycVerifiedAt ? formatDate(vp.kycVerifiedAt) : '—' },
                 ].map(({ label, value, cls }) => (
                   <div key={label} className="flex justify-between text-sm py-1.5 border-b border-secondary-50 last:border-0">
                     <span className="text-secondary-400 shrink-0">{label}</span>
                     <span className={`text-right ml-3 truncate max-w-[55%] ${cls || 'font-medium text-secondary-800'}`}>{value}</span>
                   </div>
                 ))}
+                {vp.kycStatus === 'rejected' && vp.kycRejectionReason && (
+                  <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                    <span className="font-semibold">Rejection reason: </span>{vp.kycRejectionReason}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -345,6 +501,11 @@ function VendorDetailsModal({ vendor: initialVendor, onClose, onAction }) {
             initialRules={vp.commissionRules || []}
             onSaved={onAction}
           />
+
+          {/* KYC Review — shown when vendor submitted KYC but it's awaiting admin review */}
+          {vp.kycStatus === 'pending' && (
+            <KYCReviewSection vp={vp} vendorId={vendor._id} onAction={onAction} onRefresh={() => { refreshVendor(); onAction(); }} />
+          )}
         </div>
 
         {/* Footer */}
@@ -353,7 +514,7 @@ function VendorDetailsModal({ vendor: initialVendor, onClose, onAction }) {
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
             <Trash2 size={14} /> Delete
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             {status === 'pending' && (
               <>
                 <button onClick={() => { onAction('reject', vendor); onClose(); }}
@@ -365,6 +526,13 @@ function VendorDetailsModal({ vendor: initialVendor, onClose, onAction }) {
                   <CheckCircle size={14} /> Approve Vendor
                 </button>
               </>
+            )}
+            {/* Quick KYC approval — only when not submitted yet (pending state shows review section above) */}
+            {status === 'active' && vp.kycStatus === 'not_submitted' && (
+              <button onClick={() => onAction('approveKYC', vendor)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
+                <ShieldCheck size={14} /> Override KYC
+              </button>
             )}
             {status === 'active' && (
               <button onClick={() => { onAction('suspend', vendor); onClose(); }}
@@ -579,10 +747,23 @@ export default function AdminVendors() {
 
   async function handleApprove(vendor) {
     try {
-      await api.put(`/admin/vendors/${vendor._id}/approve`);
-      toast.success(`${vendor.vendorProfile?.businessName || vendor.name} approved`);
+      const { data } = await api.put(`/admin/vendors/${vendor._id}/approve`);
+      if (data.kycAutoApproved) {
+        toast.success(`✅ Vendor approved + KYC auto-approved! Full access granted.`);
+      } else {
+        toast.success(`Vendor approved. Vendor must complete KYC for full access.`);
+      }
       loadData();
     } catch (err) { toast.error(err?.response?.data?.error?.message || 'Failed'); }
+  }
+
+  async function handleApproveKYC(vendor) {
+    try {
+      await api.put(`/admin/kyc/vendors/${vendor._id}/approve`, { force: true });
+      toast.success(`KYC approved for ${vendor.vendorProfile?.businessName || vendor.name}`);
+      setViewingVendor(null);
+      loadData();
+    } catch (err) { toast.error(err?.response?.data?.error?.message || 'KYC approval failed'); }
   }
 
   async function handleSuspend(vendor) {
@@ -602,11 +783,12 @@ export default function AdminVendors() {
   }
 
   function handleAction(type, vendor) {
-    if (type === 'approve')   handleApprove(vendor);
-    else if (type === 'reject')    setRejectingVendor(vendor);
-    else if (type === 'suspend')   handleSuspend(vendor);
-    else if (type === 'unsuspend') handleUnsuspend(vendor);
-    else if (type === 'delete')    setDeletingVendor(vendor);
+    if (type === 'approve')      handleApprove(vendor);
+    else if (type === 'approveKYC')  handleApproveKYC(vendor);
+    else if (type === 'reject')      setRejectingVendor(vendor);
+    else if (type === 'suspend')     handleSuspend(vendor);
+    else if (type === 'unsuspend')   handleUnsuspend(vendor);
+    else if (type === 'delete')      setDeletingVendor(vendor);
   }
 
   function exportCSV() {
@@ -784,7 +966,7 @@ export default function AdminVendors() {
                       </div>
                     </td>
                     <td className="px-4 py-3"><StatusBadge status={v.vendorStatus} /></td>
-                    <td className="px-4 py-3"><KYCBadge approved={vp.approved} /></td>
+                    <td className="px-4 py-3"><KYCBadge kycStatus={vp.kycStatus} /></td>
                     <td className="px-4 py-3 font-semibold text-secondary-800 text-xs">{vp.commissionRate ?? 10}%</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-0.5">

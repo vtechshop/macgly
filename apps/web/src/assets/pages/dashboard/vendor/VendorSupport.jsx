@@ -1,255 +1,652 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
-  Plus, ArrowLeft, Send, ChevronDown, HelpCircle,
+  Plus, RefreshCw, Search, Filter, X, Send,
+  CircleDot, Clock, CheckCircle2, XCircle,
+  HelpCircle, Paperclip, Bell, Mail, Phone,
+  ChevronRight, Loader2,
 } from 'lucide-react';
 import api from '../../../../utils/api';
-import { useFetch } from '../../../../hooks';
+import { useFetch, invalidateCache } from '../../../../hooks';
+import { formatDate } from '../../../../utils/format';
 import Spinner from '../../../components/common/Spinner';
+import Modal from '../../../components/common/Modal';
+import Button from '../../../components/common/Button';
 import toast from 'react-hot-toast';
 
-const STATUS_CONFIG = {
-  open:        { label: 'Open',        class: 'bg-blue-100 text-blue-700' },
-  in_progress: { label: 'In Progress', class: 'bg-yellow-100 text-yellow-700' },
-  resolved:    { label: 'Resolved',    class: 'bg-green-100 text-green-700' },
-  closed:      { label: 'Closed',      class: 'bg-secondary-100 text-secondary-500' },
+// ─── Static config ────────────────────────────────────────────────────────────
+
+const STATUS_CFG = {
+  open:        { label: 'Open',        cls: 'bg-blue-100 text-blue-700',        icon: CircleDot },
+  in_progress: { label: 'In Progress', cls: 'bg-yellow-100 text-yellow-700',    icon: Clock },
+  resolved:    { label: 'Resolved',    cls: 'bg-green-100 text-green-700',      icon: CheckCircle2 },
+  closed:      { label: 'Closed',      cls: 'bg-secondary-100 text-secondary-500', icon: XCircle },
+};
+
+const PRIORITY_CFG = {
+  urgent: { label: 'Urgent', cls: 'text-red-600',    dot: 'bg-red-500' },
+  high:   { label: 'High',   cls: 'text-orange-500', dot: 'bg-orange-400' },
+  medium: { label: 'Medium', cls: 'text-blue-600',   dot: 'bg-blue-400' },
+  low:    { label: 'Low',    cls: 'text-secondary-500', dot: 'bg-secondary-300' },
 };
 
 const CATEGORIES = [
-  { value: 'approval',   label: 'Account Approval' },
-  { value: 'payment',    label: 'Payment / Settlement' },
-  { value: 'kyc',        label: 'KYC Verification' },
-  { value: 'products',   label: 'Product Listing' },
-  { value: 'orders',     label: 'Orders & Returns' },
-  { value: 'technical',  label: 'Technical Problem' },
-  { value: 'other',      label: 'Other' },
+  { value: 'approval',  label: 'Account Approval' },
+  { value: 'payment',   label: 'Payment / Settlement' },
+  { value: 'kyc',       label: 'KYC Verification' },
+  { value: 'products',  label: 'Product Listing' },
+  { value: 'orders',    label: 'Orders & Returns' },
+  { value: 'shipping',  label: 'Shipping' },
+  { value: 'technical', label: 'Technical Problem' },
+  { value: 'other',     label: 'Other' },
 ];
 
-const PRIORITIES = [
-  { value: 'low',    label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high',   label: 'High — urgent issue' },
+const STATUS_FILTERS = [
+  { value: 'all',         label: 'All' },
+  { value: 'open',        label: 'Open' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'resolved',    label: 'Resolved' },
+  { value: 'closed',      label: 'Closed' },
 ];
 
-const FAQ = [
-  { q: 'How long does account approval take?', a: 'Our team reviews vendor applications within 1 business day. You\'ll receive access to your full dashboard once approved.' },
-  { q: 'When do I receive my payouts?', a: 'Earnings are credited to your account once an order reaches "Delivered" status. Payouts are processed on the 1st of every month to your registered bank account.' },
-  { q: 'What is the platform commission rate?', a: 'The default platform fee is 10% of the order total. Your net earnings per order are shown in your dashboard.' },
-  { q: 'Can I list products before approval?', a: 'No. You need to complete onboarding and receive admin approval before you can list or manage products.' },
-  { q: 'What happens if an order is returned?', a: 'If an order is returned or cancelled after delivery, the credited earnings are reversed from your account balance.' },
-];
+const EMPTY_FORM = { subject: '', description: '', category: 'other', priority: 'medium' };
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.open;
-  return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${cfg.class}`}>{cfg.label}</span>;
+  const cfg = STATUS_CFG[status] || STATUS_CFG.open;
+  const Icon = cfg.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${cfg.cls}`}>
+      <Icon size={11} />
+      {cfg.label}
+    </span>
+  );
 }
 
-function formatTime(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+function PriorityBadge({ priority }) {
+  const cfg = PRIORITY_CFG[priority] || PRIORITY_CFG.medium;
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${cfg.cls}`}>
+      <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  );
 }
 
-function NewTicketForm({ onCreated, onCancel }) {
-  const [form, setForm] = useState({ subject: '', category: 'other', priority: 'medium', message: '' });
-  const [saving, setSaving] = useState(false);
+function Avatar({ name, role }) {
+  const bg = role === 'support' ? 'bg-primary-100 text-primary-700' : 'bg-secondary-100 text-secondary-600';
+  return (
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${bg}`}>
+      {(name || '?')[0].toUpperCase()}
+    </div>
+  );
+}
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!form.subject.trim() || !form.message.trim()) return toast.error('Subject and message are required');
-    setSaving(true);
+function StatsCard({ label, value, color, active, onClick, badge }) {
+  const colors = {
+    blue:   { card: active ? 'border-blue-500 bg-blue-50'   : 'border-secondary-200 hover:border-blue-300',   val: 'text-blue-600' },
+    yellow: { card: active ? 'border-yellow-400 bg-yellow-50': 'border-secondary-200 hover:border-yellow-300', val: 'text-yellow-600' },
+    green:  { card: active ? 'border-green-500 bg-green-50'  : 'border-secondary-200 hover:border-green-300',  val: 'text-green-600' },
+  };
+  const c = colors[color] || colors.blue;
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-xl border-2 p-4 text-left transition-all w-full ${c.card}`}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-secondary-500">{label}</span>
+        {badge > 0 && (
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 animate-pulse">
+            {badge} new
+          </span>
+        )}
+      </div>
+      <p className={`text-3xl font-bold mt-1 ${c.val}`}>{value}</p>
+    </button>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+export default function VendorSupport() {
+  const [rev, setRev] = useState(0);
+
+  // List state
+  const [statusFilter,   setStatusFilter]   = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [searchQuery,    setSearchQuery]    = useState('');
+  const [showFilters,    setShowFilters]    = useState(false);
+
+  // Create modal
+  const [showCreate,   setShowCreate]   = useState(false);
+  const [formData,     setFormData]     = useState({ ...EMPTY_FORM });
+  const [attachments,  setAttachments]  = useState([]);
+  const [uploading,    setUploading]    = useState(false);
+  const [creating,     setCreating]     = useState(false);
+  const fileInputRef = useRef(null);
+
+  // View modal
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [newMessage,     setNewMessage]     = useState('');
+  const [sending,        setSending]        = useState(false);
+  const [ticketRev,      setTicketRev]      = useState(0);
+
+  // ── Queries ──────────────────────────────────────────────────────────────────
+
+  const { data: listData, isLoading: listLoading } = useFetch(
+    ['vendor-tickets', rev],
+    () => api.get('/tickets').then((r) => r.data)
+  );
+
+  const { data: statsData } = useFetch(
+    ['vendor-ticket-stats', rev],
+    () => api.get('/tickets/my-stats').then((r) => r.data)
+  );
+
+  const { data: detailData, isLoading: detailLoading } = useFetch(
+    ['ticket', selectedTicket, ticketRev],
+    () => api.get(`/tickets/${selectedTicket}`).then((r) => r.data),
+    { enabled: !!selectedTicket }
+  );
+
+  const allTickets = listData?.tickets || [];
+  const stats      = statsData || { total: 0, open: 0, inProgress: 0, resolved: 0, unread: 0 };
+  const ticket     = detailData?.ticket || null;
+
+  // ── Filtered list ─────────────────────────────────────────────────────────
+
+  const filteredTickets = allTickets.filter((t) => {
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      if (!t.subject?.toLowerCase().includes(q) && !t.ticketId?.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  function refresh() {
+    invalidateCache('vendor-tickets');
+    invalidateCache('vendor-ticket-stats');
+    setRev((r) => r + 1);
+  }
+
+  function openTicket(id) {
+    setSelectedTicket(id);
+    setTicketRev(0);
+    setNewMessage('');
+  }
+
+  function closeTicket() {
+    setSelectedTicket(null);
+    refresh();
+  }
+
+  async function handleFileAttach(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
     try {
-      const { data } = await api.post('/tickets', form);
-      toast.success(`Ticket ${data.ticket.ticketId} created!`);
-      onCreated(data.ticket);
+      const fd = new FormData();
+      files.forEach((f) => fd.append('files', f));
+      fd.append('folder', 'ticket-attachments');
+      const { data } = await api.post('/upload/multiple', fd);
+      const urls = (data.urls || []).map((u) => u.url || u);
+      setAttachments((a) => [...a, ...urls]);
+      toast.success(`${urls.length} file(s) attached`);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function handleCreateTicket(e) {
+    e.preventDefault();
+    if (!formData.subject.trim() || !formData.description.trim()) {
+      return toast.error('Subject and description are required');
+    }
+    setCreating(true);
+    try {
+      const { data } = await api.post('/tickets', { ...formData, attachments });
+      toast.success(`Ticket ${data.ticket?.ticketId} created!`);
+      setShowCreate(false);
+      setFormData({ ...EMPTY_FORM });
+      setAttachments([]);
+      refresh();
+      openTicket(data.ticket._id);
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Could not create ticket');
-    } finally { setSaving(false); }
+    } finally {
+      setCreating(false);
+    }
   }
+
+  async function handleSendMessage(e) {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    setSending(true);
+    try {
+      await api.post(`/tickets/${selectedTicket}/messages`, { message: newMessage.trim() });
+      setNewMessage('');
+      setTicketRev((r) => r + 1);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Could not send reply');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <button onClick={onCancel} className="p-1.5 hover:bg-secondary-100 rounded-lg"><ArrowLeft size={18} className="text-secondary-500" /></button>
+
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="font-bold text-lg">New Support Ticket</h2>
-          <p className="text-xs text-secondary-500">We typically respond within 1 business day</p>
+          <h1 className="text-2xl font-bold">Support Center</h1>
+          <p className="text-secondary-500 text-sm mt-0.5">Get help from our support team</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={refresh} className="btn-secondary flex items-center gap-1.5 text-sm">
+            <RefreshCw size={14} /> Refresh
+          </button>
+          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2 text-sm">
+            <Plus size={15} /> New Ticket
+          </button>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="card p-6 space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Subject <span className="text-red-500">*</span></label>
-          <input className="input w-full" placeholder="Brief description of your issue" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required />
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatsCard label="Total Tickets"  value={stats.total}      color="blue"   active={statusFilter === 'all'}         onClick={() => setStatusFilter('all')} />
+        <StatsCard label="Open"           value={stats.open}       color="blue"   active={statusFilter === 'open'}        onClick={() => setStatusFilter('open')}        badge={stats.unread} />
+        <StatsCard label="In Progress"    value={stats.inProgress} color="yellow" active={statusFilter === 'in_progress'} onClick={() => setStatusFilter('in_progress')} />
+        <StatsCard label="Resolved"       value={stats.resolved}   color="green"  active={statusFilter === 'resolved'}    onClick={() => setStatusFilter('resolved')} />
+      </div>
+
+      {/* Filter bar */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
+            <input
+              className="input w-full pl-9"
+              placeholder="Search tickets…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400">
+                <X size={13} />
+              </button>
+            )}
+          </div>
+          {/* Mobile filter toggle */}
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className="sm:hidden btn-secondary flex items-center gap-1.5 text-sm"
+          >
+            <Filter size={14} /> Filters
+          </button>
+          {/* Desktop category dropdown */}
+          <select
+            className="input hidden sm:block w-44"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="all">All Categories</option>
+            {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Category</label>
-            <select className="input w-full" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+
+        {/* Desktop status tabs */}
+        <div className="hidden sm:flex items-center gap-1 flex-wrap">
+          {STATUS_FILTERS.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setStatusFilter(value)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                statusFilter === value
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'text-secondary-500 hover:bg-secondary-100'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile filters */}
+        {showFilters && (
+          <div className="sm:hidden grid grid-cols-2 gap-2">
+            <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              {STATUS_FILTERS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+            <select className="input" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+              <option value="all">All Categories</option>
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Priority</label>
-            <select className="input w-full" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-              {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Message <span className="text-red-500">*</span></label>
-          <textarea className="input w-full resize-none" rows={6} placeholder="Describe your issue in detail…" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required />
-        </div>
-        <div className="flex gap-3">
-          <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
-            {saving ? <Spinner size="sm" /> : <Send size={14} />}
-            {saving ? 'Submitting…' : 'Submit Ticket'}
-          </button>
-          <button type="button" onClick={onCancel} className="btn border border-secondary-200 text-secondary-700 hover:bg-secondary-50">Cancel</button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-function TicketDetail({ ticketId, onBack }) {
-  const [rev, setRev] = useState(0);
-  const [reply, setReply] = useState('');
-  const [sending, setSending] = useState(false);
-  const { data, isLoading } = useFetch(['ticket-detail-v', ticketId, rev], () => api.get(`/tickets/${ticketId}`).then((r) => r.data));
-  const ticket = data?.ticket;
-
-  async function handleReply(e) {
-    e.preventDefault();
-    if (!reply.trim()) return;
-    setSending(true);
-    try {
-      await api.post(`/tickets/${ticketId}/reply`, { message: reply.trim() });
-      setReply('');
-      setRev((r) => r + 1);
-    } catch { toast.error('Could not send reply'); }
-    finally { setSending(false); }
-  }
-
-  if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
-  if (!ticket) return <div className="text-center py-20 text-secondary-400">Ticket not found</div>;
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <button onClick={onBack} className="p-1.5 hover:bg-secondary-100 rounded-lg"><ArrowLeft size={18} className="text-secondary-500" /></button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-mono text-secondary-400">{ticket.ticketId}</span>
-            <StatusBadge status={ticket.status} />
-            <span className="text-xs text-secondary-400 capitalize">{ticket.category?.replace('_', ' ')}</span>
-          </div>
-          <h2 className="font-bold text-lg line-clamp-1 mt-0.5">{ticket.subject}</h2>
-        </div>
+        )}
       </div>
-      <div className="card overflow-hidden">
-        <div className="divide-y divide-secondary-100">
-          {ticket.messages.map((msg, i) => (
-            <div key={i} className={`p-5 ${msg.senderRole === 'support' ? 'bg-primary-50' : 'bg-white'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-xs font-bold uppercase tracking-wide ${msg.senderRole === 'support' ? 'text-primary-600' : 'text-secondary-500'}`}>
-                  {msg.senderRole === 'support' ? 'Macgly Support' : 'You'}
-                </span>
-                <span className="text-xs text-secondary-400">{formatTime(msg.createdAt)}</span>
+
+      {/* Ticket list */}
+      {listLoading
+        ? <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        : filteredTickets.length === 0
+          ? (
+            <div className="card p-14 text-center text-secondary-400">
+              <HelpCircle size={40} className="mx-auto mb-3 opacity-30" />
+              <p className="font-medium">No tickets found</p>
+              <p className="text-sm mt-1">
+                {allTickets.length === 0
+                  ? 'Open your first ticket to get help from our support team'
+                  : 'Try adjusting your filters'}
+              </p>
+            </div>
+          )
+          : (
+            <>
+              {/* Desktop table */}
+              <div className="hidden sm:block card overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-secondary-50 border-b border-secondary-200">
+                    <tr>
+                      {['Ticket', 'Category', 'Status', 'Priority', 'Updated', 'Action'].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-secondary-500 uppercase tracking-wide">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-secondary-100">
+                    {filteredTickets.map((t) => {
+                      const hasNew = t.lastResponseBy === 'support' && !t.userViewed;
+                      return (
+                        <tr key={t._id} className="hover:bg-secondary-50 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-medium line-clamp-1">{t.subject}</p>
+                            <p className="text-xs text-secondary-400 font-mono mt-0.5">#{t.ticketId}</p>
+                            {hasNew && (
+                              <span className="inline-flex items-center gap-1 text-xs text-green-600 font-semibold animate-pulse mt-0.5">
+                                <Bell size={11} /> New Reply
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-secondary-500 capitalize">
+                            {CATEGORIES.find((c) => c.value === t.category)?.label || t.category}
+                          </td>
+                          <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
+                          <td className="px-4 py-3"><PriorityBadge priority={t.priority} /></td>
+                          <td className="px-4 py-3 text-secondary-400 whitespace-nowrap">
+                            <p>{formatDate(t.updatedAt || t.createdAt)}</p>
+                            {t.messages?.length > 0 && (
+                              <p className="text-xs">{t.messages.length} repl{t.messages.length === 1 ? 'y' : 'ies'}</p>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => openTicket(t._id)} className="text-primary-600 hover:underline flex items-center gap-1 text-sm font-medium">
+                              View <ChevronRight size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              <p className="text-sm text-secondary-700 whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-      {ticket.status !== 'closed' ? (
-        <form onSubmit={handleReply} className="card p-5 space-y-3">
-          <p className="text-sm font-medium">Add a Reply</p>
-          <textarea className="input w-full resize-none" rows={4} placeholder="Type your reply…" value={reply} onChange={(e) => setReply(e.target.value)} required />
-          <button type="submit" disabled={sending || !reply.trim()} className="btn-primary flex items-center gap-2">
-            {sending ? <Spinner size="sm" /> : <Send size={14} />}
-            {sending ? 'Sending…' : 'Send Reply'}
-          </button>
-        </form>
-      ) : (
-        <div className="card p-4 text-center text-secondary-400 text-sm">This ticket is closed. Open a new ticket if you need further help.</div>
-      )}
-    </div>
-  );
-}
 
-function TicketList({ onSelect, onNew, rev }) {
-  const { data, isLoading } = useFetch(['vendor-tickets', rev], () => api.get('/tickets').then((r) => r.data));
-  const tickets = data?.tickets || [];
-  const [open, setOpen] = useState(null);
+              {/* Mobile cards */}
+              <div className="sm:hidden grid gap-3">
+                {filteredTickets.map((t) => {
+                  const hasNew = t.lastResponseBy === 'support' && !t.userViewed;
+                  return (
+                    <button
+                      key={t._id}
+                      onClick={() => openTicket(t._id)}
+                      className="card p-4 text-left w-full hover:bg-secondary-50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <p className="font-medium text-sm line-clamp-2 flex-1">{t.subject}</p>
+                        <StatusBadge status={t.status} />
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap text-xs text-secondary-400">
+                        <span className="font-mono">#{t.ticketId}</span>
+                        <PriorityBadge priority={t.priority} />
+                        <span>{formatDate(t.updatedAt || t.createdAt)}</span>
+                      </div>
+                      {hasNew && (
+                        <span className="inline-flex items-center gap-1 text-xs text-green-600 font-semibold animate-pulse mt-2">
+                          <Bell size={11} /> New Reply
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )
+      }
 
-  if (isLoading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>;
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Support</h1>
-          <p className="text-secondary-500 text-sm mt-0.5">Raise a ticket and our team will get back to you</p>
-        </div>
-        <button onClick={onNew} className="btn-primary flex items-center gap-2"><Plus size={15} /> New Ticket</button>
-      </div>
-
-      {tickets.length === 0 ? (
-        <div className="card p-14 text-center space-y-3">
-          <HelpCircle size={40} className="mx-auto text-secondary-200" />
-          <p className="font-medium text-secondary-500">No tickets yet</p>
-          <p className="text-sm text-secondary-400">Have a question about approval, payments, or products? Open a ticket.</p>
-          <button onClick={onNew} className="btn-primary inline-flex items-center gap-2 mx-auto mt-2"><Plus size={14} /> Open First Ticket</button>
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <div className="divide-y divide-secondary-100">
-            {tickets.map((t) => (
-              <button key={t._id} onClick={() => onSelect(t._id)} className="w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary-50 transition-colors text-left">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-xs font-mono text-secondary-400">{t.ticketId}</span>
-                    <StatusBadge status={t.status} />
-                    <span className="text-xs text-secondary-400 capitalize">{t.category?.replace('_', ' ')}</span>
-                  </div>
-                  <p className="font-medium text-sm line-clamp-1">{t.subject}</p>
-                  <p className="text-xs text-secondary-400 mt-0.5">{formatTime(t.createdAt)}</p>
-                </div>
-                <ChevronDown size={15} className="text-secondary-300 shrink-0 -rotate-90" />
-              </button>
-            ))}
+      {/* Quick help */}
+      <div className="card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <HelpCircle size={16} className="text-primary-500 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold">Need Quick Help?</p>
+            <p className="text-xs text-secondary-400">Contact our support team for immediate assistance</p>
           </div>
         </div>
-      )}
-
-      <div className="card p-5">
-        <div className="flex items-center gap-2 mb-4"><HelpCircle size={17} className="text-primary-600" /><h2 className="font-bold">Frequently Asked Questions</h2></div>
-        <div>
-          {FAQ.map((item, i) => (
-            <div key={i} className="border-b border-secondary-100 last:border-0">
-              <button className="w-full flex items-center justify-between py-3.5 text-left" onClick={() => setOpen(open === i ? null : i)}>
-                <span className="text-sm font-medium pr-4">{item.q}</span>
-                <ChevronDown size={14} className={`text-secondary-400 shrink-0 transition-transform ${open === i ? 'rotate-180' : ''}`} />
-              </button>
-              {open === i && <p className="text-sm text-secondary-500 pb-4 leading-relaxed">{item.a}</p>}
-            </div>
-          ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          <a href="mailto:support@macgly.com" className="btn-secondary flex items-center gap-2 text-sm">
+            <Mail size={14} /> Email
+          </a>
+          <a href="tel:+911234567890" className="btn-secondary flex items-center gap-2 text-sm">
+            <Phone size={14} /> Call
+          </a>
         </div>
       </div>
+
+      {/* ── Create Ticket Modal ───────────────────────────────────────────────── */}
+      <Modal open={showCreate} onClose={() => { setShowCreate(false); setFormData({ ...EMPTY_FORM }); setAttachments([]); }} title="New Support Ticket" size="lg">
+        <form onSubmit={handleCreateTicket} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Subject *</label>
+            <input
+              className="input w-full"
+              placeholder="Brief description of your issue"
+              value={formData.subject}
+              onChange={(e) => setFormData((f) => ({ ...f, subject: e.target.value }))}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Category</label>
+              <select className="input w-full" value={formData.category} onChange={(e) => setFormData((f) => ({ ...f, category: e.target.value }))}>
+                {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Priority</label>
+              <select className="input w-full" value={formData.priority} onChange={(e) => setFormData((f) => ({ ...f, priority: e.target.value }))}>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Description *</label>
+            <textarea
+              className="input w-full resize-none"
+              rows={5}
+              placeholder="Describe your issue in detail…"
+              value={formData.description}
+              onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
+              required
+            />
+          </div>
+
+          {/* Attachments */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Attachments</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,application/pdf,.doc,.docx"
+              onChange={handleFileAttach}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="btn-secondary flex items-center gap-2 text-sm"
+            >
+              {uploading ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
+              {uploading ? 'Uploading…' : 'Attach Files'}
+            </button>
+            <p className="text-xs text-secondary-400 mt-1">Images, PDF, DOC — max 10MB each</p>
+            {attachments.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {attachments.map((url, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs text-secondary-600">
+                    <Paperclip size={11} />
+                    <a href={url} target="_blank" rel="noreferrer" className="hover:underline truncate max-w-xs">{url.split('/').pop()}</a>
+                    <button type="button" onClick={() => setAttachments((a) => a.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600"><X size={11} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-1">
+            <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary text-sm">Cancel</button>
+            <Button type="submit" loading={creating}>
+              <Send size={14} /> Submit Ticket
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── View Ticket Modal ─────────────────────────────────────────────────── */}
+      <Modal
+        open={!!selectedTicket}
+        onClose={closeTicket}
+        title={ticket ? `#${ticket.ticketId} — ${ticket.subject}` : 'Loading…'}
+        size="xl"
+      >
+        {detailLoading || !ticket
+          ? <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+          : (
+            <div className="space-y-4">
+              {/* Status bar */}
+              <div className="flex items-center gap-3 flex-wrap p-3 rounded-lg bg-secondary-50 border border-secondary-200">
+                <StatusBadge status={ticket.status} />
+                <PriorityBadge priority={ticket.priority} />
+                <span className="text-xs text-secondary-500 capitalize">
+                  {CATEGORIES.find((c) => c.value === ticket.category)?.label || ticket.category}
+                </span>
+                {ticket.assignedTo && (
+                  <span className="text-xs text-secondary-500">
+                    Assigned to: <strong>{ticket.assignedTo.name}</strong>
+                  </span>
+                )}
+              </div>
+
+              {/* Original request */}
+              <div className="p-4 rounded-xl border border-secondary-200 bg-secondary-50">
+                <p className="text-xs font-semibold text-secondary-400 uppercase tracking-wide mb-2">Original Request</p>
+                <p className="text-sm text-secondary-700 whitespace-pre-wrap leading-relaxed">
+                  {ticket.messages?.[0]?.content || '—'}
+                </p>
+                {ticket.attachments?.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {ticket.attachments.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline flex items-center gap-1">
+                        <Paperclip size={11} /> Attachment {i + 1}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Conversation thread */}
+              {ticket.messages?.length > 1 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-secondary-400 uppercase tracking-wide">Conversation</p>
+                  {ticket.messages.slice(1).map((msg, i) => {
+                    const isSupport = msg.senderRole === 'support';
+                    return (
+                      <div key={i} className={`flex gap-3 ${isSupport ? '' : 'flex-row-reverse'}`}>
+                        <Avatar name={isSupport ? 'S' : 'Y'} role={msg.senderRole} />
+                        <div className={`flex-1 max-w-[80%] ${isSupport ? '' : 'items-end'}`}>
+                          <div className={`rounded-xl p-3 text-sm ${isSupport ? 'bg-primary-50 border border-primary-100' : 'bg-white border border-secondary-200'}`}>
+                            <p className={`text-xs font-bold mb-1 ${isSupport ? 'text-primary-600' : 'text-secondary-500'}`}>
+                              {isSupport ? 'Support Team' : 'You'}
+                            </p>
+                            <p className="text-secondary-700 whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                            {msg.attachments?.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {msg.attachments.map((url, j) => (
+                                  <a key={j} href={url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline flex items-center gap-1">
+                                    <Paperclip size={10} /> Attachment
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-secondary-400 mt-1 px-1">
+                            {new Date(msg.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Reply form */}
+              {ticket.status !== 'closed'
+                ? (
+                  <form onSubmit={handleSendMessage} className="flex gap-3 pt-2 border-t border-secondary-100">
+                    <textarea
+                      className="input flex-1 resize-none"
+                      rows={3}
+                      placeholder="Type your reply…"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      required
+                    />
+                    <Button type="submit" loading={sending} disabled={!newMessage.trim()} className="self-end">
+                      <Send size={14} />
+                    </Button>
+                  </form>
+                )
+                : (
+                  <div className="pt-3 border-t border-secondary-100 text-center text-sm text-secondary-400">
+                    This ticket is closed.{' '}
+                    <button
+                      onClick={() => { closeTicket(); setShowCreate(true); }}
+                      className="text-primary-600 hover:underline"
+                    >
+                      Create a new ticket
+                    </button>{' '}
+                    if you need further assistance.
+                  </div>
+                )
+              }
+            </div>
+          )
+        }
+      </Modal>
     </div>
   );
-}
-
-export default function VendorSupport() {
-  const [view, setView] = useState('list');
-  const [selectedId, setSelectedId] = useState(null);
-  const [listRev, setListRev] = useState(0);
-
-  function onCreated(ticket) {
-    setListRev((r) => r + 1);
-    setSelectedId(ticket._id);
-    setView('detail');
-  }
-
-  if (view === 'new') return <NewTicketForm onCreated={onCreated} onCancel={() => setView('list')} />;
-  if (view === 'detail') return <TicketDetail ticketId={selectedId} onBack={() => { setView('list'); setListRev((r) => r + 1); }} />;
-  return <TicketList onSelect={(id) => { setSelectedId(id); setView('detail'); }} onNew={() => setView('new')} rev={listRev} />;
 }

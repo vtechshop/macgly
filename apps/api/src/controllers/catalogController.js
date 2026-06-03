@@ -10,6 +10,11 @@ async function getProducts(req, res, next) {
       category, search, featured, brand, minPrice, maxPrice,
     } = req.query;
 
+    // status=active is treated as published=true (affiliate page uses this param)
+    if (req.query.status && req.query.status !== 'active') {
+      return res.json({ products: [], pagination: { page: 1, limit: parseInt(limit), total: 0, pages: 0 } });
+    }
+
     const filter = { published: true };
 
     if (category) {
@@ -58,7 +63,9 @@ async function getProducts(req, res, next) {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [products, total] = await Promise.all([
       Product.find(filter).sort(sortObj).skip(skip).limit(parseInt(limit))
-        .select('-faqs -specifications -description'),
+        .select('-faqs -specifications -description')
+        .populate('vendorId', 'name vendorProfile.storeName')
+        .populate('categoryIds', 'name slug'),
       Product.countDocuments(filter),
     ]);
 

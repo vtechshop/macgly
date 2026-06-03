@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import VendorOnboarding from './VendorOnboarding';
 import {
   Package, ShoppingBag, IndianRupee, TrendingUp, TrendingDown,
   AlertTriangle, ArrowRight, RefreshCw, Box, Megaphone,
@@ -54,8 +53,6 @@ export default function VendorDashboard() {
   const { user } = useSelector((s) => s.auth);
   const [period, setPeriod] = useState('30days');
   const [rev, setRev] = useState(0);
-
-  if (!user?.vendorProfile?.onboardingComplete) return <VendorOnboarding />;
 
   const { data: raw, isLoading } = useFetch(
     ['vendor-stats', user?._id, period, rev],
@@ -150,7 +147,7 @@ export default function VendorDashboard() {
             <div className="flex flex-wrap gap-2 mt-1.5">
               {stats.pendingOrders > 0 && (
                 <Link
-                  to="/vendor-dashboard/orders?status=pending"
+                  to="/dashboard/vendor/orders?status=pending"
                   className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-full transition-colors"
                 >
                   📦 {stats.pendingOrders} orders to ship
@@ -159,7 +156,7 @@ export default function VendorDashboard() {
               )}
               {stats.lowStockProducts > 0 && (
                 <Link
-                  to="/vendor-dashboard/inventory?filter=low-stock"
+                  to="/dashboard/vendor/inventory?filter=low-stock"
                   className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-full transition-colors"
                 >
                   ⚠️ {stats.lowStockProducts} low stock items
@@ -168,7 +165,7 @@ export default function VendorDashboard() {
               )}
               {stats.pendingReviews > 0 && (
                 <Link
-                  to="/vendor-dashboard/reviews"
+                  to="/dashboard/vendor/reviews"
                   className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-full transition-colors"
                 >
                   ⭐ {stats.pendingReviews} reviews to respond

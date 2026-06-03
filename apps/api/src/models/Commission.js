@@ -17,6 +17,10 @@ const commissionSchema = new mongoose.Schema({
   paymentRef:   String, // UTR or transaction ID
   paymentProof: String, // screenshot URL
   note:         String,
+  tds: {
+    amount:    { type: Number, default: 0 },
+    netAmount: { type: Number, default: 0 },
+  },
 }, { timestamps: true });
 
 commissionSchema.index({ user: 1, status: 1 });

@@ -11,34 +11,16 @@ function vendorStatus(v) {
   if (!v.isActive) return 'suspended';
   if (v.vendorProfile?.approved) return 'active';
   if (v.vendorProfile?.rejectionReason) return 'rejected';
-  if (v.vendorProfile?.onboardingComplete) return 'pending';
-  return 'incomplete';
+  return 'pending';
 }
 
 function buildStatusFilter(status) {
   switch (status) {
-    case 'active':
-      return { 'vendorProfile.approved': true, isActive: true };
-    case 'pending':
-      return {
-        'vendorProfile.approved': false,
-        'vendorProfile.onboardingComplete': true,
-        isActive: true,
-        $or: [
-          { 'vendorProfile.rejectionReason': { $exists: false } },
-          { 'vendorProfile.rejectionReason': '' },
-        ],
-      };
-    case 'suspended':
-      return { isActive: false };
-    case 'rejected':
-      return {
-        'vendorProfile.approved': false,
-        'vendorProfile.rejectionReason': { $exists: true, $ne: '' },
-        isActive: true,
-      };
-    default:
-      return {};
+    case 'active':    return { 'vendorProfile.approved': true, isActive: true };
+    case 'pending':   return { 'vendorProfile.approved': false, isActive: true, 'vendorProfile.rejectionReason': { $in: ['', null, undefined] } };
+    case 'suspended': return { isActive: false };
+    case 'rejected':  return { 'vendorProfile.approved': false, 'vendorProfile.rejectionReason': { $exists: true, $ne: '' }, isActive: true };
+    default:          return {};
   }
 }
 
@@ -48,18 +30,9 @@ router.get('/stats', async (req, res, next) => {
   try {
     const base = { role: 'vendor' };
     const [total, active, pending, suspended, topPerformer] = await Promise.all([
-      User.countDocuments({ ...base, 'vendorProfile.onboardingComplete': true }),
+      User.countDocuments(base),
       User.countDocuments({ ...base, 'vendorProfile.approved': true, isActive: true }),
-      User.countDocuments({
-        ...base,
-        'vendorProfile.approved': false,
-        'vendorProfile.onboardingComplete': true,
-        isActive: true,
-        $or: [
-          { 'vendorProfile.rejectionReason': { $exists: false } },
-          { 'vendorProfile.rejectionReason': '' },
-        ],
-      }),
+      User.countDocuments({ ...base, 'vendorProfile.approved': false, isActive: true, 'vendorProfile.rejectionReason': { $in: ['', null] } }),
       User.countDocuments({ ...base, isActive: false }),
       User.findOne({ ...base, 'vendorProfile.approved': true, isActive: true })
         .sort({ 'vendorProfile.totalEarnings': -1 })
@@ -84,7 +57,7 @@ router.get('/stats', async (req, res, next) => {
 router.get('/', async (req, res, next) => {
   try {
     const { page = 1, limit = 20, status, search } = req.query;
-    const filter = { role: 'vendor', 'vendorProfile.onboardingComplete': true };
+    const filter = { role: 'vendor' };
 
     Object.assign(filter, buildStatusFilter(status));
 
@@ -155,20 +128,42 @@ router.get('/:id', async (req, res, next) => {
 // ── PUT /admin/vendors/:id/approve ────────────────────────────────────────────
 router.put('/:id/approve', async (req, res, next) => {
   try {
-    const vendor = await User.findOneAndUpdate(
-      { _id: req.params.id, role: 'vendor' },
-      { 'vendorProfile.approved': true, 'vendorProfile.rejectionReason': '', isActive: true },
-      { new: true },
-    ).select('-password -refreshTokens');
-    if (!vendor) throw new AppError('Vendor not found', 404, 'NOT_FOUND');
+    const user = await User.findOne({ _id: req.params.id, role: 'vendor' });
+    if (!user) throw new AppError('Vendor not found', 404, 'NOT_FOUND');
+
+    const vp = user.vendorProfile || {};
+    const docs = vp.kycDocuments || [];
+    const kycComplete =
+      vp.gstVerified &&
+      vp.businessName?.trim() &&
+      vp.businessType &&
+      vp.businessAddress?.trim() &&
+      vp.businessPhone?.trim() &&
+      docs.some((d) => d.type === 'id_proof') &&
+      docs.some((d) => d.type === 'address_proof');
+
+    const update = {
+      'vendorProfile.approved': true,
+      'vendorProfile.rejectionReason': '',
+      isActive: true,
+    };
+
+    if (kycComplete) {
+      update['vendorProfile.kycStatus']    = 'approved';
+      update['vendorProfile.kycVerifiedAt'] = new Date();
+      update['vendorProfile.kycVerifiedBy'] = req.user._id;
+    }
+
+    const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true })
+      .select('-password -refreshTokens');
 
     notif.notifyVendorApprovalStatus({
-      vendorUserId: vendor._id,
-      vendor:       vendor.vendorProfile,
+      vendorUserId: updated._id,
+      vendor:       updated.vendorProfile,
       status:       'approved',
     }).catch(() => {});
 
-    res.json({ ok: true, vendor });
+    res.json({ ok: true, vendor: updated, kycAutoApproved: !!kycComplete });
   } catch (err) { next(err); }
 });
 

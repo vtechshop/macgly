@@ -88,8 +88,20 @@ router.put('/vendors/:id/approve', async (req, res, next) => {
     const user = await User.findOne({ _id: req.params.id, role: 'vendor' });
     if (!user) throw new AppError('Vendor not found', 404, 'NOT_FOUND');
 
-    if (!user.vendorProfile?.gstin) {
-      throw new AppError('Cannot approve vendor KYC without GST verification.', 400, 'GST_NOT_VERIFIED');
+    const { force } = req.body;
+    const vp   = user.vendorProfile || {};
+    const docs = vp.kycDocuments || [];
+
+    if (!force) {
+      if (!vp.businessName?.trim() || !vp.businessType || !vp.businessAddress?.trim() || !vp.businessPhone?.trim()) {
+        throw new AppError('Business information is incomplete', 400, 'INCOMPLETE_KYC');
+      }
+      if (!vp.gstVerified) {
+        throw new AppError('GST has not been verified', 400, 'GST_NOT_VERIFIED');
+      }
+      if (!docs.some((d) => d.type === 'id_proof') || !docs.some((d) => d.type === 'address_proof')) {
+        throw new AppError('ID proof and address proof documents are required', 400, 'MISSING_DOCUMENTS');
+      }
     }
 
     const updated = await User.findByIdAndUpdate(
