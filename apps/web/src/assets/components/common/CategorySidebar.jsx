@@ -1,17 +1,19 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, Wrench, Settings, Hammer, HardHat, Package, Ruler, Flame, Scissors, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
+import { Sprout, Wrench, Hammer, Cpu, Settings, Package, Home as HomeIcon, Pipette, UtensilsCrossed, Trees, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { normalizeImageUrl } from '../../../utils/format';
 
 const CATEGORY_ICONS = {
-  'power-tools': Zap,
-  'hand-tools': Wrench,
-  'spare-parts': Settings,
-  machines: Hammer,
-  safety: HardHat,
-  'measuring-tools': Ruler,
-  welding: Flame,
-  'cutting-tools': Scissors,
+  'agricultural-industry-farm-tools': Sprout,
+  'engineering-workshop-kits':        Wrench,
+  'hardware-tools':                   Hammer,
+  'electronics-instruments':          Cpu,
+  'general-machineries':              Settings,
+  'spare-parts':                      Package,
+  'household-cleaning-equipment':     HomeIcon,
+  'plumbing-hardware-construction':   Pipette,
+  'hotel-food-processing':            UtensilsCrossed,
+  'wood-carvings':                    Trees,
   default: Package,
 };
 

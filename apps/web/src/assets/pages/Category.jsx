@@ -178,30 +178,33 @@ export default function Category() {
         </div>
       )}
 
-      {/* Subcategory list */}
+      {/* Subcategory tiles */}
       {subcategories.length > 0 && (
-        <div className="mb-8 max-w-xs">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-sm font-bold text-primary-600 uppercase tracking-wide">{category?.name}</span>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-secondary-800">Browse Subcategories</h2>
             <Link to={`/products?category=${slug}`} className="text-xs text-primary-600 hover:underline font-semibold flex items-center gap-0.5">
               All <ChevronRight size={13} />
             </Link>
           </div>
-          <div className="bg-white rounded-xl border border-secondary-200 overflow-hidden">
-            {subcategories.map((sub, i) => (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+            {subcategories.map((sub) => (
               <Link
                 key={sub._id}
                 to={`/category/${sub.slug}`}
-                className={`flex items-center gap-3 px-4 py-3 hover:bg-primary-50 transition-colors group ${i !== 0 ? 'border-t border-secondary-100' : ''}`}
+                className="flex flex-col rounded-xl border-2 border-secondary-200 bg-white hover:border-primary-300 hover:shadow-sm transition-all duration-150 group overflow-hidden"
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary-100 text-secondary-500 group-hover:bg-primary-100 group-hover:text-primary-600 transition-colors shrink-0">
+                <div className="w-full aspect-square bg-secondary-50 flex items-center justify-center group-hover:bg-secondary-100 transition-colors">
                   {sub.image
-                    ? <img src={normalizeImageUrl(sub.image)} alt="" className="w-full h-full object-contain p-0.5" onError={(e) => { e.target.style.display = 'none'; }} />
-                    : <Package size={15} />
+                    ? <img src={normalizeImageUrl(sub.image)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                    : <Package size={26} className="text-secondary-400 group-hover:text-primary-500 transition-colors" />
                   }
                 </div>
-                <span className="flex-1 text-sm font-medium text-secondary-700 group-hover:text-primary-700">{sub.name}</span>
-                <ChevronRight size={14} className="text-secondary-400 group-hover:text-primary-500" />
+                <div className="px-2 py-2 text-center">
+                  <span className="text-[11px] font-semibold leading-tight line-clamp-2 text-secondary-700 group-hover:text-primary-700">
+                    {sub.name}
+                  </span>
+                </div>
               </Link>
             ))}
           </div>

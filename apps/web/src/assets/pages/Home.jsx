@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { ArrowRight, ChevronRight, Zap, Wrench, Settings, Hammer, HardHat, Package, Ruler, Flame, Scissors } from 'lucide-react';
+import { ArrowRight, ChevronRight, Sprout, Wrench, Hammer, Cpu, Settings, Package, Home as HomeIcon, Pipette, UtensilsCrossed, Trees } from 'lucide-react';
 import api from '../../utils/api';
 import CategorySidebar from '../components/common/CategorySidebar';
 import { useFetch } from '../../hooks';
@@ -8,11 +8,18 @@ import { normalizeImageUrl } from '../../utils/format';
 import { setMeta } from '../../utils/seo';
 
 const CAT_ICONS = {
-  'power-tools': Zap, 'hand-tools': Wrench, 'spare-parts': Settings,
-  'machines': Hammer, 'safety-equipment': HardHat, 'measuring-tools': Ruler,
-  'welding': Flame, 'cutting-tools': Scissors, default: Package,
+  'agricultural-industry-farm-tools': Sprout,
+  'engineering-workshop-kits':        Wrench,
+  'hardware-tools':                   Hammer,
+  'electronics-instruments':          Cpu,
+  'general-machineries':              Settings,
+  'spare-parts':                      Package,
+  'household-cleaning-equipment':     HomeIcon,
+  'plumbing-hardware-construction':   Pipette,
+  'hotel-food-processing':            UtensilsCrossed,
+  'wood-carvings':                    Trees,
+  default: Package,
 };
-
 
 function HeroSection({ banners }) {
   const banner = banners?.[0];
@@ -22,17 +29,13 @@ function HeroSection({ banners }) {
         <img src={normalizeImageUrl(banner.image)} alt={banner.title} className="absolute inset-0 w-full h-full object-cover opacity-30" />
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-secondary-900/95 via-secondary-900/70 to-transparent" />
-
-      {/* Accent line */}
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500" />
-
-      {/* Glow */}
       <div className="absolute top-0 right-0 w-72 h-72 bg-primary-600/15 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative flex items-center h-full px-8 md:px-12 py-10">
         <div className="max-w-lg">
           <span className="inline-flex items-center gap-1.5 bg-primary-600/90 text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
-            <Zap size={10} fill="currentColor" /> {banner?.subtitle || 'Premium Collection'}
+            <Sprout size={10} /> {banner?.subtitle || 'Premium Collection'}
           </span>
           <h1 className="text-3xl md:text-4xl font-black text-white leading-tight tracking-tight">
             {banner?.title || 'Professional Tools & Machinery'}
@@ -44,13 +47,12 @@ function HeroSection({ banners }) {
             <Link to={banner?.link || '/products'} className="btn-primary px-5 py-2 text-sm shadow-lg shadow-orange-600/20">
               Shop Now <ArrowRight size={15} />
             </Link>
-            <Link to="/products?category=spare-parts" className="btn border border-white/20 text-secondary-300 hover:bg-white/10 hover:text-white px-5 py-2 text-sm">
+            <Link to="/category/spare-parts" className="btn border border-white/20 text-secondary-300 hover:bg-white/10 hover:text-white px-5 py-2 text-sm">
               Spare Parts
             </Link>
           </div>
         </div>
 
-        {/* Right side decorative stat cards */}
         <div className="hidden md:flex flex-col gap-3 ml-auto mr-4 shrink-0">
           {[['50K+', 'Engineers'], ['500+', 'Products'], ['Pan India', 'Delivery']].map(([n, l]) => (
             <div key={l} className="bg-white/5 backdrop-blur border border-white/10 rounded-xl px-5 py-3 text-center min-w-[100px]">
@@ -68,7 +70,7 @@ export default function Home() {
   useEffect(() => {
     setMeta({
       title: 'Macgly — Professional Tools & Machinery in India',
-      description: 'Buy genuine power tools, hand tools, machines, spare parts and safety equipment from trusted vendors. Pan India delivery. Trusted by 50,000+ engineers & workshops.',
+      description: 'Buy genuine tools, machines, spare parts and equipment from trusted vendors. Pan India delivery.',
       canonical: 'https://macgly.com/',
     });
   }, []);
@@ -89,13 +91,10 @@ export default function Home() {
         </aside>
       )}
 
-      {/* Main content */}
       <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4 space-y-6">
 
-        {/* Hero */}
         <HeroSection banners={bannersData?.banners} />
 
-        {/* Mobile categories accordion */}
         {/* Shop by Category */}
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -108,7 +107,6 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Category tiles */}
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
             {topCats.map((cat) => {
               const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
