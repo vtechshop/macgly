@@ -230,11 +230,22 @@ async function verifyPayment(req, res, next) {
 
 async function getOrders(req, res, next) {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, status } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const filter = { user: req.user._id };
+
+    if (status === 'placed') {
+      filter.status = { $in: ['placed', 'paid', 'confirmed', 'processing', 'packed'] };
+    } else if (status === 'shipped') {
+      filter.status = { $in: ['shipped', 'out_for_delivery'] };
+    } else if (status && status !== 'all') {
+      filter.status = status;
+    }
+
     const [orders, total] = await Promise.all([
-      Order.find({ user: req.user._id }).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
-      Order.countDocuments({ user: req.user._id }),
+      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      Order.countDocuments(filter),
     ]);
     res.json({ orders, pagination: { page: parseInt(page), limit: parseInt(limit), total } });
   } catch (err) { next(err); }

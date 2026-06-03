@@ -26,18 +26,38 @@ function toDbStatus(s) {
 }
 
 // ─── Customer routes ──────────────────────────────────────────────────────────
+
+async function getMyStats(req, res, next) {
+  try {
+    const [total, open, inProgress, resolved, closed, unread] = await Promise.all([
+      Ticket.countDocuments({ user: req.user._id }),
+      Ticket.countDocuments({ user: req.user._id, status: 'open' }),
+      Ticket.countDocuments({ user: req.user._id, status: 'in_progress' }),
+      Ticket.countDocuments({ user: req.user._id, status: 'resolved' }),
+      Ticket.countDocuments({ user: req.user._id, status: 'closed' }),
+      Ticket.countDocuments({ user: req.user._id, lastResponseBy: 'support', userViewed: false }),
+    ]);
+    res.json({ total, open, inProgress, resolved, closed, unread });
+  } catch (err) { next(err); }
+}
+
 async function createTicket(req, res, next) {
   try {
-    const { subject, category, priority, message } = req.body;
-    if (!subject?.trim() || !message?.trim()) {
+    const { subject, category, priority, message, description, attachments } = req.body;
+    const content = (description || message || '').trim();
+    if (!subject?.trim() || !content) {
       throw new AppError('Subject and message are required', 400, 'MISSING_FIELDS');
     }
     const ticket = await Ticket.create({
-      user: req.user._id,
-      subject: subject.trim(),
-      category: category || 'other',
-      priority: priority || 'medium',
-      messages: [{ senderRole: 'user', content: message.trim() }],
+      user:           req.user._id,
+      subject:        subject.trim(),
+      category:       category || 'other',
+      priority:       priority || 'medium',
+      attachments:    attachments || [],
+      lastResponseBy: 'user',
+      userViewed:     true,
+      adminViewed:    false,
+      messages: [{ senderRole: 'user', content, attachments: attachments || [] }],
     });
     notif.notifyAdminNewTicket({ ticket, userEmail: req.user.email }).catch(() => {});
     res.status(201).json({ ticket });
@@ -50,7 +70,7 @@ async function getTickets(req, res, next) {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const filter = { user: req.user._id };
     const [tickets, total] = await Promise.all([
-      Ticket.find(filter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).select('-messages'),
+      Ticket.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(parseInt(limit)).select('-messages').lean(),
       Ticket.countDocuments(filter),
     ]);
     res.json({ tickets, pagination: { page: parseInt(page), limit: parseInt(limit), total } });
@@ -59,8 +79,14 @@ async function getTickets(req, res, next) {
 
 async function getTicket(req, res, next) {
   try {
-    const ticket = await Ticket.findOne({ _id: req.params.id, user: req.user._id });
+    const ticket = await Ticket.findOne({ _id: req.params.id, user: req.user._id })
+      .populate('assignedTo', 'name');
     if (!ticket) throw new AppError('Ticket not found', 404, 'NOT_FOUND');
+    // Mark as viewed by user
+    if (!ticket.userViewed) {
+      ticket.userViewed = true;
+      await ticket.save();
+    }
     res.json({ ticket });
   } catch (err) { next(err); }
 }
@@ -73,6 +99,9 @@ async function replyToTicket(req, res, next) {
     if (!ticket) throw new AppError('Ticket not found', 404, 'NOT_FOUND');
     if (ticket.status === 'closed') throw new AppError('Cannot reply to a closed ticket', 400, 'TICKET_CLOSED');
     ticket.messages.push({ senderRole: 'user', content: message.trim() });
+    ticket.lastResponseBy = 'user';
+    ticket.userViewed  = true;
+    ticket.adminViewed = false;
     if (ticket.status === 'resolved') ticket.status = 'open';
     await ticket.save();
     res.json({ ticket });
@@ -209,7 +238,7 @@ async function adminReply(req, res, next) {
 }
 
 module.exports = {
-  createTicket, getTickets, getTicket, replyToTicket,
+  createTicket, getTickets, getTicket, replyToTicket, getMyStats,
   adminGetStats, adminGetTickets, adminGetTicket,
   adminUpdateStatus, adminUpdatePriority, adminReply,
 };

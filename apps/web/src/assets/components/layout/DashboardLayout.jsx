@@ -6,7 +6,7 @@ import {
   Tag, Image, Settings, LogOut, MapPin, Heart,
   Store, UserCheck, IndianRupee, Link2, ShieldCheck, HelpCircle, Clock, CreditCard, Star, Menu, X,
   FileText, Inbox, Sliders, LayoutTemplate, ClipboardList, BookOpen, Share2, Mail, Warehouse,
-  RotateCcw, Megaphone, BarChart2, PenTool, TrendingUp,
+  RotateCcw, Megaphone, BarChart2, PenTool, TrendingUp, Lock,
 } from 'lucide-react';
 import VendorOnboarding from '../../pages/dashboard/vendor/VendorOnboarding';
 import NotificationBell from '../common/NotificationBell';
@@ -81,8 +81,8 @@ const navsByRole = {
     { type: 'item', to: '/dashboard/customer/wishlist', label: 'Wishlist', icon: Heart },
     { type: 'item', to: '/dashboard/customer/settings', label: 'Settings', icon: Settings },
     { type: 'section', label: 'Grow' },
-    { type: 'item', to: '/sell', label: 'Become a Vendor', icon: Store },
-    { type: 'item', to: '/affiliate', label: 'Become an Affiliate', icon: UserCheck },
+    { type: 'item', to: '/dashboard/become-vendor', label: 'Become a Vendor', icon: Store },
+    { type: 'item', to: '/dashboard/become-affiliate', label: 'Become an Affiliate', icon: UserCheck },
   ],
   affiliate: [
     { type: 'item', to: '/dashboard/affiliate', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -98,7 +98,7 @@ const navsByRole = {
   ],
 };
 
-function SidebarContent({ navItems, user, activeOrderCount, badgeCounts, onNav, onLogout }) {
+function SidebarContent({ navItems, user, activeOrderCount, badgeCounts, onNav, onLogout, isItemLocked }) {
   return (
     <>
       <div className="px-4 py-3 border-b border-white/10 flex justify-center shrink-0 bg-white">
@@ -123,32 +123,48 @@ function SidebarContent({ navItems, user, activeOrderCount, badgeCounts, onNav, 
             <p key={`s-${i}`} className="px-4 pt-5 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-600">
               {item.label}
             </p>
-          ) : (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              onClick={onNav}
-              className={({ isActive }) =>
-                `flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive ? 'bg-orange-500 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
-                }`
-              }
-            >
-              <item.icon size={16} />
-              <span className="flex-1">{item.label}</span>
-              {item.badge === 'orders' && activeOrderCount > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
-                  {activeOrderCount > 99 ? '99+' : activeOrderCount}
-                </span>
-              )}
-              {item.badge && item.badge !== 'orders' && (badgeCounts?.[item.badge] || 0) > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
-                  {badgeCounts[item.badge] > 99 ? '99+' : badgeCounts[item.badge]}
-                </span>
-              )}
-            </NavLink>
-          )
+          ) : (() => {
+            const locked = isItemLocked?.(item.to);
+            if (locked) {
+              return (
+                <button
+                  key={item.to}
+                  onClick={() => toast.error('Complete KYC verification to access this page.', { duration: 4000 })}
+                  className="flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium w-full text-left opacity-50 cursor-not-allowed text-gray-400"
+                >
+                  <item.icon size={16} />
+                  <span className="flex-1">{item.label}</span>
+                  <Lock size={12} className="text-gray-500" />
+                </button>
+              );
+            }
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={onNav}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive ? 'bg-orange-500 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                <item.icon size={16} />
+                <span className="flex-1">{item.label}</span>
+                {item.badge === 'orders' && activeOrderCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
+                    {activeOrderCount > 99 ? '99+' : activeOrderCount}
+                  </span>
+                )}
+                {item.badge && item.badge !== 'orders' && (badgeCounts?.[item.badge] || 0) > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
+                    {badgeCounts[item.badge] > 99 ? '99+' : badgeCounts[item.badge]}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })()
         )}
       </nav>
 
@@ -216,11 +232,18 @@ export default function DashboardLayout({ requiredRole }) {
     return <Navigate to={`/dashboard/${user.role}`} replace />;
   }
 
-  const isVendor = requiredRole === 'vendor' && user.role === 'vendor';
+  const isVendor = user.role === 'vendor';
+  const isVendorKYCApproved = isVendor && user.vendorProfile?.kycStatus === 'approved';
   const needsOnboarding = isVendor && !user.vendorProfile?.onboardingComplete;
   const isUnapprovedVendor = isVendor && user.vendorProfile?.onboardingComplete && !user.vendorProfile?.approved;
   const isSupportPage = location.pathname.endsWith('/support');
   const isOverviewPage = location.pathname === '/dashboard/vendor' || location.pathname === '/dashboard/vendor/';
+
+  function isItemLocked(to) {
+    if (!isVendor || isVendorKYCApproved) return false;
+    if (to.includes('/kyc') || to.includes('/support')) return false;
+    return true;
+  }
   const navItems = navsByRole[requiredRole || user.role] || navsByRole.customer;
 
   const currentNavLabel = navItems.find(
@@ -237,7 +260,7 @@ export default function DashboardLayout({ requiredRole }) {
     }
   }
 
-  const sidebarProps = { navItems, user, activeOrderCount, badgeCounts, onNav: () => setSidebarOpen(false), onLogout: handleLogout };
+  const sidebarProps = { navItems, user, activeOrderCount, badgeCounts, onNav: () => setSidebarOpen(false), onLogout: handleLogout, isItemLocked };
 
   return (
     <div className="h-screen flex bg-secondary-50 overflow-hidden">

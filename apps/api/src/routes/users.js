@@ -7,6 +7,43 @@ router.use(authenticate);
 
 router.get('/profile', (req, res) => res.json({ user: req.user.toSafeObject() }));
 
+// Dashboard stats — 5 parallel DB queries
+router.get('/stats', async (req, res, next) => {
+  try {
+    const Order    = require('../models/Order');
+    const mongoose = require('mongoose');
+    const userId   = new mongoose.Types.ObjectId(req.user._id);
+
+    const activeStatuses = ['pending', 'pending_payment', 'placed', 'paid', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery'];
+    const thirtyDaysAgo  = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const user = await User.findById(userId).select('wishlist addresses createdAt');
+
+    const [totalOrders, pendingOrders, deliveredOrders, spentAgg, recentCount] = await Promise.all([
+      Order.countDocuments({ user: userId }),
+      Order.countDocuments({ user: userId, status: { $in: activeStatuses } }),
+      Order.countDocuments({ user: userId, status: 'delivered' }),
+      Order.aggregate([
+        { $match: { user: userId, status: { $nin: ['cancelled', 'returned'] } } },
+        { $group: { _id: null, totalSpent: { $sum: '$totalAmount' }, totalSavings: { $sum: { $ifNull: ['$discount', 0] } } } },
+      ]),
+      Order.countDocuments({ user: userId, createdAt: { $gte: thirtyDaysAgo } }),
+    ]);
+
+    res.json({
+      totalOrders,
+      pendingOrders,
+      deliveredOrders,
+      recentOrders: recentCount,
+      totalSpent:   parseFloat((spentAgg[0]?.totalSpent   || 0).toFixed(2)),
+      totalSavings: parseFloat((spentAgg[0]?.totalSavings || 0).toFixed(2)),
+      wishlistCount: user.wishlist.length,
+      addressCount:  user.addresses.length,
+      memberSince:   user.createdAt,
+    });
+  } catch (err) { next(err); }
+});
+
 router.post('/become-vendor', async (req, res, next) => {
   try {
     if (req.user.role === 'vendor') return res.json({ user: req.user.toSafeObject() });
@@ -56,6 +93,13 @@ router.put('/profile', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.get('/addresses', async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select('addresses');
+    res.json({ addresses: user.addresses || [] });
+  } catch (err) { next(err); }
+});
+
 router.post('/addresses', async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -76,6 +120,17 @@ router.put('/addresses/:addressId', async (req, res, next) => {
     const fields = ['name', 'phone', 'line1', 'line2', 'city', 'state', 'pincode', 'country', 'label'];
     fields.forEach((f) => { if (req.body[f] !== undefined) addr[f] = req.body[f]; });
     if (req.body.isDefault) user.addresses.forEach((a) => { a.isDefault = a._id.equals(addr._id); });
+    await user.save();
+    res.json({ addresses: user.addresses });
+  } catch (err) { next(err); }
+});
+
+router.put('/addresses/:addressId/default', async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const exists = user.addresses.id(req.params.addressId);
+    if (!exists) throw new AppError('Address not found', 404, 'NOT_FOUND');
+    user.addresses.forEach((a) => { a.isDefault = a._id.toString() === req.params.addressId; });
     await user.save();
     res.json({ addresses: user.addresses });
   } catch (err) { next(err); }
@@ -120,6 +175,13 @@ router.delete('/wishlist/:productId', async (req, res, next) => {
       $pull: { wishlist: req.params.productId },
     });
     res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+router.get('/login-activity', async (req, res, next) => {
+  try {
+    // No LoginActivity model yet — stub returns empty array
+    res.json({ activities: [] });
   } catch (err) { next(err); }
 });
 

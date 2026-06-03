@@ -69,6 +69,7 @@ const AdminAnalytics        = lazy(() => import('./assets/pages/dashboard/admin/
 const VendorDashboard       = lazy(() => import('./assets/pages/dashboard/vendor/VendorDashboard'));
 const VendorProducts        = lazy(() => import('./assets/pages/dashboard/vendor/VendorProducts'));
 const VendorOrders          = lazy(() => import('./assets/pages/dashboard/vendor/VendorOrders'));
+const VendorOrderDetail     = lazy(() => import('./assets/pages/dashboard/vendor/VendorOrderDetail'));
 const VendorSupport         = lazy(() => import('./assets/pages/dashboard/vendor/VendorSupport'));
 const VendorKYC             = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
 const VendorInventory       = lazy(() => import('./assets/pages/dashboard/vendor/VendorInventory'));
@@ -79,6 +80,8 @@ const VendorManualOrders    = lazy(() => import('./assets/pages/dashboard/vendor
 const VendorSettings        = lazy(() => import('./assets/pages/dashboard/vendor/VendorSettings'));
 
 // Customer pages — lazy loaded
+const BecomeVendor          = lazy(() => import('./assets/pages/dashboard/customer/BecomeVendor'));
+const BecomeAffiliate       = lazy(() => import('./assets/pages/dashboard/customer/BecomeAffiliate'));
 const CustomerDashboard     = lazy(() => import('./assets/pages/dashboard/customer/CustomerDashboard'));
 const CustomerOrders        = lazy(() => import('./assets/pages/dashboard/customer/CustomerOrders'));
 const CustomerOrderDetail   = lazy(() => import('./assets/pages/dashboard/customer/CustomerOrderDetail'));
@@ -144,15 +147,17 @@ export default function App() {
       <AuthInit>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            {/* Public */}
+            {/* Auth — standalone, no navbar/footer */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+            {/* Public — wrapped in PublicLayout (has navbar + footer) */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/products" element={<Search />} />
               <Route path="/product/:slug" element={<Product />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/sell" element={<VendorRegister />} />
               <Route path="/affiliate" element={<AffiliateRegister />} />
@@ -215,6 +220,7 @@ export default function App() {
               <Route index element={<VendorDashboard />} />
               <Route path="products" element={<VendorProducts />} />
               <Route path="orders" element={<VendorOrders />} />
+              <Route path="orders/:id" element={<VendorOrderDetail />} />
               <Route path="support" element={<VendorSupport />} />
               <Route path="inventory" element={<VendorInventory />} />
               <Route path="settlements" element={<VendorSettlements />} />
@@ -223,6 +229,16 @@ export default function App() {
               <Route path="manual-orders" element={<VendorManualOrders />} />
               <Route path="settings" element={<VendorSettings />} />
               <Route path="kyc" element={<VendorKYC />} />
+            </Route>
+
+            {/* Become a Vendor — any authenticated user */}
+            <Route path="/dashboard/become-vendor" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
+              <Route index element={<BecomeVendor />} />
+            </Route>
+
+            {/* Become an Affiliate — any authenticated user */}
+            <Route path="/dashboard/become-affiliate" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
+              <Route index element={<BecomeAffiliate />} />
             </Route>
 
             {/* Customer dashboard */}

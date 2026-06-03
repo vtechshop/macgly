@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema({
 
   // Vendor-specific
   vendorProfile: {
+    storeName:         String,
+    storeDescription:  String,
     businessName:      String,
     businessPhone:     String,
     gstin:             String,
@@ -58,6 +60,12 @@ const userSchema = new mongoose.Schema({
     kycRejectionReason: String,
     kycVerifiedAt:      Date,
     kycVerifiedBy:      mongoose.Schema.Types.ObjectId,
+    // Store branding & settings
+    logo:              String,
+    slug:              String,
+    swiftCode:         String,
+    returnPolicy:      String,
+    shippingPolicy:    String,
   },
 
   // Affiliate-specific
@@ -83,6 +91,49 @@ const userSchema = new mongoose.Schema({
       aadhaar:           String,
       rejectionReason:   String,
     },
+    // Extended KYC fields (full verification form)
+    kycFullName:    String,
+    kycAddress:     String,
+    kycCity:        String,
+    kycState:       String,
+    kycCountry:     String,
+    kycZipCode:     String,
+    kycPhoneNumber: String,
+    kycIdType:      { type: String, enum: ['passport', 'drivers_license', 'national_id', 'other'] },
+    kycIdNumber:    String,
+    kycGstNumber:   String,
+    kycGstVerified: { type: Boolean, default: false },
+    kycGstDetails:  mongoose.Schema.Types.Mixed,
+    kycDocuments:   [{
+      type:       { type: String },
+      url:        String,
+      filename:   String,
+      uploadedAt: { type: Date, default: Date.now },
+    }],
+    kycVerifiedAt:      Date,
+    kycRejectionReason: String,
+    // Payment/bank details (separate from kycData)
+    panNumber:   String,
+    panVerified: { type: Boolean, default: false },
+    bankDetails: {
+      accountHolderName: String,
+      bankName:          String,
+      accountNumber:     String,
+      lastFourDigits:    String,
+      ifscCode:          String,
+      upiId:             String,
+      verified:          { type: Boolean, default: false },
+    },
+    preferences: {
+      emailNotifications: { type: Boolean, default: true },
+      showEarnings:       { type: Boolean, default: true },
+      soundEnabled:       { type: Boolean, default: true },
+      weeklyReports:      { type: Boolean, default: true },
+      monthlyReports:     { type: Boolean, default: true },
+      promotionalEmails:  { type: Boolean, default: false },
+      currency:           { type: String,  default: 'INR' },
+      language:           { type: String,  default: 'en' },
+    },
   },
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', sparse: true },
   pendingAffiliateRef: { type: String, default: null }, // referral code of last clicked affiliate link
@@ -90,6 +141,8 @@ const userSchema = new mongoose.Schema({
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
 
   lastLogin: Date,
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil:     Date,
   refreshTokens: { type: [String], select: false },
   isActive: { type: Boolean, default: true },
   emailVerified: { type: Boolean, default: false },

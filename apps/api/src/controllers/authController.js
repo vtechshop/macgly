@@ -66,16 +66,52 @@ async function register(req, res, next) {
   }
 }
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
     if (!email || !password) throw new AppError('email and password are required', 400, 'MISSING_FIELDS');
 
-    const user = await User.findOne({ email }).select('+password +refreshTokens');
-    if (!user || !(await user.comparePassword(password))) {
-      throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
-    }
+    const user = await User.findOne({ email: email.trim().toLowerCase() })
+      .select('+password +refreshTokens +loginAttempts +lockUntil');
+
+    if (!user) throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
     if (!user.isActive) throw new AppError('Account is deactivated', 403, 'ACCOUNT_INACTIVE');
+
+    // Check lockout
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const mins = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      throw new AppError(
+        `Account locked due to too many failed attempts. Try again in ${mins} minute${mins !== 1 ? 's' : ''}.`,
+        423,
+        'ACCOUNT_LOCKED'
+      );
+    }
+
+    const isMatch = await user.comparePassword(password);
+
+    if (!isMatch) {
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        user.lockUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+        user.loginAttempts = 0;
+        await user.save({ validateBeforeSave: false });
+        throw new AppError('Too many failed attempts. Account locked for 15 minutes.', 423, 'ACCOUNT_LOCKED');
+      }
+      await user.save({ validateBeforeSave: false });
+      const remaining = MAX_LOGIN_ATTEMPTS - user.loginAttempts;
+      throw new AppError(
+        `Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before lockout.`,
+        401,
+        'INVALID_CREDENTIALS'
+      );
+    }
+
+    // Success — reset lockout state
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
 
     const accessToken = signAccess(user._id, user.role);
     const refreshToken = signRefresh(user._id);

@@ -1,349 +1,638 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  Plus, ArrowLeft, Send, Clock, CheckCircle2,
-  Loader2, AlertCircle, XCircle, ChevronDown, HelpCircle,
+  Plus, Send, Clock, CheckCircle, XCircle, CircleDot,
+  MessageSquare, Bell, Search, RefreshCw,
+  FileText, Mail, Sparkles, Phone,
+  X, Lightbulb, HelpCircle,
 } from 'lucide-react';
 import api from '../../../../utils/api';
-import { useFetch } from '../../../../hooks';
+import { useFetch, useAction, invalidateCache } from '../../../../hooks';
 import Spinner from '../../../components/common/Spinner';
 import toast from 'react-hot-toast';
 
-const STATUS_CONFIG = {
-  open:        { label: 'Open',        class: 'bg-blue-100 text-blue-700' },
-  in_progress: { label: 'In Progress', class: 'bg-yellow-100 text-yellow-700' },
-  resolved:    { label: 'Resolved',    class: 'bg-green-100 text-green-700' },
-  closed:      { label: 'Closed',      class: 'bg-secondary-100 text-secondary-500' },
+// ─── Config ───────────────────────────────────────────────────────────────────
+
+const STATUS_CFG = {
+  open:        { icon: CircleDot,    label: 'Open',        cls: 'bg-blue-100 text-blue-700' },
+  in_progress: { icon: Clock,        label: 'In Progress', cls: 'bg-amber-100 text-amber-700' },
+  resolved:    { icon: CheckCircle,  label: 'Resolved',    cls: 'bg-green-100 text-green-700' },
+  closed:      { icon: XCircle,      label: 'Closed',      cls: 'bg-secondary-100 text-secondary-500' },
+};
+
+const PRIORITY_CFG = {
+  low:    'bg-secondary-100 text-secondary-500',
+  medium: 'bg-blue-100 text-blue-700',
+  high:   'bg-orange-100 text-orange-600',
+  urgent: 'bg-red-100 text-red-700',
 };
 
 const CATEGORIES = [
-  { value: 'payment',    label: 'Payment / Payout' },
-  { value: 'commission', label: 'Commission Issue' },
+  { value: 'payment',    label: 'Payment & Commissions' },
+  { value: 'commission', label: 'Commission Issues' },
   { value: 'kyc',        label: 'KYC Verification' },
   { value: 'links',      label: 'Affiliate Links' },
-  { value: 'technical',  label: 'Technical Problem' },
-  { value: 'other',      label: 'Other' },
+  { value: 'technical',  label: 'Technical Issue' },
+  { value: 'other',      label: 'General Support' },
 ];
 
 const PRIORITIES = [
   { value: 'low',    label: 'Low' },
   { value: 'medium', label: 'Medium' },
-  { value: 'high',   label: 'High — urgent issue' },
+  { value: 'high',   label: 'High' },
+  { value: 'urgent', label: 'Urgent' },
 ];
 
-function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.open;
+const QUICK_HELP = [
+  { label: 'Commission Issues',   desc: 'Questions about earnings or payouts', category: 'commission', icon: FileText,  gradient: 'from-blue-500 to-blue-600' },
+  { label: 'Payment Support',     desc: 'Payment method or withdrawal help',   category: 'payment',    icon: Mail,     gradient: 'from-green-500 to-emerald-600' },
+  { label: 'Marketing Materials', desc: 'Request banners and promo content',   category: 'other',      icon: Sparkles, gradient: 'from-purple-500 to-violet-600' },
+  { label: 'General Support',     desc: 'Other questions or issues',           category: 'other',      icon: Phone,    gradient: 'from-orange-500 to-orange-600' },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    + ' · ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function StatsCard({ icon: Icon, iconCls, label, value, subtext, active, onClick }) {
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${cfg.class}`}>
+    <button
+      onClick={onClick}
+      className={`card p-4 text-left w-full transition-all hover:border-primary-300 ${active ? 'border-primary-500 ring-2 ring-primary-200' : ''}`}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <Icon size={16} className={iconCls} />
+        <span className="text-xs text-secondary-400">{label}</span>
+      </div>
+      <p className="text-2xl font-bold">{value}</p>
+      {subtext && <p className="text-xs text-secondary-400 mt-0.5">{subtext}</p>}
+    </button>
+  );
+}
+
+function QuickHelpCard({ label, desc, icon: Icon, gradient, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-3 p-4 rounded-xl border border-secondary-200 hover:border-primary-300 hover:shadow-sm transition-all text-left group bg-white"
+    >
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br ${gradient}`}>
+        <Icon size={18} className="text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold">{label}</p>
+        <p className="text-xs text-secondary-400 mt-0.5">{desc}</p>
+      </div>
+      <span className="text-secondary-300 group-hover:text-primary-400 transition-colors text-sm">›</span>
+    </button>
+  );
+}
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_CFG[status] || STATUS_CFG.open;
+  const Icon = cfg.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${cfg.cls}`}>
+      <Icon size={10} />
       {cfg.label}
     </span>
   );
 }
 
-function formatTime(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) +
-    ' · ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+function TicketCard({ ticket, onClick }) {
+  const isUnread  = ticket.lastResponseBy === 'support' && !ticket.userViewed;
+  const isAwaiting = ticket.lastResponseBy === 'user'    && !ticket.adminViewed;
+  return (
+    <div
+      className={`card p-4 cursor-pointer hover:border-primary-300 transition-all ${isUnread ? 'border-green-300 bg-green-50/30' : ''}`}
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          {/* Response badges */}
+          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+            <StatusBadge status={ticket.status} />
+            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full capitalize ${PRIORITY_CFG[ticket.priority] || PRIORITY_CFG.medium}`}>
+              {ticket.priority}
+            </span>
+            {isUnread && (
+              <span className="flex items-center gap-1 text-xs font-semibold text-green-700 animate-pulse">
+                <Bell size={10} /> New Response
+              </span>
+            )}
+            {isAwaiting && !isUnread && (
+              <span className="flex items-center gap-1 text-xs font-semibold text-amber-600">
+                <Clock size={10} /> Awaiting
+              </span>
+            )}
+          </div>
+
+          {/* Subject */}
+          <p className="text-sm font-semibold line-clamp-1">{ticket.subject}</p>
+
+          {/* Meta */}
+          <div className="flex items-center gap-2 mt-1 text-xs text-secondary-400 flex-wrap">
+            <span className="font-mono">#{ticket.ticketId}</span>
+            <span>·</span>
+            <span>{fmtTime(ticket.createdAt)}</span>
+            {ticket.assignedTo?.name && (
+              <>
+                <span>·</span>
+                <span>Assigned to {ticket.assignedTo.name}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <button className="shrink-0 text-xs font-medium text-primary-600 px-3 py-1.5 rounded-lg border border-primary-200 hover:bg-primary-50 transition-colors">
+          View
+        </button>
+      </div>
+    </div>
+  );
 }
 
-// ─── Create Ticket Form ───────────────────────────────────────────────────────
-function NewTicketForm({ onCreated, onCancel }) {
-  const [form, setForm] = useState({ subject: '', category: 'other', priority: 'medium', message: '' });
-  const [saving, setSaving] = useState(false);
+// ─── Create Modal ─────────────────────────────────────────────────────────────
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!form.subject.trim() || !form.message.trim()) return toast.error('Subject and message are required');
-    setSaving(true);
-    try {
-      const { data } = await api.post('/tickets', form);
-      toast.success(`Ticket ${data.ticket.ticketId} created!`);
-      onCreated(data.ticket);
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Could not create ticket');
-    } finally {
-      setSaving(false);
-    }
-  }
-
+function CreateModal({ formData, onChange, onSubmit, creating, onClose }) {
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <button onClick={onCancel} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
-          <ArrowLeft size={18} className="text-secondary-500" />
-        </button>
+    <ModalOverlay onClose={onClose} size="md">
+      <div className="p-5 border-b border-secondary-100 flex items-center justify-between">
         <div>
-          <h2 className="font-bold text-lg">New Support Ticket</h2>
-          <p className="text-xs text-secondary-500">We typically respond within 1 business day</p>
+          <h2 className="font-bold">New Support Ticket</h2>
+          <p className="text-xs text-secondary-400 mt-0.5">We typically respond within 1 business day</p>
         </div>
+        <button onClick={onClose} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
+          <X size={16} className="text-secondary-400" />
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="card p-6 space-y-4">
+      <form onSubmit={onSubmit} className="p-5 space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Subject <span className="text-red-500">*</span></label>
           <input
             className="input w-full"
             placeholder="Brief description of your issue"
-            value={form.subject}
-            onChange={(e) => setForm({ ...form, subject: e.target.value })}
+            value={formData.subject}
+            onChange={(e) => onChange('subject', e.target.value)}
             required
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium mb-1">Category</label>
-            <select className="input w-full" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+            <select className="input w-full" value={formData.category} onChange={(e) => onChange('category', e.target.value)}>
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Priority</label>
-            <select className="input w-full" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+            <select className="input w-full" value={formData.priority} onChange={(e) => onChange('priority', e.target.value)}>
               {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Message <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium mb-1">Description <span className="text-red-500">*</span></label>
           <textarea
             className="input w-full resize-none"
-            rows={6}
-            placeholder="Describe your issue in detail. Include any relevant order IDs, dates, or amounts…"
-            value={form.message}
-            onChange={(e) => setForm({ ...form, message: e.target.value })}
+            rows={5}
+            placeholder="Describe your issue in detail…"
+            value={formData.description}
+            onChange={(e) => onChange('description', e.target.value)}
             required
           />
         </div>
 
+        {/* Tips */}
+        <div className="flex gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <Lightbulb size={14} className="text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-700">
+            Include relevant order IDs, when the issue started, and any error messages you saw. This helps our team resolve it faster.
+          </p>
+        </div>
+
         <div className="flex gap-3">
-          <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
-            {saving ? <Spinner size="sm" /> : <Send size={14} />}
-            {saving ? 'Submitting…' : 'Submit Ticket'}
+          <button type="submit" disabled={creating} className="btn-primary flex items-center gap-2">
+            {creating ? <Spinner size="sm" /> : <Send size={13} />}
+            {creating ? 'Submitting…' : 'Submit Ticket'}
           </button>
-          <button type="button" onClick={onCancel} className="btn border border-secondary-200 text-secondary-700 hover:bg-secondary-50">
+          <button type="button" onClick={onClose} className="btn border border-secondary-200 text-secondary-700 hover:bg-secondary-50">
             Cancel
           </button>
         </div>
       </form>
+    </ModalOverlay>
+  );
+}
+
+// ─── View Modal ───────────────────────────────────────────────────────────────
+
+function ViewModal({ ticketId, newMessage, onMessageChange, onSend, sending, onClose }) {
+  const [rev, setRev] = useState(0);
+
+  const { data, isLoading } = useFetch(
+    ['ticket', ticketId, rev],
+    () => api.get(`/tickets/${ticketId}`).then((r) => r.data),
+    { enabled: !!ticketId }
+  );
+
+  const ticket = data?.ticket;
+  const isClosed = ticket?.status === 'closed' || ticket?.status === 'resolved';
+
+  function handleSend(e) {
+    e.preventDefault();
+    onSend(ticketId, () => setRev((r) => r + 1));
+  }
+
+  return (
+    <ModalOverlay onClose={onClose} size="lg">
+      <div className="p-5 border-b border-secondary-100 flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          {ticket ? (
+            <>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <StatusBadge status={ticket.status} />
+                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full capitalize ${PRIORITY_CFG[ticket.priority] || PRIORITY_CFG.medium}`}>
+                  {ticket.priority}
+                </span>
+                <span className="text-xs text-secondary-400 capitalize">{ticket.category?.replace('_', ' ')}</span>
+              </div>
+              <h2 className="font-bold line-clamp-2">{ticket.subject}</h2>
+              <p className="text-xs text-secondary-400 mt-0.5 font-mono">#{ticket.ticketId}</p>
+            </>
+          ) : (
+            <p className="text-sm font-semibold text-secondary-400">Loading ticket…</p>
+          )}
+        </div>
+        <button onClick={onClose} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors shrink-0">
+          <X size={16} className="text-secondary-400" />
+        </button>
+      </div>
+
+      {isLoading && !ticket ? (
+        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+      ) : !ticket ? (
+        <div className="py-16 text-center text-secondary-400 text-sm">Ticket not found</div>
+      ) : (
+        <>
+          {/* Conversation thread */}
+          <div className="divide-y divide-secondary-100 max-h-96 overflow-y-auto">
+            {ticket.messages.map((msg, i) => {
+              const isSupport = msg.senderRole === 'support';
+              const initial   = isSupport
+                ? (ticket.assignedTo?.name?.[0] || 'S').toUpperCase()
+                : 'Y';
+              return (
+                <div key={i} className={`p-5 ${isSupport ? 'bg-blue-50' : 'bg-white sm:ml-8'}`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${isSupport ? 'bg-blue-600 text-white' : 'bg-secondary-200 text-secondary-600'}`}>
+                      {initial}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className={`text-xs font-semibold ${isSupport ? 'text-blue-700' : 'text-secondary-500'}`}>
+                          {isSupport ? 'Support Team' : 'You'}
+                        </span>
+                        <span className="text-xs text-secondary-400">{fmtTime(msg.createdAt)}</span>
+                      </div>
+                      <p className="text-sm text-secondary-700 whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Reply form or closed notice */}
+          <div className="p-5 border-t border-secondary-100">
+            {isClosed ? (
+              <div className="text-center py-4 space-y-1">
+                <p className="text-sm text-secondary-500 font-medium">
+                  This ticket is {ticket.status}.
+                </p>
+                <p className="text-xs text-secondary-400">
+                  Need more help?{' '}
+                  <button onClick={onClose} className="text-primary-600 hover:underline">
+                    Create a new ticket
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSend} className="space-y-3">
+                <textarea
+                  className="input w-full resize-none"
+                  rows={3}
+                  placeholder="Type your reply…"
+                  value={newMessage}
+                  onChange={(e) => onMessageChange(e.target.value)}
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={sending || !newMessage.trim()}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  {sending ? <Spinner size="sm" /> : <Send size={13} />}
+                  {sending ? 'Sending…' : 'Send Reply'}
+                </button>
+              </form>
+            )}
+          </div>
+        </>
+      )}
+    </ModalOverlay>
+  );
+}
+
+// ─── Modal wrapper ────────────────────────────────────────────────────────────
+
+function ModalOverlay({ onClose, size = 'md', children }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      onClick={onClose}
+    >
+      <div
+        className={`bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-y-auto ${size === 'lg' ? 'max-w-2xl' : 'max-w-lg'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
     </div>
   );
 }
 
-// ─── Ticket Detail ────────────────────────────────────────────────────────────
-function TicketDetail({ ticketId, onBack }) {
-  const [rev, setRev] = useState(0);
-  const [reply, setReply] = useState('');
-  const [sending, setSending] = useState(false);
+// ─── Main component ───────────────────────────────────────────────────────────
 
-  const { data, isLoading } = useFetch(
-    ['ticket-detail', ticketId, rev],
-    () => api.get(`/tickets/${ticketId}`).then((r) => r.data)
+export default function AffiliateSupport() {
+  const [rev,            setRev]            = useState(0);
+  const [showCreate,     setShowCreate]     = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [newMessage,     setNewMessage]     = useState('');
+  const [statusFilter,   setStatusFilter]   = useState('all');
+  const [searchQuery,    setSearchQuery]    = useState('');
+  const [formData,       setFormData]       = useState({
+    subject: '', description: '', category: 'other', priority: 'medium',
+  });
+
+  // ── Queries ───────────────────────────────────────────────────────────────
+
+  const { data: statsData } = useFetch(
+    ['affiliate-ticket-stats', rev],
+    () => api.get('/tickets/my-stats').then((r) => r.data)
   );
 
-  const ticket = data?.ticket;
+  const { data: ticketsData, isLoading: ticketsLoading } = useFetch(
+    ['affiliate-tickets', rev],
+    () => api.get('/tickets').then((r) => r.data)
+  );
 
-  async function handleReply(e) {
-    e.preventDefault();
-    if (!reply.trim()) return;
-    setSending(true);
-    try {
-      await api.post(`/tickets/${ticketId}/reply`, { message: reply.trim() });
-      setReply('');
-      setRev((r) => r + 1);
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Could not send reply');
-    } finally {
-      setSending(false);
+  // ── Mutations ─────────────────────────────────────────────────────────────
+
+  const { mutate: createMutation, isPending: creating } = useAction(
+    (body) => api.post('/tickets', body).then((r) => r.data),
+    {
+      onSuccess: (data) => {
+        toast.success(`Ticket ${data.ticket?.ticketId} created!`);
+        invalidateCache('affiliate-tickets');
+        invalidateCache('affiliate-ticket-stats');
+        setFormData({ subject: '', description: '', category: 'other', priority: 'medium' });
+        setShowCreate(false);
+        setRev((r) => r + 1);
+        setSelectedTicket(data.ticket?._id);
+      },
+      onError: (err) => toast.error(err.response?.data?.error?.message || 'Could not create ticket'),
     }
+  );
+
+  const { mutate: addMessageMutation, isPending: sending } = useAction(
+    ({ id, message }) => api.post(`/tickets/${id}/messages`, { message }).then((r) => r.data),
+    {
+      onSuccess: () => {
+        invalidateCache('ticket');
+        invalidateCache('affiliate-tickets');
+        setNewMessage('');
+        setRev((r) => r + 1);
+      },
+      onError: (err) => toast.error(err.response?.data?.error?.message || 'Could not send reply'),
+    }
+  );
+
+  // ── Derived ───────────────────────────────────────────────────────────────
+
+  const tickets = ticketsData?.tickets || [];
+  const stats   = statsData || {};
+  const active  = (stats.open || 0) + (stats.inProgress || 0);
+
+  const filteredTickets = useMemo(() => {
+    let list = tickets;
+    if (statusFilter === 'active') {
+      list = list.filter((t) => t.status === 'open' || t.status === 'in_progress');
+    } else if (statusFilter !== 'all') {
+      list = list.filter((t) => t.status === statusFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter((t) =>
+        t.subject?.toLowerCase().includes(q) ||
+        t.ticketId?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [tickets, statusFilter, searchQuery]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  function openCreateWithCategory(category) {
+    setFormData((f) => ({ ...f, category }));
+    setShowCreate(true);
   }
 
-  if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
-  if (!ticket) return <div className="text-center py-20 text-secondary-400">Ticket not found</div>;
+  function handleCreate(e) {
+    e.preventDefault();
+    if (!formData.subject.trim() || !formData.description.trim()) {
+      return toast.error('Subject and description are required');
+    }
+    createMutation(formData);
+  }
 
-  const isClosed = ticket.status === 'closed';
+  function handleSend(id, onRefresh) {
+    if (!newMessage.trim()) return;
+    addMessageMutation({ id, message: newMessage.trim() });
+    onRefresh();
+  }
+
+  function setField(key, val) {
+    setFormData((f) => ({ ...f, [key]: val }));
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <button onClick={onBack} className="p-1.5 hover:bg-secondary-100 rounded-lg transition-colors">
-          <ArrowLeft size={18} className="text-secondary-500" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-mono text-secondary-400">{ticket.ticketId}</span>
-            <StatusBadge status={ticket.status} />
-            <span className="text-xs text-secondary-400 capitalize">{ticket.category?.replace('_', ' ')}</span>
+
+      {/* 1 — Header */}
+      <div className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-5">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <HelpCircle size={20} className="text-blue-200" />
+            <div>
+              <h1 className="text-xl font-bold">Support Center</h1>
+              <p className="text-sm text-blue-200">Get help with commissions, payments, and more</p>
+            </div>
           </div>
-          <h2 className="font-bold text-lg line-clamp-1 mt-0.5">{ticket.subject}</h2>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-blue-700 font-semibold text-sm hover:bg-blue-50 transition-colors"
+          >
+            <Plus size={15} /> New Ticket
+          </button>
         </div>
+
+        {/* Unread alert */}
+        {stats.unread > 0 && (
+          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-green-500/20 border border-green-400/30 rounded-lg text-sm">
+            <Bell size={14} className="text-green-300 animate-bounce" />
+            <span className="text-green-100">
+              You have <strong>{stats.unread}</strong> ticket{stats.unread !== 1 ? 's' : ''} with new responses
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Message thread */}
-      <div className="card overflow-hidden">
-        <div className="divide-y divide-secondary-100">
-          {ticket.messages.map((msg, i) => (
-            <div key={i} className={`p-5 ${msg.senderRole === 'support' ? 'bg-primary-50' : 'bg-white'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-xs font-bold uppercase tracking-wide ${msg.senderRole === 'support' ? 'text-primary-600' : 'text-secondary-500'}`}>
-                  {msg.senderRole === 'support' ? 'Macgly Support' : 'You'}
-                </span>
-                <span className="text-xs text-secondary-400">{formatTime(msg.createdAt)}</span>
-              </div>
-              <p className="text-sm text-secondary-700 whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-            </div>
+      {/* 2 — Stats cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatsCard
+          icon={MessageSquare} iconCls="text-blue-500"
+          label="Total Tickets" value={stats.total ?? tickets.length}
+          active={statusFilter === 'all'} onClick={() => setStatusFilter('all')}
+        />
+        <StatsCard
+          icon={CircleDot} iconCls="text-amber-500"
+          label="Active" value={active}
+          subtext={`${stats.open || 0} open, ${stats.inProgress || 0} in progress`}
+          active={statusFilter === 'active'} onClick={() => setStatusFilter('active')}
+        />
+        <StatsCard
+          icon={CheckCircle} iconCls="text-green-500"
+          label="Resolved" value={stats.resolved || 0}
+          active={statusFilter === 'resolved'} onClick={() => setStatusFilter('resolved')}
+        />
+        <StatsCard
+          icon={XCircle} iconCls="text-red-400"
+          label="Closed" value={stats.closed || 0}
+          active={statusFilter === 'closed'} onClick={() => setStatusFilter('closed')}
+        />
+      </div>
+
+      {/* 3 — Quick Help Topics */}
+      <div>
+        <p className="text-sm font-semibold mb-3">Quick Help Topics</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {QUICK_HELP.map((h) => (
+            <QuickHelpCard
+              key={h.label}
+              {...h}
+              onClick={() => openCreateWithCategory(h.category)}
+            />
           ))}
         </div>
       </div>
 
-      {/* Reply box */}
-      {!isClosed ? (
-        <form onSubmit={handleReply} className="card p-5 space-y-3">
-          <p className="text-sm font-medium">Add a Reply</p>
-          <textarea
-            className="input w-full resize-none"
-            rows={4}
-            placeholder="Type your reply…"
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            required
+      {/* 4 — Search + Refresh */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
+          <input
+            className="input w-full pl-9"
+            placeholder="Search tickets by subject or ID…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button type="submit" disabled={sending || !reply.trim()} className="btn-primary flex items-center gap-2">
-            {sending ? <Spinner size="sm" /> : <Send size={14} />}
-            {sending ? 'Sending…' : 'Send Reply'}
-          </button>
-        </form>
-      ) : (
-        <div className="card p-4 text-center text-secondary-400 text-sm">
-          This ticket is closed. Open a new ticket if you need further help.
         </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Ticket List ──────────────────────────────────────────────────────────────
-function TicketList({ onSelect, onNew, rev }) {
-  const { data, isLoading } = useFetch(
-    ['tickets', rev],
-    () => api.get('/tickets').then((r) => r.data)
-  );
-
-  const tickets = data?.tickets || [];
-
-  if (isLoading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>;
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Support</h1>
-          <p className="text-secondary-500 text-sm mt-0.5">Raise a ticket and track your support requests</p>
-        </div>
-        <button onClick={onNew} className="btn-primary flex items-center gap-2">
-          <Plus size={15} />
-          New Ticket
+        <button
+          onClick={() => { invalidateCache('affiliate-tickets'); invalidateCache('affiliate-ticket-stats'); setRev((r) => r + 1); }}
+          className="btn-secondary flex items-center gap-1.5 text-sm shrink-0"
+        >
+          <RefreshCw size={13} /> Refresh
         </button>
       </div>
 
-      {tickets.length === 0 ? (
+      {/* 5 — Ticket list */}
+      {ticketsLoading && !tickets.length ? (
+        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+      ) : filteredTickets.length === 0 ? (
         <div className="card p-14 text-center space-y-3">
-          <HelpCircle size={40} className="mx-auto text-secondary-200" />
-          <p className="font-medium text-secondary-500">No tickets yet</p>
-          <p className="text-sm text-secondary-400">Have an issue? Open a ticket and our team will help you out.</p>
-          <button onClick={onNew} className="btn-primary inline-flex items-center gap-2 mx-auto mt-2">
-            <Plus size={14} />
-            Open First Ticket
-          </button>
+          <MessageSquare size={36} className="mx-auto text-secondary-200" />
+          <p className="font-medium text-secondary-500">
+            {searchQuery || statusFilter !== 'all' ? 'No tickets match your filters' : 'No Support Tickets'}
+          </p>
+          <p className="text-sm text-secondary-400">
+            {searchQuery || statusFilter !== 'all'
+              ? 'Try clearing the search or filter above.'
+              : "You haven't created any support tickets yet."}
+          </p>
+          {statusFilter === 'all' && !searchQuery && (
+            <button onClick={() => setShowCreate(true)} className="btn-primary inline-flex items-center gap-2 mx-auto mt-1">
+              <Plus size={13} /> Create Your First Ticket
+            </button>
+          )}
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <div className="divide-y divide-secondary-100">
-            {tickets.map((t) => (
-              <button
-                key={t._id}
-                onClick={() => onSelect(t._id)}
-                className="w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary-50 transition-colors text-left"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-xs font-mono text-secondary-400">{t.ticketId}</span>
-                    <StatusBadge status={t.status} />
-                    <span className="text-xs text-secondary-400 capitalize">{t.category?.replace('_', ' ')}</span>
-                  </div>
-                  <p className="font-medium text-sm line-clamp-1">{t.subject}</p>
-                  <p className="text-xs text-secondary-400 mt-0.5">{formatTime(t.createdAt)}</p>
-                </div>
-                <ChevronDown size={15} className="text-secondary-300 shrink-0 -rotate-90" />
-              </button>
-            ))}
+        <div className="space-y-3">
+          {filteredTickets.map((t) => (
+            <TicketCard key={t._id} ticket={t} onClick={() => { setSelectedTicket(t._id); setNewMessage(''); }} />
+          ))}
+        </div>
+      )}
+
+      {/* 6 — Avg response time */}
+      {stats.avgResponseTime && (
+        <div className="flex items-center gap-3 p-3 rounded-xl border border-secondary-200 bg-secondary-50">
+          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+            <Clock size={14} className="text-green-600" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">Average Response Time</p>
+            <p className="text-xs text-secondary-400">
+              Our team typically responds within <strong className="text-secondary-700">{stats.avgResponseTime}</strong>
+            </p>
           </div>
         </div>
       )}
 
-      {/* FAQ accordion */}
-      <FaqSection />
+      {/* 7 — Create modal */}
+      {showCreate && (
+        <CreateModal
+          formData={formData}
+          onChange={setField}
+          onSubmit={handleCreate}
+          creating={creating}
+          onClose={() => setShowCreate(false)}
+        />
+      )}
+
+      {/* 8 — View modal */}
+      {selectedTicket && (
+        <ViewModal
+          ticketId={selectedTicket}
+          newMessage={newMessage}
+          onMessageChange={setNewMessage}
+          onSend={handleSend}
+          sending={sending}
+          onClose={() => { setSelectedTicket(null); setNewMessage(''); setRev((r) => r + 1); }}
+        />
+      )}
+
     </div>
   );
-}
-
-// ─── FAQ ──────────────────────────────────────────────────────────────────────
-const FAQ = [
-  { q: 'When do I get paid?', a: 'Commissions are credited once an order reaches "Delivered" status. Payouts are processed on the 1st of every month to your verified bank account after KYC approval.' },
-  { q: 'How long does my referral cookie last?', a: 'When someone clicks your affiliate link, a 30-day tracking cookie is set. If they purchase within 30 days, the sale is attributed to you.' },
-  { q: 'What is the commission rate?', a: 'The default rate is 5% of the order total. High-performing affiliates may be eligible for a higher rate — contact support to discuss.' },
-  { q: 'Why do I need KYC?', a: 'KYC is required by Indian law for financial payouts. We need your PAN card for TDS deduction and bank details to transfer your earnings.' },
-  { q: 'What happens if an order is cancelled?', a: 'Commission is only credited for delivered orders. Cancelled or returned orders have their pending commission removed.' },
-];
-
-function FaqSection() {
-  const [open, setOpen] = useState(null);
-  return (
-    <div className="card p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <HelpCircle size={17} className="text-primary-600" />
-        <h2 className="font-bold">Frequently Asked Questions</h2>
-      </div>
-      <div>
-        {FAQ.map((item, i) => (
-          <div key={i} className="border-b border-secondary-100 last:border-0">
-            <button
-              className="w-full flex items-center justify-between py-3.5 text-left"
-              onClick={() => setOpen(open === i ? null : i)}
-            >
-              <span className="text-sm font-medium pr-4">{item.q}</span>
-              <ChevronDown size={14} className={`text-secondary-400 shrink-0 transition-transform ${open === i ? 'rotate-180' : ''}`} />
-            </button>
-            {open === i && <p className="text-sm text-secondary-500 pb-4 leading-relaxed">{item.a}</p>}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
-export default function AffiliateSupport() {
-  const [view, setView] = useState('list'); // 'list' | 'new' | 'detail'
-  const [selectedId, setSelectedId] = useState(null);
-  const [listRev, setListRev] = useState(0);
-
-  function openTicket(id) {
-    setSelectedId(id);
-    setView('detail');
-  }
-
-  function onCreated(ticket) {
-    setListRev((r) => r + 1);
-    setSelectedId(ticket._id);
-    setView('detail');
-  }
-
-  if (view === 'new') {
-    return <NewTicketForm onCreated={onCreated} onCancel={() => setView('list')} />;
-  }
-  if (view === 'detail') {
-    return <TicketDetail ticketId={selectedId} onBack={() => { setView('list'); setListRev((r) => r + 1); }} />;
-  }
-  return <TicketList onSelect={openTicket} onNew={() => setView('new')} rev={listRev} />;
 }
