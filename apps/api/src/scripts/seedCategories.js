@@ -66,6 +66,22 @@ async function main() {
     console.log(`   └─ ${s.name}`);
   }
 
+  // Subcategories — Hotel and Food Processing
+  const hotelSubs = [
+    { name: 'Food Packaging',        slug: 'hotel-food-packaging',        displayOrder: 1 },
+    { name: 'Labeling',              slug: 'hotel-labeling',              displayOrder: 2 },
+    { name: 'Weighing',              slug: 'hotel-weighing',              displayOrder: 3 },
+    { name: 'Kitchen Equipments',    slug: 'hotel-kitchen-equipments',    displayOrder: 4 },
+    { name: 'Kitchen Tools',         slug: 'hotel-kitchen-tools',         displayOrder: 5 },
+    { name: 'Cleaning Equipments',   slug: 'hotel-cleaning-equipments',   displayOrder: 6 },
+    { name: 'Water Treatment Plants',slug: 'hotel-water-treatment-plants',displayOrder: 7 },
+    { name: 'Measuring Instruments', slug: 'hotel-measuring-instruments', displayOrder: 8 },
+  ];
+  for (const s of hotelSubs) {
+    await Category.create({ ...s, parentId: created['hotel-food-processing'], isActive: true });
+    console.log(`   └─ ${s.name}`);
+  }
+
   console.log('\n✅ All categories seeded successfully.');
   await mongoose.disconnect();
 }
