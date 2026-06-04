@@ -113,6 +113,12 @@ export default function AdminCategories() {
     setShowForm(true);
   }
 
+  function openAddSub(parentCat) {
+    setEditCat(null);
+    setForm({ ...BLANK, parentId: parentCat._id.toString() });
+    setShowForm(true);
+  }
+
   function openEdit(cat) {
     setEditCat(cat);
     setForm({
@@ -423,18 +429,18 @@ export default function AdminCategories() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-0.5">
                       <button
+                        onClick={() => openAddSub(cat)}
+                        title="Add subcategory"
+                        className="flex items-center gap-0.5 px-2 py-1 text-xs text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors font-medium"
+                      >
+                        <Plus size={11} /> Sub
+                      </button>
+                      <button
                         onClick={() => openEdit(cat)}
                         title="Edit"
                         className="p-1.5 text-secondary-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                       >
                         <Edit2 size={14} />
-                      </button>
-                      <button
-                        onClick={() => openProductsModal(cat)}
-                        title="Manage products"
-                        className="p-1.5 text-secondary-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Package size={14} />
                       </button>
                       <button
                         onClick={() => setDeleteId(cat._id)}
@@ -557,16 +563,26 @@ export default function AdminCategories() {
                 <label className="block text-sm font-medium text-secondary-700 mb-1">
                   Parent Category
                 </label>
-                <select
-                  value={form.parentId}
-                  onChange={(e) => setField('parentId', e.target.value)}
-                  className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white"
-                >
-                  <option value="">— None (Root Category) —</option>
-                  {parentOptions.map((c) => (
-                    <option key={c._id} value={c._id}>{c.name}</option>
-                  ))}
-                </select>
+                {!editCat && form.parentId ? (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 font-medium">
+                    <FolderOpen size={14} className="text-green-600" />
+                    {categories.find(c => c._id.toString() === form.parentId)?.name || 'Selected'}
+                    <button type="button" onClick={() => setField('parentId', '')} className="ml-auto text-green-500 hover:text-red-500">
+                      <X size={13} />
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={form.parentId}
+                    onChange={(e) => setField('parentId', e.target.value)}
+                    className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white"
+                  >
+                    <option value="">— None (Root Category) —</option>
+                    {parentOptions.map((c) => (
+                      <option key={c._id} value={c._id}>{c.name}</option>
+                    ))}
+                  </select>
+                )}
                 <p className="text-xs text-secondary-400 mt-1">
                   Leave blank to create a top-level category
                 </p>

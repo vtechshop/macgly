@@ -78,6 +78,9 @@ function StickyNav({ parents, childrenMap }) {
             </div>
           );
         })}
+        <Link to="/categories" className="flex items-center gap-2 px-3 py-2.5 text-xs text-primary-600 font-semibold border-t border-secondary-100 hover:bg-primary-50 transition-colors">
+          <Package size={14} /> View All Categories
+        </Link>
       </nav>
 
       {/* Level 2 flyout panel */}
