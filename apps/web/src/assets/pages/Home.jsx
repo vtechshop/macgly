@@ -131,20 +131,6 @@ export default function Home() {
               );
             })}
 
-            {/* View All tile — fills the empty gap */}
-            <Link
-              to="/categories"
-              className="flex flex-col rounded-xl border-2 border-dashed border-primary-300 bg-primary-50 hover:bg-primary-100 hover:border-primary-500 transition-all duration-150 group overflow-hidden"
-            >
-              <div className="w-full h-24 flex items-center justify-center">
-                <ChevronRight size={28} className="text-primary-400 group-hover:text-primary-600 transition-colors" />
-              </div>
-              <div className="px-2 py-2 text-center">
-                <span className="text-[11px] font-semibold leading-tight text-primary-600 group-hover:text-primary-700">
-                  View All
-                </span>
-              </div>
-            </Link>
           </div>
         </section>
 

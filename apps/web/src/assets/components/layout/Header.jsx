@@ -10,14 +10,14 @@ import { useFetch } from '../../../hooks';
 import toast from 'react-hot-toast';
 
 const NAV_LINKS = [
-  { label: 'ALL PRODUCTS',     to: '/products' },
-  { label: 'ALL CATEGORIES',   to: '/categories' },
-  { label: 'AGRI & FARM',      to: '/category/agricultural-industry-farm-tools' },
-  { label: 'ENGINEERING',      to: '/category/engineering-workshop-kits' },
-  { label: 'HARDWARE',         to: '/category/hardware-tools' },
-  { label: 'SPARE PARTS',      to: '/category/spare-parts' },
-  { label: 'MACHINERIES',      to: '/category/general-machineries' },
-  { label: 'NEW ARRIVALS',     to: '/products?featured=true', highlight: true },
+  { label: 'ALL PRODUCTS',   to: '/products' },
+  { label: 'ALL CATEGORIES', to: '/categories' },
+  { label: 'AGRI & FARM',    to: '/category/agricultural-industry-farm-tools' },
+  { label: 'ENGINEERING',    to: '/category/engineering-workshop-kits' },
+  { label: 'ELECTRONICS',    to: '/category/electronics-instruments' },
+  { label: 'SPARE PARTS',    to: '/category/spare-parts' },
+  { label: 'HOTEL & FOOD',   to: '/category/hotel-food-processing' },
+  { label: 'NEW ARRIVALS',   to: '/products?featured=true', highlight: true },
 ];
 
 export default function Header() {

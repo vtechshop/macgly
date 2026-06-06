@@ -196,7 +196,7 @@ export default function Category() {
               >
                 <div className="w-full h-24 bg-secondary-50 flex items-center justify-center group-hover:bg-secondary-100 transition-colors">
                   {sub.image
-                    ? <img src={normalizeImageUrl(sub.image)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                    ? <img src={normalizeImageUrl(sub.image)} alt="" className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display = 'none'; }} />
                     : <Package size={26} className="text-secondary-400 group-hover:text-primary-500 transition-colors" />
                   }
                 </div>

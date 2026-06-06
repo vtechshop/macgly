@@ -58,7 +58,7 @@ export default function AllCategories() {
               >
                 <div className="w-8 h-8 rounded-lg bg-white border border-secondary-200 flex items-center justify-center shrink-0 overflow-hidden">
                   {cat.image
-                    ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                    ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display = 'none'; }} />
                     : <Icon size={16} className="text-primary-500" />
                   }
                 </div>
@@ -67,7 +67,7 @@ export default function AllCategories() {
               </Link>
 
               {/* Subcategories */}
-              {subs.length > 0 ? (
+              {subs.length > 0 && (
                 <div className="divide-y divide-secondary-50">
                   {subs.map((sub) => (
                     <Link
@@ -80,8 +80,6 @@ export default function AllCategories() {
                     </Link>
                   ))}
                 </div>
-              ) : (
-                <div className="px-4 py-3 text-xs text-secondary-400 italic">No subcategories</div>
               )}
             </div>
           );

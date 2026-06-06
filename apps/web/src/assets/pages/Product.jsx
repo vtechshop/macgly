@@ -164,10 +164,18 @@ export default function Product() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-6">
-      <nav className="text-sm text-secondary-500 mb-4 flex gap-2">
+      <nav className="text-sm text-secondary-500 mb-4 flex gap-2 flex-wrap">
         <Link to="/" className="hover:text-primary-600">Home</Link>
         <span>/</span>
         <Link to="/products" className="hover:text-primary-600">Products</Link>
+        {categorySlug && (
+          <>
+            <span>/</span>
+            <Link to={`/category/${categorySlug}`} className="hover:text-primary-600 capitalize">
+              {product.category?.name || categorySlug.replace(/-/g, ' ')}
+            </Link>
+          </>
+        )}
         <span>/</span>
         <span className="text-secondary-800 truncate">{product.title}</span>
       </nav>
