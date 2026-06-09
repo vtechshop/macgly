@@ -98,18 +98,17 @@ export default function ProductCard({ product, onAddToCart }) {
                 OUT OF STOCK
               </span>
             )}
-            {product.images?.[0] ? (
+            <div className="absolute inset-0 flex items-center justify-center text-secondary-200">
+              <ShoppingCart size={36} />
+            </div>
+            {product.images?.[0] && (
               <img
                 src={normalizeImageUrl(product.images[0])}
                 alt={product.imageAlts?.[0] || product.title}
-                className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+                className="absolute inset-0 w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"
-                onError={(e) => { e.target.style.display = 'none'; }}
+                onError={(e) => e.currentTarget.remove()}
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-secondary-200">
-                <ShoppingCart size={36} />
-              </div>
             )}
           </Link>
 

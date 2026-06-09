@@ -182,11 +182,10 @@ export default function Product() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8">
         <div className="space-y-3">
-          <div className="rounded-2xl overflow-hidden bg-white border border-secondary-200 shadow-sm" style={{ height: 580 }}>
-            {product.images?.[activeImg] ? (
-              <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="w-full h-full object-contain p-3" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-secondary-300"><ShoppingCart size={48} /></div>
+          <div className="relative rounded-2xl overflow-hidden bg-white border border-secondary-200 shadow-sm flex items-center justify-center" style={{ height: 580 }}>
+            <ShoppingCart size={48} className="text-secondary-200" />
+            {product.images?.[activeImg] && (
+              <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="absolute inset-0 w-full h-full object-contain p-3" onError={(e) => e.currentTarget.remove()} />
             )}
           </div>
           {product.images?.length > 1 && (

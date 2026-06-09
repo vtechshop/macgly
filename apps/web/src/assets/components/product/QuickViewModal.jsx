@@ -48,16 +48,16 @@ export default function QuickViewModal({ product, onClose }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
           {/* Image */}
           <div className="bg-secondary-50 rounded-tl-2xl rounded-bl-2xl p-6 flex flex-col gap-3">
-            <div className="aspect-square flex items-center justify-center">
-              {product.images?.[activeImg] ? (
+            <div className="aspect-square flex items-center justify-center relative">
+              {product.images?.[activeImg] && (
                 <img
                   src={normalizeImageUrl(product.images[activeImg])}
                   alt={product.title}
-                  className="w-full h-full object-contain"
+                  className="absolute inset-0 w-full h-full object-contain"
+                  onError={(e) => e.currentTarget.remove()}
                 />
-              ) : (
-                <ShoppingCart size={48} className="text-secondary-200" />
               )}
+              <ShoppingCart size={48} className="text-secondary-200" />
             </div>
             {product.images?.length > 1 && (
               <div className="flex gap-1.5 flex-wrap justify-center">
