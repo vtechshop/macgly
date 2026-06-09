@@ -517,18 +517,17 @@ export default function AdminProducts() {
                   <tr key={p._id} className="hover:bg-secondary-50 transition-colors">
                     {/* Thumb */}
                     <td className="px-4 py-3">
-                      {p.images?.[0] ? (
-                        <img
-                          src={normalizeImageUrl(p.images[0])}
-                          alt=""
-                          className="w-12 h-12 rounded-lg object-cover bg-secondary-100 border border-secondary-100"
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-secondary-100 flex items-center justify-center text-secondary-300">
-                          <Eye size={16} />
-                        </div>
-                      )}
+                      <div className="relative w-12 h-12 rounded-lg bg-secondary-100 border border-secondary-100 overflow-hidden flex items-center justify-center shrink-0">
+                        {p.images?.[0] && (
+                          <img
+                            src={normalizeImageUrl(p.images[0])}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => e.currentTarget.remove()}
+                          />
+                        )}
+                        <Eye size={16} className="text-secondary-300" />
+                      </div>
                     </td>
                     {/* Product info */}
                     <td className="px-4 py-3">

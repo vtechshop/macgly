@@ -668,15 +668,14 @@ function ProductRow({ product: p, selected, onSelect, onEdit, onDelete, onCopyId
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          {p.images?.[0] ? (
-            <img src={normalizeImageUrl(p.images[0])} alt={p.imageAlts?.[0] || p.title}
-              className="w-10 h-10 rounded-lg object-cover bg-secondary-100 shrink-0"
-              onError={(ev) => { ev.target.style.display = 'none'; }} />
-          ) : (
-            <div className="w-10 h-10 rounded-lg bg-secondary-100 flex items-center justify-center shrink-0">
-              <Package size={16} className="text-secondary-300" />
-            </div>
-          )}
+          <div className="relative w-10 h-10 rounded-lg bg-secondary-100 overflow-hidden flex items-center justify-center shrink-0">
+            {p.images?.[0] && (
+              <img src={normalizeImageUrl(p.images[0])} alt={p.imageAlts?.[0] || p.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(ev) => ev.currentTarget.remove()} />
+            )}
+            <Package size={16} className="text-secondary-300" />
+          </div>
           <div className="min-w-0">
             <p className="font-semibold text-secondary-900 text-sm leading-tight line-clamp-1">{p.title}</p>
             {p.brand && <p className="text-xs text-secondary-400 mt-0.5">{p.brand}</p>}
