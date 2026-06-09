@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ShoppingCart, Star, Shield, ChevronDown, ChevronUp, MapPin, CheckCircle, XCircle, Heart, Zap } from 'lucide-react';
+import { ShoppingCart, Star, Shield, ChevronDown, ChevronUp, MapPin, CheckCircle, XCircle, Heart, Zap, Truck } from 'lucide-react';
 import ProductCard from '../components/product/ProductCard';
 import api from '../../utils/api';
 import { setCart, addItemOptimistic, openCartDrawer } from '../../store/slices/cartSlice';
@@ -345,36 +345,51 @@ export default function Product() {
           )}
 
           {/* Pincode checker */}
-          <div className="border border-secondary-200 rounded-lg p-4 space-y-2">
-            <p className="text-sm font-medium flex items-center gap-1.5"><MapPin size={14} className="text-primary-600" /> Check Delivery</p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                maxLength={6}
-                value={pincode}
-                onChange={(e) => { setPincode(e.target.value.replace(/\D/g, '')); setPincodeStatus(null); }}
-                onKeyDown={(e) => e.key === 'Enter' && checkPincode()}
-                placeholder="Enter 6-digit pincode"
-                className="input flex-1 text-sm"
-              />
-              <button
-                onClick={checkPincode}
-                disabled={pincodeStatus === 'checking'}
-                className="px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
-              >
-                {pincodeStatus === 'checking' ? '...' : 'Check'}
-              </button>
+          <div className="rounded-xl border border-secondary-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-secondary-50 border-b border-secondary-200">
+              <Truck size={15} className="text-primary-600 shrink-0" />
+              <span className="text-sm font-semibold text-secondary-700">Check Delivery</span>
             </div>
-            {pincodeStatus === 'available' && (
-              <p className="text-xs text-green-600 flex items-center gap-1 font-medium">
-                <CheckCircle size={13} /> Delivery available to {pincode} — estimated 3–5 business days
-              </p>
-            )}
-            {pincodeStatus === 'unavailable' && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <XCircle size={13} /> {!/^\d{6}$/.test(pincode) ? 'Enter a valid 6-digit pincode' : `Delivery not available to ${pincode}`}
-              </p>
-            )}
+            <div className="p-4 space-y-3">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={pincode}
+                    onChange={(e) => { setPincode(e.target.value.replace(/\D/g, '')); setPincodeStatus(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && checkPincode()}
+                    placeholder="Enter 6-digit pincode"
+                    className="input pl-8 text-sm w-full font-mono tracking-widest"
+                  />
+                </div>
+                <button
+                  onClick={checkPincode}
+                  disabled={pincodeStatus === 'checking'}
+                  className="px-5 py-2 bg-primary-600 text-white text-sm font-bold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors shrink-0"
+                >
+                  {pincodeStatus === 'checking' ? '...' : 'Check'}
+                </button>
+              </div>
+              {pincodeStatus === 'available' && (
+                <div className="flex items-start gap-2.5 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
+                  <CheckCircle size={15} className="text-green-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-green-700">Delivery available to {pincode}</p>
+                    <p className="text-xs text-green-600 mt-0.5">Estimated delivery: 3–5 business days</p>
+                  </div>
+                </div>
+              )}
+              {pincodeStatus === 'unavailable' && (
+                <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+                  <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-sm font-medium text-red-600">
+                    {!/^\d{6}$/.test(pincode) ? 'Enter a valid 6-digit pincode' : `Delivery not available to ${pincode}`}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           <p className="text-sm text-secondary-600 leading-relaxed">{product.description}</p>
