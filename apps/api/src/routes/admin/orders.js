@@ -4,7 +4,8 @@ const User    = require('../../models/User');
 const Product = require('../../models/Product');
 const AppError = require('../../utils/AppError');
 const { createShipment } = require('../../services/shippingService');
-const notif   = require('../../utils/notificationHelper');
+const notif      = require('../../utils/notificationHelper');
+const whatsapp   = require('../../services/whatsappService');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -157,9 +158,13 @@ router.put('/:id/status', async (req, res, next) => {
       console.error('[Orders] earnings error:', e.message),
     );
 
-    // Notify customer of status change
+    // Notify customer of status change (in-app + WhatsApp)
     if (order.user) {
       notif.notifyCustomerOrderStatus({ userId: order.user, order, status }).catch(() => {});
+      const userObj = order.user;
+      if (status === 'shipped')   whatsapp.notifyOrderShipped(order, userObj).catch(() => {});
+      if (status === 'delivered') whatsapp.notifyOrderDelivered(order, userObj).catch(() => {});
+      if (status === 'cancelled') whatsapp.notifyOrderCancelled(order, userObj).catch(() => {});
     }
 
     res.json({ order });

@@ -8,6 +8,7 @@ const { generateOrderId } = require('../utils/helpers');
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config/env');
 const { sendOrderConfirmation } = require('../services/emailService');
 const notif = require('../utils/notificationHelper');
+const whatsapp = require('../services/whatsappService');
 
 const razorpay = RAZORPAY_KEY_ID
   ? new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET })
@@ -151,11 +152,14 @@ async function createOrder(req, res, next) {
       throw new AppError('One or more items went out of stock. Please review your cart.', 409, 'OUT_OF_STOCK');
     }
 
-    // Send COD confirmation email async
+    // Send COD confirmation email + WhatsApp async
     if (paymentMethod === 'cod') {
       const User = require('../models/User');
       User.findById(req.user._id).then((u) => {
-        if (u) sendOrderConfirmation({ order, user: u }).catch(() => {});
+        if (u) {
+          sendOrderConfirmation({ order, user: u }).catch(() => {});
+          whatsapp.notifyOrderPlaced(order, u).catch(() => {});
+        }
       });
     }
 
@@ -214,7 +218,10 @@ async function verifyPayment(req, res, next) {
     // Send confirmation email + fire notifications async — don't block response
     const User = require('../models/User');
     User.findById(order.user).then((user) => {
-      if (user) sendOrderConfirmation({ order, user }).catch(console.error);
+      if (user) {
+        sendOrderConfirmation({ order, user }).catch(console.error);
+        whatsapp.notifyOrderPlaced(order, user).catch(() => {});
+      }
     });
 
     // Payment success notification to customer

@@ -7,7 +7,7 @@ async function getProducts(req, res, next) {
   try {
     const {
       page = 1, limit = 24, sort = 'displayOrder',
-      category, search, featured, brand, minPrice, maxPrice,
+      category, search, featured, brand, minPrice, maxPrice, minRating,
     } = req.query;
 
     // status=active is treated as published=true (affiliate page uses this param)
@@ -34,6 +34,7 @@ async function getProducts(req, res, next) {
     }
     if (featured === 'true') filter.featured = true;
     if (brand) filter.brand = new RegExp(brand, 'i');
+    if (minRating) filter.rating = { $gte: parseFloat(minRating) };
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
