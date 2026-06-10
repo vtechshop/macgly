@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+
+# Private / auth pages
 Disallow: /dashboard/
 Disallow: /checkout
 Disallow: /order-confirmation/
@@ -8,18 +10,15 @@ Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password/
 
-# Allow key public paths explicitly
-Allow: /products
-Allow: /product/
-Allow: /category/
-Allow: /categories
-Allow: /blog
-Allow: /blog/
-Allow: /track-order
-Allow: /warranty-check
-Allow: /sell
-Allow: /affiliate
-Allow: /info/
-Allow: /store/
+# Block query-param URLs (search results, filters, pagination) — avoids duplicate content
+Disallow: /*?q=
+Disallow: /*?search=
+Disallow: /*?page=
+Disallow: /*?sort=
+Disallow: /*?filter=
+Disallow: /*?category=
+Disallow: /*?brand=
+Disallow: /*?min=
+Disallow: /*?max=
 
 Sitemap: https://macgly.com/sitemap.xml
