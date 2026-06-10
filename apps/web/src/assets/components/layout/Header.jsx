@@ -10,14 +10,14 @@ import { useFetch } from '../../../hooks';
 import toast from 'react-hot-toast';
 
 const NAV_LINKS = [
-  { label: 'Home',            to: '/' },
-  { label: 'Products',        to: '/products' },
-  { label: 'Categories',      to: '/categories' },
-  { label: 'Contact Us',      to: '/info/contact' },
-  { label: 'Blog',            to: '/blog' },
-  { label: 'About',           to: '/info/about' },
-  { label: 'Track Order',     to: '/track-order' },
-  { label: 'Warranty Check',  to: '/warranty-check' },
+  { label: 'ALL PRODUCTS',   to: '/products' },
+  { label: 'ALL CATEGORIES', to: '/categories' },
+  { label: 'AGRI & FARM',    to: '/category/agricultural-industry-farm-tools' },
+  { label: 'ENGINEERING',    to: '/category/engineering-workshop-kits' },
+  { label: 'ELECTRONICS',    to: '/category/electronics-instruments' },
+  { label: 'SPARE PARTS',    to: '/category/spare-parts' },
+  { label: 'HOTEL & FOOD',   to: '/category/hotel-food-processing' },
+  { label: 'NEW ARRIVALS',   to: '/products?featured=true', highlight: true },
 ];
 
 export default function Header() {
@@ -224,14 +224,18 @@ export default function Header() {
       </div>
 
       {/* ── Nav bar ──────────────────────────────────────────── */}
-      <div className="bg-secondary-900 hidden md:block border-b border-secondary-800">
+      <div className="bg-secondary-50 hidden md:block border-b border-secondary-200">
         <div className="px-4 sm:px-6 lg:px-10">
           <div className="flex items-center">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-[11px] font-semibold tracking-wide px-4 py-2.5 whitespace-nowrap transition-colors text-secondary-400 hover:text-white hover:bg-secondary-800"
+                className={`text-[11px] font-bold tracking-wider px-4 py-3 whitespace-nowrap transition-colors ${
+                  link.highlight
+                    ? 'text-primary-600 hover:text-primary-700'
+                    : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
+                }`}
               >
                 {link.label}
               </Link>
