@@ -149,14 +149,22 @@ router.delete('/addresses/:addressId', async (req, res, next) => {
 router.get('/wishlist', async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).populate('wishlist');
-    res.json({ wishlist: user.wishlist || [] });
+    const valid = (user.wishlist || []).filter(Boolean);
+    if (valid.length !== (user.wishlist || []).length) {
+      await User.findByIdAndUpdate(req.user._id, { $set: { wishlist: valid.map((p) => p._id) } });
+    }
+    res.json({ wishlist: valid });
   } catch (err) { next(err); }
 });
 
 router.get('/wishlist/ids', async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id).select('wishlist');
-    res.json({ ids: (user.wishlist || []).map((id) => id.toString()) });
+    const user = await User.findById(req.user._id).populate({ path: 'wishlist', select: '_id' });
+    const valid = (user.wishlist || []).filter(Boolean);
+    if (valid.length !== (user.wishlist || []).length) {
+      await User.findByIdAndUpdate(req.user._id, { $set: { wishlist: valid.map((p) => p._id) } });
+    }
+    res.json({ ids: valid.map((p) => p._id.toString()) });
   } catch (err) { next(err); }
 });
 
