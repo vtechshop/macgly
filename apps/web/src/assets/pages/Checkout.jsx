@@ -48,8 +48,12 @@ function StepIndicator({ current }) {
 
 function OrderSummary({ items, subtotal, shippingCharge, discount, coupon, couponCode, setCouponCode, onApplyCoupon, onRemoveCoupon, applyingCoupon }) {
   const gstAmount = parseFloat(
-    items.reduce((sum, i) => sum + (i.price * i.quantity * (i.product?.gstRate ?? 18)) / (100 + (i.product?.gstRate ?? 18)), 0).toFixed(2)
+    items.reduce((sum, i) => {
+      const rate = i.product?.taxRate ?? i.product?.gstRate ?? 18;
+      return sum + (i.price * i.quantity * rate) / (100 + rate);
+    }, 0).toFixed(2)
   );
+  const baseAmount = parseFloat((subtotal - gstAmount).toFixed(2));
   const total = Math.max(0, subtotal + shippingCharge - discount);
 
   return (
@@ -65,10 +69,10 @@ function OrderSummary({ items, subtotal, shippingCharge, discount, coupon, coupo
       </div>
       <div className="border-t border-secondary-100 pt-2 space-y-1.5 text-sm">
         <div className="flex justify-between text-secondary-600">
-          <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
+          <span>Subtotal (excl. GST)</span><span>{formatCurrency(baseAmount)}</span>
         </div>
-        <div className="flex justify-between text-secondary-400 text-xs">
-          <span>GST (incl.)</span><span>{formatCurrency(gstAmount)}</span>
+        <div className="flex justify-between text-secondary-600">
+          <span>GST</span><span>+ {formatCurrency(gstAmount)}</span>
         </div>
         <div className="flex justify-between text-secondary-600">
           <span>Shipping</span>
