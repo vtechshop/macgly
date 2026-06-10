@@ -1,19 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Core pages -->
   <url><loc>https://macgly.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
-  <url><loc>https://macgly.com/products</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://macgly.com/blog</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://macgly.com/track-order</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://macgly.com/warranty-check</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://macgly.com/sell</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://macgly.com/info/about</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
-  <url><loc>https://macgly.com/info/contact</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
-  <url><loc>https://macgly.com/category/power-tools</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://macgly.com/category/hand-tools</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/products</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://macgly.com/categories</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/blog</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/track-order</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/warranty-check</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://macgly.com/sell</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/affiliate</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+
+  <!-- Info pages -->
+  <url><loc>https://macgly.com/info/about</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://macgly.com/info/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://macgly.com/info/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://macgly.com/info/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+
+  <!-- Top-level categories -->
+  <url><loc>https://macgly.com/category/agricultural-industry-farm-tools</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/engineering-workshop-kits</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/hardware-tools</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/electronics-instruments</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/general-machineries</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://macgly.com/category/spare-parts</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://macgly.com/category/machines</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://macgly.com/category/safety</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://macgly.com/category/measuring-tools</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
-  <url><loc>https://macgly.com/category/welding</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
-  <url><loc>https://macgly.com/category/cutting-tools</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/household-cleaning-equipment</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/plumbing-hardware-construction</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/hotel-food-processing</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://macgly.com/category/wood-carvings</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+
+  <!-- Subcategories — Agricultural and Farm Tools -->
+  <url><loc>https://macgly.com/category/home-gardens</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/agri-tools</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/agri-machines</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/motor-pumps</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- Subcategories — Engineering and Workshop Kits -->
+  <url><loc>https://macgly.com/category/eng-power-tools</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/eng-welding</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/eng-cleaning</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/eng-hand-tools</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/eng-safety</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- Subcategories — Spare Parts -->
+  <url><loc>https://macgly.com/category/drill-bits</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/cutting-blades</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/machine-spares</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- Subcategories — Hotel and Food Processing -->
+  <url><loc>https://macgly.com/category/hotel-food-packaging</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/hotel-labeling</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/hotel-weighing</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/hotel-kitchen-equipments</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/hotel-kitchen-tools</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/hotel-cleaning-equipments</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/hotel-water-treatment-plants</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://macgly.com/category/hotel-measuring-instruments</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+
 </urlset>

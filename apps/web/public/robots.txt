@@ -1,6 +1,25 @@
 User-agent: *
 Allow: /
 Disallow: /dashboard/
-Disallow: /api/
+Disallow: /checkout
+Disallow: /order-confirmation/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password/
+
+# Allow key public paths explicitly
+Allow: /products
+Allow: /product/
+Allow: /category/
+Allow: /categories
+Allow: /blog
+Allow: /blog/
+Allow: /track-order
+Allow: /warranty-check
+Allow: /sell
+Allow: /affiliate
+Allow: /info/
+Allow: /store/
 
 Sitemap: https://macgly.com/sitemap.xml
