@@ -3,7 +3,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Blog = require('../models/Blog');
 
-const BASE_URL = process.env.FRONTEND_URL || 'https://macgly.com';
+const BASE_URL = process.env.FRONTEND_URL || 'https://www.macgly.com';
 
 const STATIC_ROUTES = [
   { path: '/',                  priority: '1.0', changefreq: 'daily' },

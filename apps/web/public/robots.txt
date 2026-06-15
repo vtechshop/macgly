@@ -21,4 +21,4 @@ Disallow: /*?brand=
 Disallow: /*?min=
 Disallow: /*?max=
 
-Sitemap: https://macgly.com/sitemap.xml
+Sitemap: https://www.macgly.com/sitemap.xml
