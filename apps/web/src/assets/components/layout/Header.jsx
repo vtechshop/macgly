@@ -225,7 +225,7 @@ export default function Header() {
       </div>
 
       {/* ── Nav bar ──────────────────────────────────────────── */}
-      <div className="bg-secondary-50 hidden md:block border-b border-secondary-200">
+      <div className="bg-white hidden md:block border-b border-secondary-100">
         <div className="px-4 sm:px-6 lg:px-10">
           <div className="flex items-center">
             {NAV_LINKS.map((link) => (
@@ -235,7 +235,7 @@ export default function Header() {
                 className={`text-[11px] font-bold tracking-wider px-4 py-3 whitespace-nowrap transition-colors ${
                   link.highlight
                     ? 'text-primary-600 hover:text-primary-700'
-                    : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-100'
+                    : 'text-secondary-500 hover:text-secondary-900 hover:bg-secondary-50'
                 }`}
               >
                 {link.label}

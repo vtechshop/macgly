@@ -13,7 +13,6 @@ import { useFetch } from '../../hooks';
 import { normalizeImageUrl } from '../../utils/format';
 import { setMeta } from '../../utils/seo';
 
-/* ─── Category icon map ──────────────────────────────────────── */
 const CAT_ICONS = {
   'agricultural-industry-farm-tools': Sprout,
   'engineering-workshop-kits':        Wrench,
@@ -28,7 +27,6 @@ const CAT_ICONS = {
   default: Package,
 };
 
-/* ─── Bento card styles ──────────────────────────────────────── */
 const BENTO = {
   'agricultural-industry-farm-tools': { span: 'md:col-span-2 md:row-span-2', bg: 'bg-[#F4E8CC]',   icon: 'text-amber-700',  text: 'text-amber-900'  },
   'engineering-workshop-kits':        { span: '',                             bg: 'bg-slate-900',   icon: 'text-orange-400', text: 'text-white'      },
@@ -40,10 +38,9 @@ const BENTO = {
   'plumbing-hardware-construction':   { span: '',                             bg: 'bg-blue-950',    icon: 'text-sky-300',    text: 'text-white'      },
   'hotel-food-processing':            { span: 'md:col-span-2',               bg: 'bg-rose-800',    icon: 'text-rose-200',   text: 'text-white'      },
   'wood-carvings':                    { span: '',                             bg: 'bg-amber-950',   icon: 'text-amber-300',  text: 'text-white'      },
-  default:                            { span: '',                             bg: 'bg-secondary-100', icon: 'text-secondary-500', text: 'text-secondary-800' },
+  default:                            { span: '', bg: 'bg-secondary-100', icon: 'text-secondary-500', text: 'text-secondary-800' },
 };
 
-/* ─── Trust signals ──────────────────────────────────────────── */
 const USP = [
   { Icon: Truck,       text: 'Free Delivery',    sub: 'Orders above ₹999' },
   { Icon: ShieldCheck, text: 'Genuine Products', sub: '100% Authentic' },
@@ -51,80 +48,94 @@ const USP = [
   { Icon: RotateCcw,   text: 'Easy Returns',     sub: '7-day policy' },
 ];
 
-/* ─── Reusable section header ────────────────────────────────── */
 function SectionHead({ badge, title, sub, to, linkText }) {
   return (
-    <div className="flex items-start justify-between mb-5">
+    <div className="flex items-start justify-between mb-6">
       <div>
         {badge && (
-          <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-700 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-[0.12em] mb-2">
+          <span className="inline-flex items-center gap-1.5 bg-primary-600 text-white text-[9px] font-black px-2.5 py-1 rounded-md uppercase tracking-[0.14em] mb-2.5">
             {badge}
           </span>
         )}
-        <h2 className="text-2xl font-black text-secondary-900 tracking-tight leading-none">{title}</h2>
-        {sub && <p className="text-xs text-secondary-400 mt-1.5">{sub}</p>}
+        <h2 className="text-[22px] font-black text-secondary-900 tracking-tight leading-none">{title}</h2>
+        {sub && <p className="text-xs text-secondary-400 mt-1.5 font-medium">{sub}</p>}
       </div>
       {to && (
-        <Link to={to} className="flex items-center gap-1 text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors mt-1 shrink-0">
-          {linkText || 'View All'} <ArrowRight size={13} />
+        <Link to={to} className="flex items-center gap-1 text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors mt-1 shrink-0 group">
+          {linkText || 'View All'}
+          <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
         </Link>
       )}
     </div>
   );
 }
 
-/* ─── Hero ───────────────────────────────────────────────────── */
 function HeroSection({ banners }) {
   const banner = banners?.[0];
   return (
-    <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: 220, background: 'linear-gradient(135deg, #1a1209 0%, #2d1f0e 40%, #1c2130 100%)' }}>
+    <div className="relative overflow-hidden rounded-2xl" style={{
+      minHeight: 270,
+      background: 'linear-gradient(130deg, #130d05 0%, #281706 35%, #1b1f2e 100%)',
+    }}>
       {banner?.image && (
         <img src={normalizeImageUrl(banner.image)} alt={banner.title}
           className="absolute inset-0 w-full h-full object-cover opacity-15" />
       )}
-      {/* depth layers */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-      {/* accent elements */}
-      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-primary-400 via-primary-500 to-primary-600" />
-      <div className="absolute -top-20 right-0 w-[420px] h-[420px] rounded-full opacity-20"
-        style={{ background: 'radial-gradient(circle, #F97316 0%, transparent 70%)' }} />
-      <div className="absolute bottom-0 left-1/3 w-64 h-48 rounded-full opacity-10 blur-3xl"
-        style={{ background: 'radial-gradient(circle, #7c6b4e 0%, transparent 70%)' }} />
 
-      <div className="relative flex items-center h-full px-8 md:px-14 py-12 gap-8">
+      {/* subtle grid overlay */}
+      <div className="absolute inset-0 opacity-[0.04]" style={{
+        backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+        backgroundSize: '44px 44px',
+      }} />
+
+      {/* depth + fade */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+
+      {/* orange glow */}
+      <div className="absolute -top-24 right-0 w-[500px] h-[500px] rounded-full pointer-events-none" style={{
+        background: 'radial-gradient(circle, rgba(249,115,22,0.22) 0%, transparent 65%)',
+      }} />
+
+      {/* left accent bar */}
+      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full"
+        style={{ background: 'linear-gradient(180deg, #fb923c 0%, #f97316 50%, #ea580c 100%)' }} />
+
+      <div className="relative flex items-center h-full px-8 md:px-14 py-14 gap-8">
         <div className="flex-1 max-w-xl">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-[0.15em] mb-4 border"
-            style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c', borderColor: 'rgba(249,115,22,0.3)' }}>
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-[0.14em] mb-5"
+            style={{ background: 'rgba(249,115,22,0.18)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.35)' }}>
             <Sprout size={10} /> {banner?.subtitle || 'Premium Industrial Collection'}
           </span>
-          <h1 className="text-3xl md:text-4xl lg:text-[2.75rem] font-black text-white leading-[1.1] tracking-tight">
+
+          <h1 className="text-[2.6rem] md:text-5xl font-black text-white leading-[1.08] tracking-tight">
             {banner?.title || <>Professional<br />Tools &amp; Machinery</>}
           </h1>
-          <p className="mt-3 text-sm leading-relaxed max-w-sm" style={{ color: '#94a3b8' }}>
-            Trusted by engineers, contractors &amp; workshops across India.
+
+          <p className="mt-4 text-sm leading-relaxed max-w-sm" style={{ color: '#7c8fa8' }}>
+            Trusted by engineers, contractors &amp; workshops across India. Genuine brands, fast delivery.
           </p>
-          <div className="flex flex-wrap gap-3 mt-7">
-            <Link to={banner?.link || '/products'} className="btn-primary px-6 py-2.5 text-sm shadow-lg"
-              style={{ boxShadow: '0 6px 20px rgba(249,115,22,0.35)' }}>
+
+          <div className="flex flex-wrap gap-3 mt-8">
+            <Link to={banner?.link || '/products'} className="btn-primary px-7 py-3 text-sm font-bold"
+              style={{ boxShadow: '0 8px 24px rgba(249,115,22,0.38)' }}>
               Shop Now <ArrowRight size={15} />
             </Link>
-            <Link to="/categories" className="px-6 py-2.5 text-sm rounded-lg font-semibold transition-colors"
-              style={{ border: '1px solid rgba(255,255,255,0.12)', color: '#94a3b8', background: 'rgba(255,255,255,0.04)' }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.09)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}>
+            <Link to="/categories" className="px-7 py-3 text-sm font-semibold rounded-lg transition-all"
+              style={{ border: '1px solid rgba(255,255,255,0.14)', color: '#94a3b8', background: 'rgba(255,255,255,0.05)' }}>
               Browse Categories
             </Link>
           </div>
         </div>
 
         {/* Stats — desktop */}
-        <div className="hidden lg:flex flex-col gap-3 mr-2 shrink-0">
-          {[['50K+', 'Engineers Served'], ['500+', 'Products'], ['Pan India', 'Delivery']].map(([n, l]) => (
-            <div key={l} className="rounded-2xl px-5 py-4 text-center min-w-[120px]"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <div className="font-black text-2xl leading-none" style={{ color: '#fb923c' }}>{n}</div>
-              <div className="text-[11px] mt-1.5 leading-tight" style={{ color: '#64748b' }}>{l}</div>
+        <div className="hidden lg:flex flex-col gap-3 mr-4 shrink-0">
+          {[['50K+', 'Engineers', '👷'], ['500+', 'Products', '🔧'], ['Pan India', 'Delivery', '🚚']].map(([n, l, e]) => (
+            <div key={l} className="rounded-xl px-5 py-3.5 text-center min-w-[115px]"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', backdropFilter: 'blur(8px)' }}>
+              <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>{e}</div>
+              <div className="font-black text-xl leading-none" style={{ color: '#fb923c' }}>{n}</div>
+              <div className="text-[10px] mt-1" style={{ color: '#64748b' }}>{l}</div>
             </div>
           ))}
         </div>
@@ -133,7 +144,6 @@ function HeroSection({ banners }) {
   );
 }
 
-/* ─── Page ───────────────────────────────────────────────────── */
 export default function Home() {
   useEffect(() => {
     setMeta({
@@ -154,14 +164,14 @@ export default function Home() {
   return (
     <div className="flex w-full">
 
-      {/* Sticky left category nav — lg+ */}
+      {/* Sticky left sidebar — lg+ */}
       {categories.length > 0 && (
         <aside className="hidden lg:block w-48 shrink-0 self-start sticky z-40" style={{ top: '110px' }}>
           <CategorySidebar categories={categories} sticky />
         </aside>
       )}
 
-      <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4 space-y-8">
+      <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-5 space-y-6">
 
         {/* 1. Hero */}
         <HeroSection banners={bannersData?.banners} />
@@ -169,13 +179,13 @@ export default function Home() {
         {/* 2. Trust bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {USP.map(({ Icon, text, sub }) => (
-            <div key={text} className="flex items-center gap-3 bg-white border border-secondary-200 rounded-xl px-4 py-3 shadow-sm">
+            <div key={text} className="flex items-center gap-3 bg-white border border-white/80 rounded-xl px-4 py-3.5 shadow-sm">
               <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center shrink-0">
                 <Icon size={17} className="text-primary-600" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-secondary-800 leading-tight">{text}</p>
-                <p className="text-[10px] text-secondary-400 mt-0.5 leading-tight">{sub}</p>
+                <p className="text-[10px] text-secondary-400 mt-0.5">{sub}</p>
               </div>
             </div>
           ))}
@@ -183,17 +193,17 @@ export default function Home() {
 
         {/* 3. Popular Products — FIRST */}
         {homeProducts.length > 0 && (
-          <section>
+          <section className="bg-white rounded-2xl shadow-sm border border-white/80 p-5 md:p-6">
             <SectionHead
               badge="Top Picks"
               title="Popular Products"
               sub="Bestsellers from our catalog"
               to="/products"
             />
-            {/* mobile: horizontal scroll */}
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:hidden snap-x snap-mandatory scrollbar-hide">
+            {/* mobile: horizontal snap-scroll */}
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 md:hidden snap-x snap-mandatory">
               {homeProducts.map((p) => (
-                <div key={p._id} className="w-[175px] shrink-0 snap-start">
+                <div key={p._id} className="w-[172px] shrink-0 snap-start">
                   <ProductCard product={p} />
                 </div>
               ))}
@@ -202,12 +212,18 @@ export default function Home() {
             <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4">
               {homeProducts.map((p) => <ProductCard key={p._id} product={p} />)}
             </div>
+            <div className="mt-5 text-center">
+              <Link to="/products"
+                className="inline-flex items-center gap-2 text-sm font-bold text-primary-600 hover:text-primary-700 border border-primary-200 hover:border-primary-400 bg-primary-50 hover:bg-primary-100 px-6 py-2.5 rounded-lg transition-all">
+                View All Products <ArrowRight size={14} />
+              </Link>
+            </div>
           </section>
         )}
 
-        {/* 4. Shop by Category — SECOND */}
+        {/* 4. Shop by Category */}
         {topCats.length > 0 && (
-          <section>
+          <section className="bg-white rounded-2xl shadow-sm border border-white/80 p-5 md:p-6">
             <SectionHead
               badge="Collections"
               title="Shop by Category"
@@ -216,7 +232,7 @@ export default function Home() {
               linkText="All Categories"
             />
 
-            {/* mobile: 3-col grid */}
+            {/* mobile: 3-col */}
             <div className="grid grid-cols-3 gap-2.5 md:hidden">
               {topCats.map((cat) => {
                 const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
@@ -233,8 +249,8 @@ export default function Home() {
               })}
             </div>
 
-            {/* desktop: bento grid */}
-            <div className="hidden md:grid grid-cols-4 gap-3" style={{ gridAutoRows: '165px' }}>
+            {/* desktop: bento */}
+            <div className="hidden md:grid grid-cols-4 gap-3" style={{ gridAutoRows: '160px' }}>
               {topCats.map((cat) => {
                 const Icon    = CAT_ICONS[cat.slug] || CAT_ICONS.default;
                 const cfg     = BENTO[cat.slug] || BENTO.default;
@@ -243,46 +259,46 @@ export default function Home() {
 
                 return (
                   <Link key={cat._id} to={`/category/${cat.slug}`}
-                    className={`${cfg.span} relative rounded-2xl overflow-hidden group hover:scale-[1.02] hover:shadow-xl transition-all duration-200 ${cfg.bg}`}>
+                    className={`${cfg.span} relative rounded-xl overflow-hidden group hover:scale-[1.02] hover:shadow-lg transition-all duration-200 ${cfg.bg}`}>
 
                     {isLarge && (
                       <>
-                        <Icon size={140} className={`absolute -top-6 -right-8 opacity-[0.06] ${cfg.icon}`} />
+                        <Icon size={130} className={`absolute -top-4 -right-6 opacity-[0.065] ${cfg.icon}`} />
                         {cat.image && (
                           <img src={normalizeImageUrl(cat.image)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" onError={(e) => e.currentTarget.remove()} />
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-6">
-                          <div className="w-10 h-10 rounded-xl bg-black/12 flex items-center justify-center mb-3">
-                            <Icon size={22} className={cfg.icon} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-5">
+                          <div className="w-9 h-9 rounded-lg bg-black/15 flex items-center justify-center mb-2.5">
+                            <Icon size={20} className={cfg.icon} />
                           </div>
-                          <p className={`text-2xl font-black leading-tight ${cfg.text}`}>{cat.name}</p>
-                          <p className={`text-xs mt-2 font-semibold flex items-center gap-1 opacity-55 ${cfg.text}`}>
-                            Explore collection <ChevronRight size={12} />
+                          <p className={`text-xl font-black leading-tight ${cfg.text}`}>{cat.name}</p>
+                          <p className={`text-[11px] mt-1.5 font-semibold flex items-center gap-0.5 opacity-55 ${cfg.text}`}>
+                            Explore <ChevronRight size={11} />
                           </p>
                         </div>
                       </>
                     )}
 
                     {isWide && (
-                      <div className="h-full flex items-center justify-between px-8">
+                      <div className="h-full flex items-center justify-between px-7">
                         <div>
-                          <p className={`text-xl font-black ${cfg.text}`}>{cat.name}</p>
-                          <p className={`text-xs mt-1.5 font-semibold flex items-center gap-1 opacity-55 ${cfg.text}`}>
-                            Browse all products <ChevronRight size={11} />
+                          <p className={`text-lg font-black ${cfg.text}`}>{cat.name}</p>
+                          <p className={`text-[11px] mt-1.5 font-semibold flex items-center gap-0.5 opacity-55 ${cfg.text}`}>
+                            Browse products <ChevronRight size={11} />
                           </p>
                         </div>
                         {cat.image
-                          ? <img src={normalizeImageUrl(cat.image)} alt="" className="h-24 w-24 object-contain opacity-90" onError={(e) => e.currentTarget.remove()} />
-                          : <Icon size={56} className={`${cfg.icon} opacity-75 group-hover:scale-110 group-hover:opacity-90 transition-all duration-200`} />}
+                          ? <img src={normalizeImageUrl(cat.image)} alt="" className="h-20 w-20 object-contain opacity-90" onError={(e) => e.currentTarget.remove()} />
+                          : <Icon size={50} className={`${cfg.icon} opacity-75 group-hover:scale-110 group-hover:opacity-90 transition-all duration-200`} />}
                       </div>
                     )}
 
                     {!isLarge && !isWide && (
-                      <div className="h-full flex flex-col items-center justify-center gap-3 p-4">
+                      <div className="h-full flex flex-col items-center justify-center gap-2.5 p-4">
                         {cat.image
-                          ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-12 h-12 object-contain" onError={(e) => e.currentTarget.remove()} />
-                          : <Icon size={34} className={`${cfg.icon} group-hover:scale-110 transition-transform duration-200`} />}
+                          ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-11 h-11 object-contain" onError={(e) => e.currentTarget.remove()} />
+                          : <Icon size={32} className={`${cfg.icon} group-hover:scale-110 transition-transform duration-200`} />}
                         <p className={`text-[11px] font-bold text-center leading-snug ${cfg.text}`}>{cat.name}</p>
                       </div>
                     )}
@@ -290,32 +306,37 @@ export default function Home() {
                 );
               })}
 
-              {/* View All — fills last empty cell */}
+              {/* View All */}
               <Link to="/categories"
-                className="relative rounded-2xl overflow-hidden group hover:scale-[1.02] hover:shadow-lg transition-all duration-200 bg-secondary-50 border-2 border-dashed border-secondary-200 hover:border-primary-300 flex flex-col items-center justify-center gap-2.5">
-                <div className="w-11 h-11 rounded-full bg-primary-600 group-hover:bg-primary-700 transition-colors flex items-center justify-center shadow-md"
+                className="relative rounded-xl group hover:scale-[1.02] hover:shadow-lg transition-all duration-200 bg-secondary-50 border-2 border-dashed border-secondary-200 hover:border-primary-300 flex flex-col items-center justify-center gap-2.5">
+                <div className="w-10 h-10 rounded-full bg-primary-600 group-hover:bg-primary-700 flex items-center justify-center shadow"
                   style={{ boxShadow: '0 4px 12px rgba(249,115,22,0.3)' }}>
-                  <ChevronRight size={20} className="text-white" />
+                  <ChevronRight size={18} className="text-white" />
                 </div>
-                <p className="text-xs font-bold text-secondary-500 group-hover:text-primary-600 transition-colors">View All</p>
+                <p className="text-[11px] font-bold text-secondary-500 group-hover:text-primary-600 transition-colors">View All</p>
               </Link>
             </div>
           </section>
         )}
 
-        {/* 5. Bottom CTA */}
+        {/* 5. CTA */}
         <div className="relative overflow-hidden rounded-2xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6"
-          style={{ background: 'linear-gradient(135deg, #1a1209 0%, #2d1f0e 50%, #1c2130 100%)' }}>
-          <div className="absolute -top-16 right-16 w-64 h-64 rounded-full opacity-15 blur-3xl pointer-events-none"
-            style={{ background: 'radial-gradient(circle, #F97316 0%, transparent 70%)' }} />
+          style={{ background: 'linear-gradient(130deg, #130d05 0%, #281706 40%, #1b1f2e 100%)' }}>
+          <div className="absolute -top-20 right-12 w-72 h-72 rounded-full pointer-events-none" style={{
+            background: 'radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 70%)',
+          }} />
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+            backgroundSize: '44px 44px',
+          }} />
           <div className="relative text-center md:text-left">
-            <p className="text-white font-black text-xl md:text-2xl">Need bulk orders or custom parts?</p>
+            <p className="text-white font-black text-xl md:text-2xl tracking-tight">Need bulk orders or custom parts?</p>
             <p className="text-sm mt-2 max-w-md" style={{ color: '#64748b' }}>
               Special pricing for B2B orders, workshop kits &amp; custom specifications.
             </p>
           </div>
-          <Link to="/info/contact" className="btn-primary px-6 py-2.5 shrink-0 shadow-lg"
-            style={{ boxShadow: '0 6px 20px rgba(249,115,22,0.35)' }}>
+          <Link to="/info/contact" className="btn-primary px-7 py-3 shrink-0 font-bold"
+            style={{ boxShadow: '0 8px 24px rgba(249,115,22,0.38)' }}>
             Contact Us <ArrowRight size={16} />
           </Link>
         </div>
