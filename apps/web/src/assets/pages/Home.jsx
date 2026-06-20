@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import {
   ArrowRight, ChevronRight,
-  Sprout, Wrench, Hammer, Cpu, Settings, Package,
-  Home as HomeIcon, Pipette, UtensilsCrossed, Trees,
+  Sprout,
   Truck, ShieldCheck, FileText, RotateCcw,
 } from 'lucide-react';
 import api from '../../utils/api';
@@ -13,33 +12,6 @@ import { useFetch } from '../../hooks';
 import { normalizeImageUrl } from '../../utils/format';
 import { setMeta } from '../../utils/seo';
 
-const CAT_ICONS = {
-  'agricultural-industry-farm-tools': Sprout,
-  'engineering-workshop-kits':        Wrench,
-  'hardware-tools':                   Hammer,
-  'electronics-instruments':          Cpu,
-  'general-machineries':              Settings,
-  'spare-parts':                      Package,
-  'household-cleaning-equipment':     HomeIcon,
-  'plumbing-hardware-construction':   Pipette,
-  'hotel-food-processing':            UtensilsCrossed,
-  'wood-carvings':                    Trees,
-  default: Package,
-};
-
-const BENTO = {
-  'agricultural-industry-farm-tools': { span: 'md:col-span-2 md:row-span-2', bg: 'bg-[#F4E8CC]',   icon: 'text-amber-700',  text: 'text-amber-900'  },
-  'engineering-workshop-kits':        { span: '',                             bg: 'bg-slate-900',   icon: 'text-orange-400', text: 'text-white'      },
-  'hardware-tools':                   { span: '',                             bg: 'bg-orange-50',   icon: 'text-orange-600', text: 'text-orange-900' },
-  'electronics-instruments':          { span: '',                             bg: 'bg-indigo-950',  icon: 'text-indigo-300', text: 'text-white'      },
-  'general-machineries':              { span: '',                             bg: 'bg-zinc-800',    icon: 'text-zinc-300',   text: 'text-white'      },
-  'spare-parts':                      { span: 'md:col-span-2',               bg: 'bg-primary-600', icon: 'text-orange-100', text: 'text-white'      },
-  'household-cleaning-equipment':     { span: '',                             bg: 'bg-cyan-50',     icon: 'text-cyan-700',   text: 'text-cyan-900'   },
-  'plumbing-hardware-construction':   { span: '',                             bg: 'bg-blue-950',    icon: 'text-sky-300',    text: 'text-white'      },
-  'hotel-food-processing':            { span: 'md:col-span-2',               bg: 'bg-rose-800',    icon: 'text-rose-200',   text: 'text-white'      },
-  'wood-carvings':                    { span: '',                             bg: 'bg-amber-950',   icon: 'text-amber-300',  text: 'text-white'      },
-  default:                            { span: '', bg: 'bg-secondary-100', icon: 'text-secondary-500', text: 'text-secondary-800' },
-};
 
 const USP = [
   { Icon: Truck,       text: 'Free Delivery',    sub: 'Orders above ₹999' },
@@ -153,7 +125,6 @@ export default function Home() {
   const { data: productsData }   = useFetch(['home-products'], () => api.get('/catalog/products', { params: { limit: 8 } }).then((r) => r.data));
 
   const categories   = categoriesData?.categories || [];
-  const topCats      = categories.filter((c) => !c.parentId).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
   const homeProducts = productsData?.products || [];
 
   return (
@@ -216,103 +187,6 @@ export default function Home() {
           </section>
         )}
 
-        {/* 4. Shop by Category */}
-        {topCats.length > 0 && (
-          <section className="bg-white rounded-2xl shadow-sm border border-white/80 p-5 md:p-6">
-            <SectionHead
-              badge="Collections"
-              title="Shop by Category"
-              sub="Find exactly what your project needs"
-              to="/categories"
-              linkText="All Categories"
-            />
-
-            {/* mobile: 3-col */}
-            <div className="grid grid-cols-3 gap-2.5 md:hidden">
-              {topCats.map((cat) => {
-                const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
-                const cfg  = BENTO[cat.slug] || BENTO.default;
-                return (
-                  <Link key={cat._id} to={`/category/${cat.slug}`}
-                    className={`flex flex-col items-center justify-center gap-2 rounded-xl p-3 h-24 ${cfg.bg} active:opacity-80 transition-opacity`}>
-                    {cat.image
-                      ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-8 h-8 object-contain" onError={(e) => e.currentTarget.remove()} />
-                      : <Icon size={24} className={cfg.icon} />}
-                    <span className={`text-[10px] font-bold text-center leading-tight ${cfg.text}`}>{cat.name}</span>
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* desktop: bento */}
-            <div className="hidden md:grid grid-cols-4 gap-3" style={{ gridAutoRows: '160px' }}>
-              {topCats.map((cat) => {
-                const Icon    = CAT_ICONS[cat.slug] || CAT_ICONS.default;
-                const cfg     = BENTO[cat.slug] || BENTO.default;
-                const isLarge = cfg.span.includes('row-span-2');
-                const isWide  = cfg.span.includes('col-span-2') && !isLarge;
-
-                return (
-                  <Link key={cat._id} to={`/category/${cat.slug}`}
-                    className={`${cfg.span} relative rounded-xl overflow-hidden group hover:scale-[1.02] hover:shadow-lg transition-all duration-200 ${cfg.bg}`}>
-
-                    {isLarge && (
-                      <>
-                        <Icon size={130} className={`absolute -top-4 -right-6 opacity-[0.065] ${cfg.icon}`} />
-                        {cat.image && (
-                          <img src={normalizeImageUrl(cat.image)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" onError={(e) => e.currentTarget.remove()} />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-5">
-                          <div className="w-9 h-9 rounded-lg bg-black/15 flex items-center justify-center mb-2.5">
-                            <Icon size={20} className={cfg.icon} />
-                          </div>
-                          <p className={`text-xl font-black leading-tight ${cfg.text}`}>{cat.name}</p>
-                          <p className={`text-[11px] mt-1.5 font-semibold flex items-center gap-0.5 opacity-55 ${cfg.text}`}>
-                            Explore <ChevronRight size={11} />
-                          </p>
-                        </div>
-                      </>
-                    )}
-
-                    {isWide && (
-                      <div className="h-full flex items-center justify-between px-7">
-                        <div>
-                          <p className={`text-lg font-black ${cfg.text}`}>{cat.name}</p>
-                          <p className={`text-[11px] mt-1.5 font-semibold flex items-center gap-0.5 opacity-55 ${cfg.text}`}>
-                            Browse products <ChevronRight size={11} />
-                          </p>
-                        </div>
-                        {cat.image
-                          ? <img src={normalizeImageUrl(cat.image)} alt="" className="h-20 w-20 object-contain opacity-90" onError={(e) => e.currentTarget.remove()} />
-                          : <Icon size={50} className={`${cfg.icon} opacity-75 group-hover:scale-110 group-hover:opacity-90 transition-all duration-200`} />}
-                      </div>
-                    )}
-
-                    {!isLarge && !isWide && (
-                      <div className="h-full flex flex-col items-center justify-center gap-2.5 p-4">
-                        {cat.image
-                          ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-11 h-11 object-contain" onError={(e) => e.currentTarget.remove()} />
-                          : <Icon size={32} className={`${cfg.icon} group-hover:scale-110 transition-transform duration-200`} />}
-                        <p className={`text-[11px] font-bold text-center leading-snug ${cfg.text}`}>{cat.name}</p>
-                      </div>
-                    )}
-                  </Link>
-                );
-              })}
-
-              {/* View All */}
-              <Link to="/categories"
-                className="relative rounded-xl group hover:scale-[1.02] hover:shadow-lg transition-all duration-200 bg-secondary-50 border-2 border-dashed border-secondary-200 hover:border-primary-300 flex flex-col items-center justify-center gap-2.5">
-                <div className="w-10 h-10 rounded-full bg-primary-600 group-hover:bg-primary-700 flex items-center justify-center shadow"
-                  style={{ boxShadow: '0 4px 12px rgba(249,115,22,0.3)' }}>
-                  <ChevronRight size={18} className="text-white" />
-                </div>
-                <p className="text-[11px] font-bold text-secondary-500 group-hover:text-primary-600 transition-colors">View All</p>
-              </Link>
-            </div>
-          </section>
-        )}
 
         {/* 5. CTA */}
         <div className="relative overflow-hidden rounded-2xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6"
