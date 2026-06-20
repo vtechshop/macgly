@@ -74,72 +74,63 @@ function HeroSection({ banners }) {
   const banner = banners?.[0];
   return (
     <div className="relative overflow-hidden rounded-2xl" style={{
-      minHeight: 340,
-      background: 'linear-gradient(135deg, #0f0a04 0%, #1e1108 45%, #141824 100%)',
+      minHeight: 300,
+      background: 'linear-gradient(135deg, #0c1520 0%, #162035 50%, #1a2a3e 100%)',
     }}>
       {banner?.image && (
         <img src={normalizeImageUrl(banner.image)} alt={banner.title}
-          className="absolute inset-0 w-full h-full object-cover opacity-10" />
+          className="absolute inset-0 w-full h-full object-cover opacity-15" />
       )}
 
-      {/* grid texture */}
-      <div className="absolute inset-0" style={{
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)',
-        backgroundSize: '48px 48px',
-      }} />
+      {/* depth layers */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-      {/* right glow — softer */}
+      {/* orange glow — right */}
       <div className="absolute top-0 right-0 bottom-0 w-1/2 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse at 80% 40%, rgba(249,115,22,0.16) 0%, transparent 60%)',
+        background: 'radial-gradient(ellipse at 75% 45%, rgba(249,115,22,0.18) 0%, transparent 60%)',
       }} />
-      {/* bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.45), transparent)' }} />
 
-      {/* left accent */}
-      <div className="absolute left-0 top-6 bottom-6 w-[3px] rounded-r-full"
+      {/* left accent bar */}
+      <div className="absolute left-0 top-0 bottom-0 w-[3px]"
         style={{ background: 'linear-gradient(180deg, #fdba74, #f97316, #c2410c)' }} />
 
-      {/* content */}
-      <div className="relative flex flex-col justify-between h-full px-8 md:px-14" style={{ minHeight: 340 }}>
-
-        {/* top: badge + headline + buttons */}
-        <div className="pt-12 max-w-2xl">
+      <div className="relative flex items-center h-full px-8 md:px-12 py-10 gap-6">
+        {/* Left: text */}
+        <div className="flex-1 max-w-xl">
           <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-[0.15em] mb-5"
-            style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.3)' }}>
+            style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.35)' }}>
             <Sprout size={9} /> {banner?.subtitle || 'Premium Industrial Collection'}
           </span>
 
-          <h1 className="text-[2.8rem] md:text-[3.5rem] font-black text-white leading-[1.05] tracking-tight">
+          <h1 className="text-[2.4rem] md:text-[3rem] font-black text-white leading-[1.08] tracking-tight">
             {banner?.title || <>Professional<br />Tools &amp; Machinery</>}
           </h1>
 
-          <p className="mt-4 text-sm leading-relaxed max-w-md" style={{ color: '#8898b3' }}>
-            Trusted by engineers, contractors &amp; workshops across India.
+          <p className="mt-3 text-sm leading-relaxed max-w-sm" style={{ color: '#8898b3' }}>
+            Trusted by engineers, contractors &amp; workshops across India. Genuine brands, fast delivery.
           </p>
 
           <div className="flex flex-wrap gap-3 mt-7">
-            <Link to={banner?.link || '/products'} className="btn-primary px-7 py-2.5 text-[13px] font-bold tracking-wide"
-              style={{ boxShadow: '0 6px 20px rgba(249,115,22,0.4)' }}>
+            <Link to={banner?.link || '/products'} className="btn-primary px-6 py-2.5 text-sm font-bold"
+              style={{ boxShadow: '0 6px 20px rgba(249,115,22,0.38)' }}>
               Shop Now <ArrowRight size={14} />
             </Link>
-            <Link to="/categories"
-              className="px-7 py-2.5 text-[13px] font-semibold rounded-lg transition-colors"
-              style={{ border: '1px solid rgba(255,255,255,0.12)', color: '#8898b3', background: 'rgba(255,255,255,0.04)' }}>
-              Browse Categories
+            <Link to="/category/spare-parts"
+              className="px-6 py-2.5 text-sm font-semibold rounded-lg transition-colors"
+              style={{ border: '1px solid rgba(255,255,255,0.15)', color: '#94a3b8', background: 'rgba(255,255,255,0.05)' }}>
+              Spare Parts
             </Link>
           </div>
         </div>
 
-        {/* bottom: stats bar */}
-        <div className="flex items-center gap-6 pb-7 pt-6 mt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          {[['50K+', 'Engineers Served'], ['500+', 'Products'], ['Pan India', 'Delivery'], ['GST', 'Invoices Issued']].map(([n, l], i) => (
-            <div key={l} className="flex items-center gap-3">
-              {i > 0 && <div className="w-px h-7" style={{ background: 'rgba(255,255,255,0.1)' }} />}
-              <div>
-                <div className="font-black text-lg leading-none" style={{ color: '#fb923c' }}>{n}</div>
-                <div className="text-[10px] mt-0.5 font-medium" style={{ color: '#4e6070' }}>{l}</div>
-              </div>
+        {/* Right: stat cards — desktop */}
+        <div className="hidden lg:flex flex-col gap-3 mr-2 shrink-0">
+          {[['50K+', 'Engineers'], ['500+', 'Products'], ['Pan India', 'Delivery']].map(([n, l]) => (
+            <div key={l} className="rounded-xl px-5 py-4 text-center min-w-[110px]"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(6px)' }}>
+              <div className="font-black text-xl leading-none" style={{ color: '#fb923c' }}>{n}</div>
+              <div className="text-[11px] mt-1" style={{ color: '#64748b' }}>{l}</div>
             </div>
           ))}
         </div>
