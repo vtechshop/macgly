@@ -10,15 +10,13 @@ import { useFetch } from '../../../hooks';
 import toast from 'react-hot-toast';
 
 const NAV_LINKS = [
-  { label: 'HOME',          to: '/' },
-  { label: 'PRODUCTS',      to: '/products' },
-  { label: 'CATEGORIES',    to: '/categories' },
-  { label: 'CONTACT US',    to: '/info/contact' },
-  { label: 'BLOG',          to: '/blog' },
-  { label: 'ABOUT',         to: '/info/about' },
-  { label: 'TRACK ORDER',   to: '/track-order' },
-  { label: 'WARRANTY',      to: '/warranty' },
-  { label: 'NEW ARRIVALS',  to: '/products?featured=true', highlight: true },
+  { label: 'PRODUCTS',     to: '/products' },
+  { label: 'CATEGORIES',   to: '/categories' },
+  { label: 'TRACK ORDER',  to: '/track-order' },
+  { label: 'WARRANTY',     to: '/warranty' },
+  { label: 'ABOUT',        to: '/info/about' },
+  { label: 'CONTACT US',   to: '/info/contact' },
+  { label: 'NEW ARRIVALS', to: '/products?featured=true', highlight: true },
 ];
 
 export default function Header() {

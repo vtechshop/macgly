@@ -74,68 +74,72 @@ function HeroSection({ banners }) {
   const banner = banners?.[0];
   return (
     <div className="relative overflow-hidden rounded-2xl" style={{
-      minHeight: 270,
-      background: 'linear-gradient(130deg, #130d05 0%, #281706 35%, #1b1f2e 100%)',
+      minHeight: 340,
+      background: 'linear-gradient(135deg, #0f0a04 0%, #1e1108 45%, #141824 100%)',
     }}>
       {banner?.image && (
         <img src={normalizeImageUrl(banner.image)} alt={banner.title}
-          className="absolute inset-0 w-full h-full object-cover opacity-15" />
+          className="absolute inset-0 w-full h-full object-cover opacity-10" />
       )}
 
-      {/* subtle grid overlay */}
-      <div className="absolute inset-0 opacity-[0.04]" style={{
-        backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-        backgroundSize: '44px 44px',
+      {/* grid texture */}
+      <div className="absolute inset-0" style={{
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)',
+        backgroundSize: '48px 48px',
       }} />
 
-      {/* depth + fade */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-
-      {/* orange glow */}
-      <div className="absolute -top-24 right-0 w-[500px] h-[500px] rounded-full pointer-events-none" style={{
-        background: 'radial-gradient(circle, rgba(249,115,22,0.22) 0%, transparent 65%)',
+      {/* right glow — softer */}
+      <div className="absolute top-0 right-0 bottom-0 w-1/2 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at 80% 40%, rgba(249,115,22,0.16) 0%, transparent 60%)',
       }} />
+      {/* bottom fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none"
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.45), transparent)' }} />
 
-      {/* left accent bar */}
-      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full"
-        style={{ background: 'linear-gradient(180deg, #fb923c 0%, #f97316 50%, #ea580c 100%)' }} />
+      {/* left accent */}
+      <div className="absolute left-0 top-6 bottom-6 w-[3px] rounded-r-full"
+        style={{ background: 'linear-gradient(180deg, #fdba74, #f97316, #c2410c)' }} />
 
-      <div className="relative flex items-center h-full px-8 md:px-14 py-14 gap-8">
-        <div className="flex-1 max-w-xl">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-[0.14em] mb-5"
-            style={{ background: 'rgba(249,115,22,0.18)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.35)' }}>
-            <Sprout size={10} /> {banner?.subtitle || 'Premium Industrial Collection'}
+      {/* content */}
+      <div className="relative flex flex-col justify-between h-full px-8 md:px-14" style={{ minHeight: 340 }}>
+
+        {/* top: badge + headline + buttons */}
+        <div className="pt-12 max-w-2xl">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-[0.15em] mb-5"
+            style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.3)' }}>
+            <Sprout size={9} /> {banner?.subtitle || 'Premium Industrial Collection'}
           </span>
 
-          <h1 className="text-[2.6rem] md:text-5xl font-black text-white leading-[1.08] tracking-tight">
+          <h1 className="text-[2.8rem] md:text-[3.5rem] font-black text-white leading-[1.05] tracking-tight">
             {banner?.title || <>Professional<br />Tools &amp; Machinery</>}
           </h1>
 
-          <p className="mt-4 text-sm leading-relaxed max-w-sm" style={{ color: '#7c8fa8' }}>
-            Trusted by engineers, contractors &amp; workshops across India. Genuine brands, fast delivery.
+          <p className="mt-4 text-sm leading-relaxed max-w-md" style={{ color: '#8898b3' }}>
+            Trusted by engineers, contractors &amp; workshops across India.
           </p>
 
-          <div className="flex flex-wrap gap-3 mt-8">
-            <Link to={banner?.link || '/products'} className="btn-primary px-7 py-3 text-sm font-bold"
-              style={{ boxShadow: '0 8px 24px rgba(249,115,22,0.38)' }}>
-              Shop Now <ArrowRight size={15} />
+          <div className="flex flex-wrap gap-3 mt-7">
+            <Link to={banner?.link || '/products'} className="btn-primary px-7 py-2.5 text-[13px] font-bold tracking-wide"
+              style={{ boxShadow: '0 6px 20px rgba(249,115,22,0.4)' }}>
+              Shop Now <ArrowRight size={14} />
             </Link>
-            <Link to="/categories" className="px-7 py-3 text-sm font-semibold rounded-lg transition-all"
-              style={{ border: '1px solid rgba(255,255,255,0.14)', color: '#94a3b8', background: 'rgba(255,255,255,0.05)' }}>
+            <Link to="/categories"
+              className="px-7 py-2.5 text-[13px] font-semibold rounded-lg transition-colors"
+              style={{ border: '1px solid rgba(255,255,255,0.12)', color: '#8898b3', background: 'rgba(255,255,255,0.04)' }}>
               Browse Categories
             </Link>
           </div>
         </div>
 
-        {/* Stats — desktop */}
-        <div className="hidden lg:flex flex-col gap-3 mr-4 shrink-0">
-          {[['50K+', 'Engineers', '👷'], ['500+', 'Products', '🔧'], ['Pan India', 'Delivery', '🚚']].map(([n, l, e]) => (
-            <div key={l} className="rounded-xl px-5 py-3.5 text-center min-w-[115px]"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', backdropFilter: 'blur(8px)' }}>
-              <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>{e}</div>
-              <div className="font-black text-xl leading-none" style={{ color: '#fb923c' }}>{n}</div>
-              <div className="text-[10px] mt-1" style={{ color: '#64748b' }}>{l}</div>
+        {/* bottom: stats bar */}
+        <div className="flex items-center gap-6 pb-7 pt-6 mt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {[['50K+', 'Engineers Served'], ['500+', 'Products'], ['Pan India', 'Delivery'], ['GST', 'Invoices Issued']].map(([n, l], i) => (
+            <div key={l} className="flex items-center gap-3">
+              {i > 0 && <div className="w-px h-7" style={{ background: 'rgba(255,255,255,0.1)' }} />}
+              <div>
+                <div className="font-black text-lg leading-none" style={{ color: '#fb923c' }}>{n}</div>
+                <div className="text-[10px] mt-0.5 font-medium" style={{ color: '#4e6070' }}>{l}</div>
+              </div>
             </div>
           ))}
         </div>
