@@ -1,10 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import {
-  ArrowRight, ChevronRight,
-  Sprout,
-  Truck, ShieldCheck, FileText, RotateCcw,
-} from 'lucide-react';
+import { ArrowRight, ChevronRight, Sprout } from 'lucide-react';
 import api from '../../utils/api';
 import CategorySidebar from '../components/common/CategorySidebar';
 import ProductCard from '../components/product/ProductCard';
@@ -13,12 +9,6 @@ import { normalizeImageUrl } from '../../utils/format';
 import { setMeta } from '../../utils/seo';
 
 
-const USP = [
-  { Icon: Truck,       text: 'Free Delivery',    sub: 'Orders above ₹999' },
-  { Icon: ShieldCheck, text: 'Genuine Products', sub: '100% Authentic' },
-  { Icon: FileText,    text: 'GST Invoice',      sub: 'For all orders' },
-  { Icon: RotateCcw,   text: 'Easy Returns',     sub: '7-day policy' },
-];
 
 function SectionHead({ badge, title, sub, to, linkText }) {
   return (
@@ -142,20 +132,7 @@ export default function Home() {
         {/* 1. Hero */}
         <HeroSection banners={bannersData?.banners} />
 
-        {/* 2. Trust bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {USP.map(({ Icon, text, sub }) => (
-            <div key={text} className="flex items-center gap-3 bg-white border border-white/80 rounded-xl px-4 py-3.5 shadow-sm">
-              <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center shrink-0">
-                <Icon size={17} className="text-primary-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-secondary-800 leading-tight">{text}</p>
-                <p className="text-[10px] text-secondary-400 mt-0.5">{sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+
 
         {/* 3. Popular Products — FIRST */}
         {homeProducts.length > 0 && (
