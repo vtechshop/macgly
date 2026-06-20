@@ -1,36 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { ArrowRight, ChevronRight, Sprout } from 'lucide-react';
+import { ArrowRight, Sprout } from 'lucide-react';
 import api from '../../utils/api';
 import CategorySidebar from '../components/common/CategorySidebar';
-import ProductCard from '../components/product/ProductCard';
 import { useFetch } from '../../hooks';
 import { normalizeImageUrl } from '../../utils/format';
 import { setMeta } from '../../utils/seo';
 
 
 
-function SectionHead({ badge, title, sub, to, linkText }) {
-  return (
-    <div className="flex items-start justify-between mb-6">
-      <div>
-        {badge && (
-          <span className="inline-flex items-center gap-1.5 bg-primary-600 text-white text-[9px] font-black px-2.5 py-1 rounded-md uppercase tracking-[0.14em] mb-2.5">
-            {badge}
-          </span>
-        )}
-        <h2 className="text-[22px] font-black text-secondary-900 tracking-tight leading-none">{title}</h2>
-        {sub && <p className="text-xs text-secondary-400 mt-1.5 font-medium">{sub}</p>}
-      </div>
-      {to && (
-        <Link to={to} className="flex items-center gap-1 text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors mt-1 shrink-0 group">
-          {linkText || 'View All'}
-          <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-        </Link>
-      )}
-    </div>
-  );
-}
 
 function HeroSection({ banners }) {
   const banner = banners?.[0];
@@ -112,10 +90,7 @@ export default function Home() {
 
   const { data: bannersData }    = useFetch(['banners'],       () => api.get('/catalog/banners').then((r) => r.data));
   const { data: categoriesData } = useFetch(['categories'],    () => api.get('/catalog/categories').then((r) => r.data));
-  const { data: productsData }   = useFetch(['home-products'], () => api.get('/catalog/products', { params: { limit: 8 } }).then((r) => r.data));
-
-  const categories   = categoriesData?.categories || [];
-  const homeProducts = productsData?.products || [];
+  const categories = categoriesData?.categories || [];
 
   return (
     <div className="flex w-full">
@@ -134,35 +109,6 @@ export default function Home() {
 
 
 
-        {/* 3. Popular Products — FIRST */}
-        {homeProducts.length > 0 && (
-          <section className="bg-white rounded-2xl shadow-sm border border-white/80 p-5 md:p-6">
-            <SectionHead
-              badge="Top Picks"
-              title="Popular Products"
-              sub="Bestsellers from our catalog"
-              to="/products"
-            />
-            {/* mobile: horizontal snap-scroll */}
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 md:hidden snap-x snap-mandatory">
-              {homeProducts.map((p) => (
-                <div key={p._id} className="w-[172px] shrink-0 snap-start">
-                  <ProductCard product={p} />
-                </div>
-              ))}
-            </div>
-            {/* desktop: grid */}
-            <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4">
-              {homeProducts.map((p) => <ProductCard key={p._id} product={p} />)}
-            </div>
-            <div className="mt-5 text-center">
-              <Link to="/products"
-                className="inline-flex items-center gap-2 text-sm font-bold text-primary-600 hover:text-primary-700 border border-primary-200 hover:border-primary-400 bg-primary-50 hover:bg-primary-100 px-6 py-2.5 rounded-lg transition-all">
-                View All Products <ArrowRight size={14} />
-              </Link>
-            </div>
-          </section>
-        )}
 
 
         {/* 5. CTA */}
