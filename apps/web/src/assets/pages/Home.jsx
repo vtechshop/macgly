@@ -29,7 +29,7 @@ function HeroSection({ banners }) {
   const banner = banners?.[0];
   return (
     <div className="relative overflow-hidden rounded-2xl" style={{
-      minHeight: 300,
+      minHeight: 220,
       background: 'linear-gradient(135deg, #0c1520 0%, #162035 50%, #1a2a3e 100%)',
     }}>
       {banner?.image && (
@@ -44,7 +44,7 @@ function HeroSection({ banners }) {
       <div className="absolute left-0 top-0 bottom-0 w-[3px]"
         style={{ background: 'linear-gradient(180deg, #fdba74, #f97316, #c2410c)' }} />
 
-      <div className="relative flex items-center h-full px-8 md:px-12 py-10 gap-6">
+      <div className="relative flex items-center h-full px-8 md:px-12 py-7 gap-6">
         <div className="flex-1 max-w-xl">
           <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-[0.15em] mb-5"
             style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.35)' }}>
