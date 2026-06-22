@@ -46,9 +46,8 @@ function HeroSection({ banners }) {
 
       <div className="relative flex items-center h-full px-8 md:px-12 py-7 gap-6">
         <div className="flex-1 max-w-xl">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-[0.15em] mb-5"
-            style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.35)' }}>
-            <Sprout size={9} /> {banner?.subtitle || 'Premium Industrial Collection'}
+          <span className="inline-flex items-center gap-1.5 bg-primary-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-[0.15em] mb-4">
+            <Sprout size={9} /> {banner?.subtitle || 'Premium Collection'}
           </span>
           <h1 className="text-[2.4rem] md:text-[3rem] font-black text-white leading-[1.08] tracking-tight">
             {banner?.title || <>Professional<br />Tools &amp; Machinery</>}
