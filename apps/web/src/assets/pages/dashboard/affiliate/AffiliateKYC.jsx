@@ -401,7 +401,7 @@ export default function AffiliateKYC() {
           <div className="flex gap-2">
             <input
               className={`input flex-1 uppercase ${gstVerified ? 'border-green-400 focus:ring-green-400' : ''}`}
-              placeholder="e.g. 33AABCU9603R1ZX"
+              placeholder="Enter GSTIN"
               value={gstNumber}
               onChange={(e) => { setGstNumber(e.target.value); setGstVerified(false); setGstDetails(null); setGstError(''); }}
             />
@@ -486,7 +486,7 @@ export default function AffiliateKYC() {
           </div>
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium mb-1">Bank Name</label>
-            <input className="input w-full" placeholder="e.g. State Bank of India" value={paymentData.bankName} onChange={setPay('bankName')} />
+            <input className="input w-full" placeholder="Enter bank name" value={paymentData.bankName} onChange={setPay('bankName')} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Account Number *</label>
@@ -496,7 +496,7 @@ export default function AffiliateKYC() {
             <label className="block text-sm font-medium mb-1">IFSC Code *</label>
             <input
               className="input w-full uppercase"
-              placeholder="e.g. SBIN0001234"
+              placeholder="Enter IFSC code"
               maxLength={11}
               value={paymentData.ifscCode}
               onChange={(e) => setPaymentData((f) => ({ ...f, ifscCode: e.target.value.toUpperCase() }))}
@@ -504,7 +504,7 @@ export default function AffiliateKYC() {
           </div>
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium mb-1">UPI ID <span className="text-secondary-400 font-normal">(Optional)</span></label>
-            <input className="input w-full" placeholder="e.g. yourname@paytm" value={paymentData.upiId} onChange={setPay('upiId')} />
+            <input className="input w-full" placeholder="Enter UPI ID" value={paymentData.upiId} onChange={setPay('upiId')} />
           </div>
         </div>
 
@@ -514,7 +514,7 @@ export default function AffiliateKYC() {
           <label className="block text-sm font-medium mb-1">PAN Number *</label>
           <input
             className="input w-full uppercase"
-            placeholder="e.g. ABCDE1234F"
+            placeholder="Enter PAN number"
             maxLength={10}
             value={paymentData.panNumber}
             onChange={(e) => setPaymentData((f) => ({ ...f, panNumber: e.target.value.toUpperCase() }))}

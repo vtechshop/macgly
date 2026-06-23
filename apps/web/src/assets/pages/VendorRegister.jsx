@@ -58,8 +58,8 @@ function UpgradeForm({ user, dispatch, navigate }) {
         <div className="border-t border-secondary-100 pt-4">
           <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wider mb-3">Business Details (optional)</p>
           <div className="space-y-3">
-            <Input label="Business / Shop Name" placeholder="e.g. Raj Tools & Machinery" value={form.businessName} onChange={set('businessName')} />
-            <Input label="GSTIN" placeholder="e.g. 22AAAAA0000A1Z5" value={form.gstin} onChange={set('gstin')} />
+            <Input label="Business / Shop Name" placeholder="Enter business name" value={form.businessName} onChange={set('businessName')} />
+            <Input label="GSTIN" placeholder="Enter GSTIN" value={form.gstin} onChange={set('gstin')} />
           </div>
         </div>
         <Button type="submit" loading={loading} className="w-full">
@@ -162,7 +162,7 @@ export default function VendorRegister() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Input label="Full Name *" placeholder="Your name" value={form.name} onChange={set('name')} error={errors.name} required />
                 <Input label="Email *" type="email" placeholder="you@business.com" value={form.email} onChange={set('email')} error={errors.email} required />
-                <Input label="Phone" type="tel" placeholder="+91 9876543210" value={form.phone} onChange={set('phone')} error={errors.phone} />
+                <Input label="Phone" type="tel" placeholder="Enter phone number" value={form.phone} onChange={set('phone')} error={errors.phone} />
                 <div className="relative">
                   <Input
                     label="Password *"
@@ -181,8 +181,8 @@ export default function VendorRegister() {
                 <div className="pt-1 border-t border-secondary-100">
                   <p className="text-xs font-semibold text-secondary-500 uppercase tracking-wider mb-3">Business Details (optional)</p>
                   <div className="space-y-3">
-                    <Input label="Business / Shop Name" placeholder="e.g. Raj Tools & Machinery" value={form.businessName} onChange={set('businessName')} />
-                    <Input label="GSTIN" placeholder="e.g. 22AAAAA0000A1Z5" value={form.gstin} onChange={set('gstin')} />
+                    <Input label="Business / Shop Name" placeholder="Enter business name" value={form.businessName} onChange={set('businessName')} />
+                    <Input label="GSTIN" placeholder="Enter GSTIN" value={form.gstin} onChange={set('gstin')} />
                   </div>
                 </div>
 

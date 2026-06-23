@@ -422,7 +422,7 @@ export default function VendorKYC() {
             <label className="block text-sm font-medium text-secondary-700 mb-1.5">
               Business Name <span className="text-red-500">*</span>
             </label>
-            <input className="input w-full" placeholder="e.g. Vtech Tools Pvt Ltd"
+            <input className="input w-full" placeholder="Enter business name"
               value={formData.businessName} onChange={setField('businessName')} />
           </div>
           <div>

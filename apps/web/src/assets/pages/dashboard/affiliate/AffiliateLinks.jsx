@@ -334,7 +334,7 @@ export default function AffiliateLinks() {
               <div className="flex gap-2">
                 <input
                   className="input flex-1"
-                  placeholder="e.g. premium-drill-machine"
+                  placeholder="Enter custom slug"
                   value={customSlug}
                   onChange={(e) => setCustomSlug(e.target.value)}
                 />

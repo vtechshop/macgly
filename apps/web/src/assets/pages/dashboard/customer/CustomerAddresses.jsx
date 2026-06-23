@@ -59,7 +59,7 @@ function Modal({ title, formData, onChange, onSubmit, saving, onClose }) {
                 <input
                   className="input w-full pl-8"
                   type="tel"
-                  placeholder="9876543210"
+                  placeholder="Enter phone number"
                   value={formData.phone}
                   onChange={(e) => onChange('phone', e.target.value)}
                   required

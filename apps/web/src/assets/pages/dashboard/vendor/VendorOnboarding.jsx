@@ -87,7 +87,7 @@ export default function VendorOnboarding() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-secondary-700 mb-1">Business Name <span className="text-red-500">*</span></label>
-                <input className={`input w-full ${errors.businessName ? 'border-red-400' : ''}`} placeholder="e.g. Vtech Tools Pvt Ltd" value={form.businessName} onChange={set('businessName')} />
+                <input className={`input w-full ${errors.businessName ? 'border-red-400' : ''}`} placeholder="Enter business name" value={form.businessName} onChange={set('businessName')} />
                 {errors.businessName && <p className="text-xs text-red-500 mt-1">{errors.businessName}</p>}
               </div>
 

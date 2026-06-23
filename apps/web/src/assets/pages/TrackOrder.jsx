@@ -40,7 +40,7 @@ export default function TrackOrder() {
       <form onSubmit={handleSearch} className="card p-6 space-y-4 mb-6">
         <div>
           <label className="block text-sm font-medium mb-1">Order ID</label>
-          <input className="input w-full" placeholder="e.g. ORD-1234567890" value={orderId} onChange={(e) => setOrderId(e.target.value)} required />
+          <input className="input w-full" placeholder="Enter order ID" value={orderId} onChange={(e) => setOrderId(e.target.value)} required />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Phone Number</label>

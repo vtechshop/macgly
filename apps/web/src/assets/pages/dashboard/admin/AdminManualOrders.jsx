@@ -232,7 +232,7 @@ function CreateModal({ onClose, onCreated }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-secondary-700 mb-1">Phone <span className="text-red-500">*</span></label>
-              <input value={form.customerPhone} onChange={set('customerPhone')} placeholder="e.g. 9944556683"
+              <input value={form.customerPhone} onChange={set('customerPhone')} placeholder="Enter phone number"
                 className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
             </div>
           </div>

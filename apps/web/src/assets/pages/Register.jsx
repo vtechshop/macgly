@@ -182,7 +182,7 @@ export default function Register() {
             <Input
               label="Phone Number"
               type="tel"
-              placeholder="+91 9876543210"
+              placeholder="Enter phone number"
               value={form.phone}
               onChange={set('phone')}
               error={errors.phone}
@@ -218,7 +218,7 @@ export default function Register() {
             <Input
               label="Email Address"
               type="email"
-              placeholder="you@example.com"
+              placeholder="Enter email address"
               value={form.email}
               onChange={set('email')}
               error={errors.email}

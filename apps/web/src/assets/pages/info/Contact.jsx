@@ -86,7 +86,7 @@ export default function Contact() {
                 <Input label="Full Name" value={form.name} onChange={set('name')} required className="col-span-2 sm:col-span-1" />
                 <Input label="Email" type="email" value={form.email} onChange={set('email')} required className="col-span-2 sm:col-span-1" />
               </div>
-              <Input label="Phone (optional)" type="tel" value={form.phone} onChange={set('phone')} placeholder="+91 99445 56683" />
+              <Input label="Phone (optional)" type="tel" value={form.phone} onChange={set('phone')} placeholder="Enter phone number" />
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-secondary-700">Message *</label>
                 <textarea

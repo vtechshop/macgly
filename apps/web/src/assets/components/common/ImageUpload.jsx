@@ -69,7 +69,7 @@ export default function ImageUpload({ urls = [], onChange, uploadUrl = '/admin/u
         <label className="block text-xs text-secondary-500">Or paste image URLs (one per line)</label>
         <textarea
           className="input h-16 resize-none font-mono text-xs"
-          placeholder="https://example.com/image.jpg"
+          placeholder="Enter image URL"
           value={urls.join('\n')}
           onChange={(e) => onChange(e.target.value.split('\n').map((u) => u.trim()).filter(Boolean))}
         />

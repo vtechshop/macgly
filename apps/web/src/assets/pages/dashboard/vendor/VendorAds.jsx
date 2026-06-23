@@ -495,7 +495,7 @@ export default function VendorAds() {
               type="number"
               min="100"
               step="50"
-              placeholder="e.g. 500"
+              placeholder="Enter amount"
               value={rechargeAmount}
               onChange={(e) => setRechargeAmount(e.target.value)}
               required
@@ -543,7 +543,7 @@ export default function VendorAds() {
               <label className="block text-sm font-medium mb-1">Campaign Name *</label>
               <input
                 className="input w-full"
-                placeholder="e.g. Summer Sale Promo"
+                placeholder="Enter campaign name"
                 value={form.name}
                 onChange={setF('name')}
                 required
@@ -620,7 +620,7 @@ export default function VendorAds() {
                 type="number"
                 min="0.5"
                 step="0.5"
-                placeholder="e.g. 10.00"
+                placeholder="Enter amount"
                 value={form.bid}
                 onChange={setF('bid')}
                 required
@@ -643,7 +643,7 @@ export default function VendorAds() {
                 type="number"
                 min="50"
                 step="50"
-                placeholder="e.g. 500"
+                placeholder="Enter amount"
                 value={form.dailyBudget}
                 onChange={setF('dailyBudget')}
                 required

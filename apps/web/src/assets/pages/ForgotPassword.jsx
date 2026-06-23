@@ -56,7 +56,7 @@ export default function ForgotPassword() {
             <Input
               label="Email address"
               type="email"
-              placeholder="you@example.com"
+              placeholder="Enter email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

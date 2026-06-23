@@ -273,7 +273,7 @@ export default function BecomeVendor() {
                 </label>
                 <input
                   className="input w-full"
-                  placeholder="e.g. State Bank of India"
+                  placeholder="Enter bank name"
                   value={formData.bankName}
                   onChange={set('bankName')}
                 />

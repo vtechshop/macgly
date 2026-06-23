@@ -69,7 +69,7 @@ function FilterPanel({ params, set, categoriesData, onClose }) {
         <div className="flex gap-2 mt-1.5">
           <input
             className="input text-sm flex-1"
-            placeholder="e.g. Bosch, Makita"
+            placeholder="Enter brand name"
             value={brandInput}
             onChange={(e) => setBrandInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && applyBrand()}

@@ -988,7 +988,7 @@ export default function AdminProducts() {
                     <div className="flex gap-2">
                       <input
                         className="input text-sm flex-1"
-                        placeholder="Category name (e.g. Cordless Drills)"
+                        placeholder="Enter category name"
                         value={newCatName}
                         onChange={(e) => setNewCatName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), createCategory())}
@@ -1032,7 +1032,7 @@ export default function AdminProducts() {
             <Input label="Price (₹) *" type="number" step="0.01" value={form.price} onChange={set('price')} required />
             <Input label="Compare Price (₹)" type="number" step="0.01" value={form.compareAt} onChange={set('compareAt')} />
             <Input label="Stock *" type="number" value={form.stock} onChange={set('stock')} required />
-            <Input label="SKU (auto if blank)" value={form.sku} onChange={set('sku')} placeholder="e.g. VCMPROMAX-HD" />
+            <Input label="SKU (auto if blank)" value={form.sku} onChange={set('sku')} placeholder="Enter SKU" />
             <Input label="Display Order (higher = appears first)" type="number" value={form.displayOrder} onChange={set('displayOrder')} />
             <Input label="Slug (auto if blank)" value={form.slug} onChange={set('slug')} />
           </div>
@@ -1040,8 +1040,8 @@ export default function AdminProducts() {
 
           {/* Commissions */}
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Vendor Commission % (blank = default)" type="number" step="0.01" value={form.vendorCommissionPercentage} onChange={set('vendorCommissionPercentage')} placeholder="e.g. 10" />
-            <Input label="Affiliate Commission % (blank = default)" type="number" step="0.01" value={form.affiliateCommissionPercentage} onChange={set('affiliateCommissionPercentage')} placeholder="e.g. 5" />
+            <Input label="Vendor Commission % (blank = default)" type="number" step="0.01" value={form.vendorCommissionPercentage} onChange={set('vendorCommissionPercentage')} placeholder="Enter percentage" />
+            <Input label="Affiliate Commission % (blank = default)" type="number" step="0.01" value={form.affiliateCommissionPercentage} onChange={set('affiliateCommissionPercentage')} placeholder="Enter percentage" />
           </div>
 
           {/* Tax / GST */}
@@ -1056,8 +1056,8 @@ export default function AdminProducts() {
                   {[0, 5, 12, 18, 28].map((r) => <option key={r} value={r}>{r}%</option>)}
                 </select>
               </div>
-              <Input label="HSN / SAC Code" value={form.hsnCode} onChange={set('hsnCode')} placeholder="e.g. 84360000" />
-              <Input label="Cost Price (₹) — internal only" type="number" step="0.01" value={form.cost} onChange={set('cost')} placeholder="e.g. 800" />
+              <Input label="HSN / SAC Code" value={form.hsnCode} onChange={set('hsnCode')} placeholder="Enter HSN code" />
+              <Input label="Cost Price (₹) — internal only" type="number" step="0.01" value={form.cost} onChange={set('cost')} placeholder="Enter cost price" />
               <div className="flex flex-col gap-2 justify-end pb-1">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={form.taxable} onChange={set('taxable')} className="accent-primary-600" /> Taxable
@@ -1090,12 +1090,12 @@ export default function AdminProducts() {
                   <div key={i} className="grid grid-cols-2 gap-2 items-start">
                     <div className="space-y-0.5">
                       <label className="text-[10px] text-secondary-500 font-medium uppercase">Label</label>
-                      <input className="input text-sm" placeholder="e.g. Motor Type" value={s.label} onChange={(e) => setSpec(i, 'label', e.target.value)} />
+                      <input className="input text-sm" placeholder="Label" value={s.label} onChange={(e) => setSpec(i, 'label', e.target.value)} />
                     </div>
                     <div className="space-y-0.5 relative">
                       <label className="text-[10px] text-secondary-500 font-medium uppercase">Value</label>
                       <div className="flex gap-1">
-                        <input className="input text-sm flex-1" placeholder="e.g. Single Phase" value={s.value} onChange={(e) => setSpec(i, 'value', e.target.value)} />
+                        <input className="input text-sm flex-1" placeholder="Value" value={s.value} onChange={(e) => setSpec(i, 'value', e.target.value)} />
                         <button type="button" onClick={() => removeSpec(i)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded shrink-0">
                           <X size={13} />
                         </button>
@@ -1130,7 +1130,7 @@ export default function AdminProducts() {
             </div>
           </div>
 
-          <Input label="Tags (comma separated)" value={form.tags} onChange={set('tags')} placeholder="drill, bosch, power-tool" />
+          <Input label="Tags (comma separated)" value={form.tags} onChange={set('tags')} placeholder="Enter tags" />
 
           {/* Warranty */}
           <div className="border border-secondary-200 rounded-xl overflow-hidden">
@@ -1154,7 +1154,7 @@ export default function AdminProducts() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-secondary-600">Warranty Duration</label>
-                    <input type="number" min="1" className="input text-sm" placeholder="e.g. 1" value={form.warranty.duration} onChange={setW('duration')} />
+                    <input type="number" min="1" className="input text-sm" placeholder="Enter duration" value={form.warranty.duration} onChange={setW('duration')} />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-secondary-600">Duration Type</label>
@@ -1167,7 +1167,7 @@ export default function AdminProducts() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-secondary-600">Warranty Provider</label>
-                  <input className="input text-sm" placeholder="e.g. Manufacturer" value={form.warranty.description} onChange={setW('description')} />
+                  <input className="input text-sm" placeholder="Enter provider" value={form.warranty.description} onChange={setW('description')} />
                 </div>
                 <div className="flex items-center gap-2">
                   <input type="checkbox" id="reqInvoice" checked={form.warranty.requiresInvoice || false} onChange={setW('requiresInvoice')} className="accent-primary-600" />
@@ -1175,7 +1175,7 @@ export default function AdminProducts() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-secondary-600">Warranty Description</label>
-                  <textarea className="input text-sm resize-none h-20" placeholder="e.g. This product comes with a 1-year complete warranty covering motor coil failures, electrical component failures..." value={form.warranty.terms || ''} onChange={setW('terms')} />
+                  <textarea className="input text-sm resize-none h-20" placeholder="Enter warranty terms"
                 </div>
               </div>
             )}
@@ -1243,7 +1243,7 @@ export default function AdminProducts() {
                   </div>
                   {form.variantOptions.map((opt, i) => (
                     <div key={i} className="flex gap-2 items-center">
-                      <input className="input text-sm w-32 shrink-0" placeholder="Name (e.g. Color)" value={opt.name} onChange={(e) => setVariantOptionName(i, e.target.value)} />
+                      <input className="input text-sm w-32 shrink-0" placeholder="Option name" value={opt.name} onChange={(e) => setVariantOptionName(i, e.target.value)} />
                       <input className="input text-sm flex-1" placeholder="Values comma separated (Red, Blue, Green)" value={opt.values.join(', ')} onChange={(e) => setVariantOptionValues(i, e.target.value)} />
                       <button type="button" onClick={() => removeVariantOption(i)} className="p-1.5 text-red-400 hover:text-red-600 shrink-0"><Trash2 size={14} /></button>
                     </div>
@@ -1311,7 +1311,7 @@ export default function AdminProducts() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-secondary-600">Keywords <span className="text-secondary-400">(comma separated)</span></label>
-                <input className="input text-sm" placeholder="drill, bosch, power tools" value={form.seo.keywords} onChange={setSeo('keywords')} />
+                <input className="input text-sm" placeholder="Enter tags" value={form.seo.keywords} onChange={setSeo('keywords')} />
               </div>
             </div>
           </div>

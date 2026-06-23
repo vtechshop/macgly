@@ -38,7 +38,7 @@ export default function WarrantyCheck() {
       <form onSubmit={handleSearch} className="card p-6 space-y-4 mb-6">
         <div>
           <label className="block text-sm font-medium mb-1">Serial Number / IMEI</label>
-          <input className="input w-full font-mono" placeholder="e.g. SN-2024-ABCD1234" value={serial} onChange={(e) => setSerial(e.target.value)} required />
+          <input className="input w-full font-mono" placeholder="Enter serial number" value={serial} onChange={(e) => setSerial(e.target.value)} required />
         </div>
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">

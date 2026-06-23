@@ -209,7 +209,7 @@ export default function AdminShareCatalog() {
             <h2 className="font-semibold text-sm flex items-center gap-2"><Share2 size={14} /> Create Shareable Catalog Link</h2>
             <div>
               <label className="block text-xs font-medium mb-1 text-secondary-600">Label</label>
-              <input className="input w-full" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. For Dealer ABC" />
+              <input className="input w-full" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Enter label" />
             </div>
             <div>
               <label className="block text-xs font-medium mb-1 text-secondary-600">Expires in (days)</label>

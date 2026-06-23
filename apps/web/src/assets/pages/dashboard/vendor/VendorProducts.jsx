@@ -269,7 +269,7 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                     <input value={form.brand} onChange={e('brand')} placeholder="Brand name" className={INPUT_CLS} />
                   </Field>
                   <Field label="SKU" hint="(auto-generated if blank)">
-                    <input value={form.sku} onChange={e('sku')} placeholder="e.g. VND-001" className={INPUT_CLS} />
+                    <input value={form.sku} onChange={e('sku')} placeholder="Enter SKU" className={INPUT_CLS} />
                   </Field>
                 </div>
                 <Field label="Category">
@@ -325,7 +325,7 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-secondary-600 mb-1">HSN Code</label>
-                        <input value={form.hsnCode} onChange={e('hsnCode')} placeholder="e.g. 8467"
+                        <input value={form.hsnCode} onChange={e('hsnCode')} placeholder="Enter HSN code"
                           className="w-full border border-secondary-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
                       </div>
                       <div className="flex items-end pb-1">
@@ -380,7 +380,7 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Weight (kg)">
-                    <input type="number" min="0" step="0.01" value={form.weight} onChange={e('weight')} placeholder="e.g. 1.5" className={INPUT_CLS} />
+                    <input type="number" min="0" step="0.01" value={form.weight} onChange={e('weight')} placeholder="Enter weight" className={INPUT_CLS} />
                   </Field>
                   <Field label="Flat Shipping Charge (₹)">
                     <input type="number" min="0" step="0.01" value={form.shippingCharge} onChange={e('shippingCharge')} placeholder="0 = free" className={INPUT_CLS} />
@@ -433,10 +433,10 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                         {form.specifications.map((spec, i) => (
                           <div key={i} className="flex items-center gap-2">
                             <input value={spec.label} onChange={(ev) => upSpec(i, 'label', ev.target.value)}
-                              placeholder="Label (e.g. Weight)"
+                              placeholder="Label"
                               className="flex-1 border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
                             <input value={spec.value} onChange={(ev) => upSpec(i, 'value', ev.target.value)}
-                              placeholder="Value (e.g. 2.5 kg)"
+                              placeholder="Value"
                               className="flex-1 border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
                             <button type="button" onClick={() => delSpec(i)} className="p-1 text-secondary-300 hover:text-red-500 shrink-0"><X size={14} /></button>
                           </div>
@@ -504,7 +504,7 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                     </div>
                     <Field label="Provider">
                       <input value={form.warranty.provider} onChange={(ev) => set('warranty.provider', ev.target.value)}
-                        placeholder="e.g. Manufacturer, In-house" className={INPUT_CLS} />
+                        placeholder="Enter warranty provider" className={INPUT_CLS} />
                     </Field>
                     <Field label="Warranty Description">
                       <textarea value={form.warranty.description} onChange={(ev) => set('warranty.description', ev.target.value)}
@@ -553,7 +553,7 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                 </div>
                 <Field label="Keywords" hint="(comma-separated)">
                   <input value={form.seo.keywords} onChange={(ev) => set('seo.keywords', ev.target.value)}
-                    placeholder="e.g. power drill, cordless, tools" className={INPUT_CLS} />
+                    placeholder="Enter tags" className={INPUT_CLS} />
                 </Field>
                 {/* Google preview */}
                 <div className="bg-white border border-secondary-200 rounded-xl p-4">
@@ -637,7 +637,7 @@ function BulkPriceModal({ open, onClose, count, onConfirm }) {
         <p className="text-sm text-secondary-500 mb-4">{count} product{count !== 1 ? 's' : ''} selected</p>
         <div className="flex items-center gap-2 border border-secondary-200 rounded-lg px-3 py-2 bg-secondary-50 mb-1">
           <input type="number" step="0.1" value={pct} onChange={(ev) => setPct(ev.target.value)} autoFocus
-            placeholder="e.g. 10 or -5"
+            placeholder="Enter adjustment"
             className="flex-1 bg-transparent text-sm focus:outline-none" />
           <span className="text-secondary-500 font-semibold text-sm">%</span>
         </div>

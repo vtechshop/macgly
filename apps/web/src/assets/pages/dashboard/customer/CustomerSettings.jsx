@@ -269,7 +269,7 @@ export default function CustomerSettings() {
                 type="tel"
                 value={profile.phone}
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                placeholder="+91 98765 43210"
+                placeholder="Enter phone number"
               />
             </div>
           </div>

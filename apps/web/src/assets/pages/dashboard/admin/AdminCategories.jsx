@@ -535,7 +535,7 @@ export default function AdminCategories() {
                 <input
                   value={form.name}
                   onChange={(e) => setField('name', e.target.value)}
-                  placeholder="e.g. Power Tools"
+                  placeholder="Enter category name"
                   className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
                 />
               </div>

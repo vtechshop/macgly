@@ -453,7 +453,7 @@ export default function VendorSettings() {
                 className="input w-full"
                 value={profileData.storeName}
                 onChange={pSet('storeName')}
-                placeholder="e.g. Vtech Kitchen"
+                placeholder="Enter store name"
                 required
               />
             </div>
@@ -510,7 +510,7 @@ export default function VendorSettings() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Bank Name *</label>
-              <input className="input w-full" value={bankData.bankName} onChange={bSet('bankName')} placeholder="e.g. State Bank of India" required />
+              <input className="input w-full" value={bankData.bankName} onChange={bSet('bankName')} placeholder="Enter bank name" required />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Account Number *</label>
@@ -536,7 +536,7 @@ export default function VendorSettings() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">UPI ID</label>
-              <input className="input w-full" value={bankData.upiId} onChange={bSet('upiId')} placeholder="yourname@upi" />
+              <input className="input w-full" value={bankData.upiId} onChange={bSet('upiId')} placeholder="Enter UPI ID" />
             </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium mb-1">PAN Number * <span className="text-xs text-secondary-400 font-normal">(for TDS compliance)</span></label>

@@ -135,7 +135,7 @@ function ContentModal({ mode, item, onClose, onSave }) {
                 <label className="block text-sm font-medium mb-1">Featured Image URL</label>
                 <input
                   className="input w-full"
-                  placeholder="https://cdn.example.com/image.jpg"
+                  placeholder="Enter image URL"
                   value={form.featuredImage}
                   onChange={(e) => set('featuredImage', e.target.value)}
                 />

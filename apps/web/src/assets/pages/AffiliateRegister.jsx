@@ -147,8 +147,8 @@ export default function AffiliateRegister() {
               <h2 className="text-lg font-bold mb-5">Create your affiliate account</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Input label="Full Name *" placeholder="Your name" value={form.name} onChange={set('name')} error={errors.name} required />
-                <Input label="Email *" type="email" placeholder="you@example.com" value={form.email} onChange={set('email')} error={errors.email} required />
-                <Input label="Phone" type="tel" placeholder="+91 9876543210" value={form.phone} onChange={set('phone')} error={errors.phone} />
+                <Input label="Email *" type="email" placeholder="Enter email address" value={form.email} onChange={set('email')} error={errors.email} required />
+                <Input label="Phone" type="tel" placeholder="Enter phone number" value={form.phone} onChange={set('phone')} error={errors.phone} />
                 <div className="relative">
                   <Input
                     label="Password *"

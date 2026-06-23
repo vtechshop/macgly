@@ -223,7 +223,7 @@ export default function BecomeAffiliate() {
               </div>
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium">IFSC Code <span className="text-red-500">*</span></label>
-                <input className="input w-full uppercase" placeholder="e.g., HDFC0001234" value={formData.ifsc} onChange={(e) => setFormData((p) => ({ ...p, ifsc: e.target.value.toUpperCase() }))} maxLength={11} />
+                <input className="input w-full uppercase" placeholder="Enter IFSC code" value={formData.ifsc} onChange={(e) => setFormData((p) => ({ ...p, ifsc: e.target.value.toUpperCase() }))} maxLength={11} />
               </div>
             </div>
           </div>
@@ -233,7 +233,7 @@ export default function BecomeAffiliate() {
         {formData.paymentMethod === 'upi' && (
           <div className="space-y-1.5">
             <label className="block text-sm font-medium">UPI ID <span className="text-red-500">*</span></label>
-            <input className="input w-full" placeholder="e.g., yourname@paytm" value={formData.upiId} onChange={set('upiId')} />
+            <input className="input w-full" placeholder="Enter UPI ID" value={formData.upiId} onChange={set('upiId')} />
             <p className="text-xs text-secondary-400">e.g., yourname@paytm, yourname@gpay</p>
           </div>
         )}
@@ -242,7 +242,7 @@ export default function BecomeAffiliate() {
         {formData.paymentMethod === 'paypal' && (
           <div className="space-y-1.5">
             <label className="block text-sm font-medium">PayPal Email <span className="text-red-500">*</span></label>
-            <input className="input w-full" type="email" placeholder="your@paypal.com" value={formData.paypalEmail} onChange={set('paypalEmail')} />
+            <input className="input w-full" type="email" placeholder="Enter PayPal email" value={formData.paypalEmail} onChange={set('paypalEmail')} />
           </div>
         )}
 

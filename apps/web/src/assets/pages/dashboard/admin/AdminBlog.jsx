@@ -124,7 +124,7 @@ function BlogModal({ post, onClose, onSave }) {
           {/* Featured Image */}
           <div>
             <label className="block text-sm font-medium mb-1">Featured Image URL</label>
-            <input className="input w-full" placeholder="https://cdn.example.com/image.jpg" value={form.featuredImage} onChange={(e) => set('featuredImage', e.target.value)} />
+            <input className="input w-full" placeholder="Enter image URL" value={form.featuredImage} onChange={(e) => set('featuredImage', e.target.value)} />
           </div>
 
           {/* Content */}
