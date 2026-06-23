@@ -71,7 +71,7 @@ export default function Home() {
     setMeta({
       title: 'Macgly — Professional Tools & Machinery in India',
       description: 'Buy genuine tools, machines, spare parts and equipment from trusted vendors. Pan India delivery.',
-      canonical: 'https://macgly.com/',
+      canonical: 'https://www.macgly.com/',
     });
   }, []);
 

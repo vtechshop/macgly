@@ -16,7 +16,7 @@ export default function Blog() {
     setMeta({
       title: 'Blog — Tools, Tips & Industry News | Macgly',
       description: 'Expert guides, tool reviews and industry news from Macgly. Learn about power tools, machines, spare parts and more.',
-      canonical: 'https://macgly.com/blog',
+      canonical: 'https://www.macgly.com/blog',
     });
   }, []);
 

@@ -15,7 +15,7 @@ export default function Contact() {
     setMeta({
       title: 'Contact Us | Macgly',
       description: 'Get in touch with Macgly for support, vendor inquiries, or partnership opportunities. We\'re here to help.',
-      canonical: 'https://macgly.com/info/contact',
+      canonical: 'https://www.macgly.com/info/contact',
     });
   }, []);
 
@@ -48,7 +48,7 @@ export default function Contact() {
             <div className="space-y-4">
               {[
                 { icon: Mail, label: 'Email', value: 'macglyshop@gmail.com' },
-                { icon: Phone, label: 'Phone', value: '+91 98765 43210' },
+                { icon: Phone, label: 'Phone', value: '+91 99445 56683' },
                 { icon: MapPin, label: 'Address', value: 'Tirupur, Tamil Nadu, India' },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className="flex items-start gap-3">
@@ -86,7 +86,7 @@ export default function Contact() {
                 <Input label="Full Name" value={form.name} onChange={set('name')} required className="col-span-2 sm:col-span-1" />
                 <Input label="Email" type="email" value={form.email} onChange={set('email')} required className="col-span-2 sm:col-span-1" />
               </div>
-              <Input label="Phone (optional)" type="tel" value={form.phone} onChange={set('phone')} placeholder="+91 98765 43210" />
+              <Input label="Phone (optional)" type="tel" value={form.phone} onChange={set('phone')} placeholder="+91 99445 56683" />
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-secondary-700">Message *</label>
                 <textarea

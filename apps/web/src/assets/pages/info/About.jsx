@@ -8,7 +8,7 @@ export default function About() {
     setMeta({
       title: 'About Macgly — India\'s Tools & Machinery Marketplace',
       description: 'Macgly is India\'s dedicated marketplace for professional tools, machinery and spare parts. Trusted by 50,000+ engineers, contractors and workshops.',
-      canonical: 'https://macgly.com/info/about',
+      canonical: 'https://www.macgly.com/info/about',
     });
   }, []);
 
