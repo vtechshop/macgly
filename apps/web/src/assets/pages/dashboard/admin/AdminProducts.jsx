@@ -1175,7 +1175,7 @@ export default function AdminProducts() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-secondary-600">Warranty Description</label>
-                  <textarea className="input text-sm resize-none h-20" placeholder="Enter warranty terms"
+                  <textarea className="input text-sm resize-none h-20" placeholder="Enter warranty terms" value={form.warranty.description || ''} onChange={setW('description')} />
                 </div>
               </div>
             )}
