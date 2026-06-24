@@ -60,15 +60,20 @@ export default function Product() {
     () => api.get(`/catalog/products/${slug}`).then((r) => r.data)
   );
 
-  const categorySlug = data?.product?.category?.slug
-    || data?.product?.category
-    || data?.product?.categoryIds?.[0]?.slug;
-  const { data: relatedData } = useFetch(
-    categorySlug ? ['related', categorySlug, slug] : null,
-    () => api.get('/catalog/products', { params: { category: categorySlug, limit: 8 } }).then((r) => r.data)
-  );
-
   const product = data?.product;
+  const categoryId   = product?.categoryIds?.[0]?._id || product?.categoryIds?.[0];
+  const categorySlug = product?.category?.slug || product?.category || product?.categoryIds?.[0]?.slug;
+  const { data: relatedData } = useFetch(
+    product ? ['related', product._id] : null,
+    () => api.get('/recommendations', {
+      params: {
+        productId:  product._id,
+        ...(categoryId   ? { categoryId }   : {}),
+        ...(categorySlug ? { category: categorySlug } : {}),
+        limit: 8,
+      },
+    }).then((r) => r.data)
+  );
 
   // Check wishlist status once product and user are known
   useEffect(() => {
