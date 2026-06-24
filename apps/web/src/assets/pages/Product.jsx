@@ -182,34 +182,49 @@ export default function Product() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8">
         <div className="space-y-3">
-          <div className="relative rounded-2xl overflow-hidden bg-white border border-secondary-200 shadow-sm flex items-center justify-center" style={{ height: 580 }}>
-            <ShoppingCart size={48} className="text-secondary-200" />
+          {/* Main image */}
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-secondary-50 to-white border border-secondary-100 shadow-md flex items-center justify-center group" style={{ height: 520 }}>
+            <ShoppingCart size={48} className="text-secondary-100" />
             {product.images?.[activeImg] && (
-              <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="absolute inset-0 w-full h-full object-contain p-3" onError={(e) => e.currentTarget.remove()} />
+              <img
+                src={normalizeImageUrl(product.images[activeImg])}
+                alt={product.imageAlts?.[activeImg] || product.title}
+                className="absolute inset-0 w-full h-full object-contain p-6 transition-opacity duration-200"
+                onError={(e) => e.currentTarget.remove()}
+              />
             )}
             {product.images?.length > 1 && (
               <>
                 <button
                   onClick={() => setActiveImg((i) => (i - 1 + product.images.length) % product.images.length)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center text-secondary-600 hover:text-secondary-900 transition-colors z-10"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-secondary-100 flex items-center justify-center text-secondary-500 hover:text-primary-600 hover:border-primary-300 hover:shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
                 >
-                  <ChevronLeft size={20} />
+                  <ChevronLeft size={18} />
                 </button>
                 <button
                   onClick={() => setActiveImg((i) => (i + 1) % product.images.length)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center text-secondary-600 hover:text-secondary-900 transition-colors z-10"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-secondary-100 flex items-center justify-center text-secondary-500 hover:text-primary-600 hover:border-primary-300 hover:shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
                 >
-                  <ChevronRight size={20} />
+                  <ChevronRight size={18} />
                 </button>
+                {/* Dot indicators */}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                  {product.images.map((_, i) => (
+                    <button key={i} onClick={() => setActiveImg(i)}
+                      className={`rounded-full transition-all duration-200 ${i === activeImg ? 'w-5 h-1.5 bg-primary-500' : 'w-1.5 h-1.5 bg-secondary-300 hover:bg-secondary-400'}`}
+                    />
+                  ))}
+                </div>
               </>
             )}
           </div>
+          {/* Thumbnails */}
           {product.images?.length > 1 && (
-            <div className="flex gap-1.5 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
               {product.images.map((img, i) => (
                 <button key={i} onClick={() => setActiveImg(i)}
-                  className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors bg-white ${i === activeImg ? 'border-primary-500' : 'border-secondary-200 hover:border-secondary-400'}`}>
-                  <img src={normalizeImageUrl(img)} alt="" className="w-full h-full object-contain p-1" />
+                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-150 bg-white shadow-sm hover:shadow-md ${i === activeImg ? 'border-primary-500 shadow-primary-100' : 'border-secondary-200 hover:border-primary-300'}`}>
+                  <img src={normalizeImageUrl(img)} alt="" className="w-full h-full object-contain p-1.5" />
                 </button>
               ))}
             </div>
