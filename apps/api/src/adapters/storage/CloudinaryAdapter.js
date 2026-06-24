@@ -13,7 +13,14 @@ class CloudinaryAdapter {
   async upload(file, folder = 'shop') {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder, resource_type: 'image' },
+        {
+          folder,
+          resource_type: 'image',
+          quality: 'auto:good',
+          fetch_format: 'auto',
+          width: 1200,
+          crop: 'limit',
+        },
         (err, result) => {
           if (err) return reject(err);
           resolve({ url: result.secure_url, publicId: result.public_id });
