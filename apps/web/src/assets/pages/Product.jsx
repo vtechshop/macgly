@@ -60,7 +60,9 @@ export default function Product() {
     () => api.get(`/catalog/products/${slug}`).then((r) => r.data)
   );
 
-  const categorySlug = data?.product?.category?.slug || data?.product?.category;
+  const categorySlug = data?.product?.category?.slug
+    || data?.product?.category
+    || data?.product?.categoryIds?.[0]?.slug;
   const { data: relatedData } = useFetch(
     categorySlug ? ['related', categorySlug, slug] : null,
     () => api.get('/catalog/products', { params: { category: categorySlug, limit: 8 } }).then((r) => r.data)
