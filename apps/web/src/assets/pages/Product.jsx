@@ -455,12 +455,18 @@ export default function Product() {
         </div>
       </div>
 
-      <ReviewSection key={product._id} productId={product._id} />
-
       {/* Related products */}
       {relatedData?.products?.filter(p => p._id !== product._id).length > 0 && (
-        <section className="mt-10">
-          <h2 className="text-lg font-black text-secondary-900 mb-4">You may also like</h2>
+        <section className="mt-10 pt-8 border-t border-secondary-100">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-xl font-black text-secondary-900">You May Also Like</h2>
+              <p className="text-xs text-secondary-400 mt-0.5">More from this category</p>
+            </div>
+            <a href={`/category/${categorySlug}`} className="text-sm font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+              View All <ChevronRight size={14} />
+            </a>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {relatedData.products
               .filter(p => p._id !== product._id)
@@ -469,6 +475,8 @@ export default function Product() {
           </div>
         </section>
       )}
+
+      <ReviewSection key={product._id} productId={product._id} />
     </div>
   );
 }
