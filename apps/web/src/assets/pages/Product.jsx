@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ShoppingCart, Star, Shield, ChevronDown, ChevronUp, MapPin, CheckCircle, XCircle, Heart, Zap, Truck } from 'lucide-react';
+import { ShoppingCart, Star, Shield, ChevronDown, ChevronUp, MapPin, CheckCircle, XCircle, Heart, Zap, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '../components/product/ProductCard';
 import api from '../../utils/api';
 import { setCart, addItemOptimistic, openCartDrawer } from '../../store/slices/cartSlice';
@@ -186,6 +186,22 @@ export default function Product() {
             <ShoppingCart size={48} className="text-secondary-200" />
             {product.images?.[activeImg] && (
               <img src={normalizeImageUrl(product.images[activeImg])} alt={product.imageAlts?.[activeImg] || product.title} className="absolute inset-0 w-full h-full object-contain p-3" onError={(e) => e.currentTarget.remove()} />
+            )}
+            {product.images?.length > 1 && (
+              <>
+                <button
+                  onClick={() => setActiveImg((i) => (i - 1 + product.images.length) % product.images.length)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center text-secondary-600 hover:text-secondary-900 transition-colors z-10"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={() => setActiveImg((i) => (i + 1) % product.images.length)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center text-secondary-600 hover:text-secondary-900 transition-colors z-10"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </>
             )}
           </div>
           {product.images?.length > 1 && (
