@@ -80,9 +80,14 @@ export default function Product() {
 
   useEffect(() => {
     if (!product) return;
+    const img = product.images?.[0];
+    const absImage = img && img.startsWith('http') ? img : null;
     setMeta({
-      title: product.seo?.title || `${product.title} — Macgly`,
+      title:       product.seo?.title || `${product.title} — Macgly`,
       description: product.seo?.description || product.description?.slice(0, 160),
+      canonical:   `https://macgly.com/product/${product.slug}`,
+      image:       absImage,
+      type:        'product',
     });
     injectJsonLd(productJsonLd(product));
   }, [product]);
