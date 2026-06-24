@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Zap, Plus, Minus, Heart, Eye } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setCart, openCartDrawer, addItemOptimistic, updateItemOptimistic } from '../../../store/slices/cartSlice';
+import { addWishlistId, removeWishlistId } from '../../../store/slices/wishlistSlice';
 import { formatCurrency, normalizeImageUrl } from '../../../utils/format';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
@@ -15,7 +16,8 @@ export default function ProductCard({ product, onAddToCart }) {
   const cartItem = cartItems.find((i) => i.product?._id === product._id || i.product === product._id);
   const qty = cartItem?.quantity || 0;
 
-  const [wishlisted, setWishlisted] = useState(false);
+  const wishlistIds = useSelector((s) => s.wishlist.ids);
+  const wishlisted = wishlistIds.includes(product._id);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   const discount = product.compareAt > product.price
@@ -26,10 +28,10 @@ export default function ProductCard({ product, onAddToCart }) {
     e.preventDefault();
     e.stopPropagation();
     if (!user) { toast.error('Please login to save to wishlist'); return; }
-    const next = !wishlisted;
-    setWishlisted(next); // instant UI update
+    const removing = wishlisted;
+    dispatch(removing ? removeWishlistId(product._id) : addWishlistId(product._id));
     try {
-      if (!next) {
+      if (removing) {
         await api.delete(`/users/wishlist/${product._id}`);
         toast.success('Removed from wishlist');
       } else {
@@ -37,7 +39,7 @@ export default function ProductCard({ product, onAddToCart }) {
         toast.success('Saved to wishlist');
       }
     } catch (err) {
-      setWishlisted(!next); // revert on failure
+      dispatch(removing ? addWishlistId(product._id) : removeWishlistId(product._id)); // revert
       if (err?.response?.status === 401) {
         toast.error('Please log in to save to wishlist');
       } else {

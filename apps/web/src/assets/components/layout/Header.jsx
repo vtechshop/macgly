@@ -4,6 +4,7 @@ import { ShoppingCart, Search, Menu, X, ChevronDown, User, Heart } from 'lucide-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { clearUser } from '../../../store/slices/authSlice';
 import { clearCart, openCartDrawer } from '../../../store/slices/cartSlice';
+import { setWishlistIds } from '../../../store/slices/wishlistSlice';
 import api from '../../../utils/api';
 import { normalizeImageUrl } from '../../../utils/format';
 import { useFetch } from '../../../hooks';
@@ -29,6 +30,10 @@ export default function Header() {
   );
   const wishlistCount = wishlistData?.ids?.length || 0;
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (wishlistData?.ids) dispatch(setWishlistIds(wishlistData.ids));
+  }, [wishlistData, dispatch]);
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
