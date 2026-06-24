@@ -5,6 +5,7 @@ import { ShoppingCart, Star, Shield, ChevronDown, ChevronUp, MapPin, CheckCircle
 import ProductCard from '../components/product/ProductCard';
 import api from '../../utils/api';
 import { setCart, addItemOptimistic, openCartDrawer } from '../../store/slices/cartSlice';
+import { addWishlistId, removeWishlistId } from '../../store/slices/wishlistSlice';
 import { formatCurrency, normalizeImageUrl } from '../../utils/format';
 import { productJsonLd, injectJsonLd, setMeta } from '../../utils/seo';
 import { useFetch } from '../../hooks';
@@ -33,7 +34,6 @@ export default function Product() {
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   const [adding, setAdding] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [pincode, setPincode] = useState('');
   const [pincodeStatus, setPincodeStatus] = useState(null);
@@ -75,13 +75,8 @@ export default function Product() {
     }).then((r) => r.data)
   );
 
-  // Check wishlist status once product and user are known
-  useEffect(() => {
-    if (!product || !user) return;
-    api.get('/users/wishlist/ids')
-      .then(({ data: d }) => setWishlisted(d.ids.includes(product._id)))
-      .catch(() => {});
-  }, [product?._id, user?._id]);
+  const wishlistIds = useSelector((s) => s.wishlist.ids);
+  const wishlisted = !!product && wishlistIds.includes(product._id);
 
   useEffect(() => {
     if (!product) return;
@@ -142,19 +137,21 @@ export default function Product() {
 
   async function toggleWishlist() {
     if (!user) { toast.error('Please login to save to wishlist'); return; }
+    const removing = wishlisted;
+    dispatch(removing ? removeWishlistId(product._id) : addWishlistId(product._id));
     setWishlistLoading(true);
     try {
-      if (wishlisted) {
+      if (removing) {
         await api.delete(`/users/wishlist/${product._id}`);
-        setWishlisted(false);
         toast.success('Removed from wishlist');
       } else {
         await api.post(`/users/wishlist/${product._id}`);
-        setWishlisted(true);
         toast.success('Saved to wishlist');
       }
-    } catch { toast.error('Could not update wishlist'); }
-    finally { setWishlistLoading(false); }
+    } catch {
+      dispatch(removing ? addWishlistId(product._id) : removeWishlistId(product._id)); // revert
+      toast.error('Could not update wishlist');
+    } finally { setWishlistLoading(false); }
   }
 
   if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
