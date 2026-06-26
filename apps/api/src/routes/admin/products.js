@@ -22,7 +22,7 @@ router.get('/', async (req, res, next) => {
       Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
       Product.countDocuments(filter),
     ]);
-    res.json({ products, pagination: { page: parseInt(page), limit: parseInt(limit), total } });
+    res.json({ products, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) } });
   } catch (err) { next(err); }
 });
 
