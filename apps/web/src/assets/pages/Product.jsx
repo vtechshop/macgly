@@ -189,8 +189,8 @@ export default function Product() {
         <span className="text-secondary-800 truncate">{product.title}</span>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8">
-        <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 items-start">
+        <div className="space-y-3 lg:sticky lg:top-24">
           {/* Main image */}
           <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-secondary-50 to-white border border-secondary-100 shadow-md flex items-center justify-center group" style={{ height: 520 }}>
             <ShoppingCart size={48} className="text-secondary-100" />
@@ -469,8 +469,8 @@ export default function Product() {
         <section className="mt-10 pt-8 border-t border-secondary-100">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-xl font-black text-secondary-900">You May Also Like</h2>
-              <p className="text-xs text-secondary-400 mt-0.5">More from this category</p>
+              <h2 className="text-xl font-black text-secondary-900">People Also Buy</h2>
+              <p className="text-xs text-secondary-400 mt-0.5">Customers who viewed this also bought</p>
             </div>
             <a href={`/category/${categorySlug}`} className="text-sm font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1">
               View All <ChevronRight size={14} />
