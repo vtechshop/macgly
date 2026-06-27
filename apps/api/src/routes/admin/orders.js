@@ -6,6 +6,7 @@ const AppError = require('../../utils/AppError');
 const { createShipment } = require('../../services/shippingService');
 const notif      = require('../../utils/notificationHelper');
 const whatsapp   = require('../../services/whatsappService');
+const { sendShippingUpdate } = require('../../services/emailService');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -158,13 +159,20 @@ router.put('/:id/status', async (req, res, next) => {
       console.error('[Orders] earnings error:', e.message),
     );
 
-    // Notify customer of status change (in-app + WhatsApp)
+    // Notify customer of status change (in-app + WhatsApp + email)
     if (order.user) {
-      notif.notifyCustomerOrderStatus({ userId: order.user, order, status }).catch(() => {});
       const userObj = order.user;
+      notif.notifyCustomerOrderStatus({ userId: userObj, order, status }).catch(() => {});
       if (status === 'shipped')   whatsapp.notifyOrderShipped(order, userObj).catch(() => {});
       if (status === 'delivered') whatsapp.notifyOrderDelivered(order, userObj).catch(() => {});
       if (status === 'cancelled') whatsapp.notifyOrderCancelled(order, userObj).catch(() => {});
+      // Email on key status changes
+      const emailStatuses = ['confirmed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+      if (emailStatuses.includes(status) && userObj?.email) {
+        sendShippingUpdate({ order, user: userObj }).catch((e) =>
+          console.error('[Orders] email error:', e.message)
+        );
+      }
     }
 
     res.json({ order });
