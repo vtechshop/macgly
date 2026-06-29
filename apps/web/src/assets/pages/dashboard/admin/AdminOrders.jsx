@@ -4,7 +4,7 @@ import {
   Package, Clock, CreditCard, Box, Truck,
   Navigation, CheckCircle, XCircle, RotateCcw,
   Wallet, Search, RefreshCw, Eye,
-  ChevronDown, ChevronUp, Settings,
+  ChevronDown, ChevronUp, Settings, ListChecks, X, Download,
 } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
@@ -202,6 +202,15 @@ function ExpandedPanel({ order, onManage }) {
 
 // ── main component ────────────────────────────────────────────────────────────
 
+const BULK_STATUSES = [
+  { value: 'confirmed',   label: 'Confirmed' },
+  { value: 'processing',  label: 'Processing' },
+  { value: 'packed',      label: 'Packed' },
+  { value: 'shipped',     label: 'Shipped' },
+  { value: 'delivered',   label: 'Delivered' },
+  { value: 'cancelled',   label: 'Cancelled' },
+];
+
 export default function AdminOrders() {
   const navigate   = useNavigate();
   const [page, setPage]               = useState(1);
@@ -211,6 +220,9 @@ export default function AdminOrders() {
   const [searchInput, setSearchInput] = useState('');
   const [expandedId, setExpandedId]   = useState(null);
   const [countsRev, setCountsRev]     = useState(0);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkStatus, setBulkStatus]   = useState('');
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const prevPaidRef = useRef(null);
 
@@ -277,6 +289,61 @@ export default function AdminOrders() {
     setStatusFilter(value);
     setPage(1);
     setExpandedId(null);
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelect(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === orders.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(orders.map((o) => o._id)));
+    }
+  }
+
+  async function exportCSV() {
+    try {
+      const { data } = await api.get('/admin/orders/export', {
+        responseType: 'blob',
+        params: { status: statusFilter || undefined, search: search || undefined },
+      });
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orders-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Export failed');
+    }
+  }
+
+  async function applyBulkStatus() {
+    if (!bulkStatus || !selectedIds.size) return;
+    if (!confirm(`Change ${selectedIds.size} order(s) to "${bulkStatus}"?`)) return;
+    setBulkLoading(true);
+    try {
+      const { data } = await api.post('/admin/orders/bulk-status', {
+        ids: [...selectedIds],
+        status: bulkStatus,
+      });
+      toast.success(`Updated ${data.updated} order(s) to ${bulkStatus}`);
+      setSelectedIds(new Set());
+      setBulkStatus('');
+      setRev((r) => r + 1);
+      setCountsRev((r) => r + 1);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Bulk update failed');
+    } finally {
+      setBulkLoading(false);
+    }
   }
 
   function toggleExpand(id) {
@@ -313,6 +380,13 @@ export default function AdminOrders() {
               </button>
             )}
           </form>
+          <button
+            onClick={exportCSV}
+            title="Export to CSV"
+            className="flex items-center gap-1.5 px-3 py-2 border border-secondary-200 rounded-lg text-secondary-600 hover:bg-secondary-50 text-sm font-medium transition-colors"
+          >
+            <Download size={14} /> Export CSV
+          </button>
           <button
             onClick={refresh}
             title="Refresh"
@@ -357,6 +431,39 @@ export default function AdminOrders() {
           </div>
         </div>
 
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 px-5 py-3 bg-primary-50 border-b border-primary-100">
+            <ListChecks size={16} className="text-primary-600 shrink-0" />
+            <span className="text-sm font-semibold text-primary-700">{selectedIds.size} selected</span>
+            <div className="flex items-center gap-2 ml-auto">
+              <select
+                className="input text-sm py-1.5 pr-8"
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+              >
+                <option value="">Change status to…</option>
+                {BULK_STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+              <button
+                onClick={applyBulkStatus}
+                disabled={!bulkStatus || bulkLoading}
+                className="px-4 py-1.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+              >
+                {bulkLoading ? 'Updating…' : 'Apply'}
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="p-1.5 text-secondary-400 hover:text-secondary-600 rounded-lg"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Orders List */}
         {isLoading && !orders.length ? (
           <div className="flex items-center justify-center py-14 text-secondary-400 gap-2">
@@ -370,10 +477,26 @@ export default function AdminOrders() {
           </div>
         ) : (
           <div className="divide-y divide-secondary-100">
+            {/* Select-all header */}
+            <div className="flex items-center gap-3 px-5 py-2 bg-secondary-50/50 border-b border-secondary-100">
+              <input
+                type="checkbox"
+                className="rounded border-secondary-300 text-primary-600"
+                checked={orders.length > 0 && selectedIds.size === orders.length}
+                onChange={toggleSelectAll}
+              />
+              <span className="text-xs text-secondary-400 font-medium">Select all on this page</span>
+            </div>
             {orders.map((order) => (
               <div key={order._id}>
                 {/* Order row */}
-                <div className={`flex items-center gap-4 px-5 py-3.5 hover:bg-secondary-50/60 transition-colors ${isNew(order.createdAt) ? 'bg-green-50/50' : ''}`}>
+                <div className={`flex items-center gap-3 px-5 py-3.5 hover:bg-secondary-50/60 transition-colors ${isNew(order.createdAt) ? 'bg-green-50/50' : ''} ${selectedIds.has(order._id) ? 'bg-primary-50/40' : ''}`}>
+                  <input
+                    type="checkbox"
+                    className="rounded border-secondary-300 text-primary-600 shrink-0"
+                    checked={selectedIds.has(order._id)}
+                    onChange={() => toggleSelect(order._id)}
+                  />
 
                   {/* Left: ID + status + customer */}
                   <div className="flex-1 min-w-0">

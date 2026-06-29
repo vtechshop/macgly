@@ -6,6 +6,8 @@ const AppError = require('../../utils/AppError');
 const { slugify, generateSKU } = require('../../utils/helpers');
 const { invalidateCache } = require('../../middleware/cache');
 const notif = require('../../utils/notificationHelper');
+const StockAlert = require('../../models/StockAlert');
+const { sendBackInStockEmail } = require('../../services/emailService');
 
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
@@ -69,7 +71,7 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const prev = await Product.findById(req.params.id).select('published vendorId').lean();
+    const prev = await Product.findById(req.params.id).select('published vendorId stock').lean();
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!product) throw new AppError('Product not found', 404, 'NOT_FOUND');
     await invalidateCache('cache:/api/catalog*');
@@ -93,6 +95,15 @@ router.put('/:id', async (req, res, next) => {
           rejectionReason: req.body.rejectionReason || '',
         }).catch(() => {});
       }
+    }
+
+    // Fire back-in-stock emails if stock went from 0 to >0 via product edit
+    if (prev && prev.stock === 0 && product.stock > 0) {
+      StockAlert.find({ productId: product._id, notifiedAt: null }).lean().then((alerts) => {
+        if (!alerts.length) return;
+        StockAlert.updateMany({ productId: product._id, notifiedAt: null }, { $set: { notifiedAt: new Date() } }).catch(() => {});
+        alerts.forEach((a) => sendBackInStockEmail({ email: a.email, product }).catch(() => {}));
+      }).catch(() => {});
     }
 
     res.json({ product });

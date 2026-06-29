@@ -48,6 +48,37 @@ async function applyEarnings(order, newStatus) {
   }
 }
 
+// ── POST /admin/orders/bulk-status ───────────────────────────────────────────
+// MUST be defined BEFORE /:id routes
+router.post('/bulk-status', async (req, res, next) => {
+  try {
+    const { ids, status } = req.body;
+    if (!Array.isArray(ids) || !ids.length) throw new AppError('ids array is required', 400, 'MISSING_FIELDS');
+    if (!status) throw new AppError('status is required', 400, 'MISSING_FIELDS');
+
+    const orders = await Order.find({ _id: { $in: ids } });
+    if (!orders.length) throw new AppError('No orders found', 404, 'NOT_FOUND');
+
+    await Promise.all(orders.map(async (order) => {
+      const update = { status };
+      if (status === 'delivered' && order.status !== 'delivered') {
+        if (order.paymentMethod === 'cod') update.paymentStatus = 'paid';
+        update.deliveredAt = new Date();
+      }
+      await applyEarnings(order, status).catch(() => {});
+      return Order.findByIdAndUpdate(
+        order._id,
+        {
+          ...update,
+          $push: { 'tracking.history': { status, timestamp: new Date(), description: 'Bulk status update' } },
+        }
+      );
+    }));
+
+    res.json({ updated: orders.length });
+  } catch (err) { next(err); }
+});
+
 // ── GET /admin/orders/counts — tab badge numbers ──────────────────────────────
 // MUST be defined BEFORE /:id to avoid 'counts' being treated as an ID.
 router.get('/counts', async (req, res, next) => {
@@ -110,6 +141,52 @@ router.get('/', async (req, res, next) => {
         pages: Math.ceil(total / parseInt(limit)),
       },
     });
+  } catch (err) { next(err); }
+});
+
+// ── GET /admin/orders/export — CSV download ───────────────────────────────────
+// MUST be defined BEFORE /:id to avoid 'export' being treated as an ID
+router.get('/export', async (req, res, next) => {
+  try {
+    const { status, search } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (search) {
+      const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ orderId: re }, { 'shippingAddress.name': re }, { guestEmail: re }];
+    }
+
+    const orders = await Order.find(filter)
+      .sort({ createdAt: -1 })
+      .populate('user', 'name email phone')
+      .lean();
+
+    const date = new Date().toISOString().split('T')[0];
+    const header = 'Order ID,Date,Customer Name,Email,Phone,Status,Payment Method,Total,Items Count,City,State,Pincode\n';
+    const rows = orders.map((o) => {
+      const addr = o.shippingAddress || {};
+      const customerName = o.user?.name || addr.name || 'Guest';
+      const email = o.user?.email || o.guestEmail || '';
+      const phone = o.user?.phone || addr.phone || '';
+      return [
+        o.orderId || '',
+        new Date(o.createdAt).toISOString().split('T')[0],
+        `"${customerName.replace(/"/g, '""')}"`,
+        email,
+        phone,
+        o.status,
+        o.paymentMethod || '',
+        o.totalAmount,
+        (o.items || []).length,
+        `"${(addr.city || '').replace(/"/g, '""')}"`,
+        `"${(addr.state || '').replace(/"/g, '""')}"`,
+        addr.pincode || '',
+      ].join(',');
+    }).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="orders-${date}.csv"`);
+    res.send(header + rows);
   } catch (err) { next(err); }
 });
 

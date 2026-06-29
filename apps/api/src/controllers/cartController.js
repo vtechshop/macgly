@@ -1,6 +1,7 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const AppError = require('../utils/AppError');
+const abandonedCartService = require('../services/abandonedCartService');
 
 function cartFilter(req) {
   return req.user ? { user: req.user._id } : { sessionId: req.cookies.sessionId || 'anon' };
@@ -127,6 +128,7 @@ async function clearCart(req, res, next) {
   try {
     const cart = await resolveCart(req);
     if (cart) await cart.deleteOne();
+    if (req.user) abandonedCartService.markRecovered(req.user._id).catch(() => {});
     res.json({ cart: { items: [], total: 0 } });
   } catch (err) { next(err); }
 }

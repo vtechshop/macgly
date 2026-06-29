@@ -3,6 +3,9 @@ const crypto = require('crypto');
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const Coupon = require('../models/Coupon');
+const Setting = require('../models/Setting');
+const abandonedCartService = require('../services/abandonedCartService');
 const AppError = require('../utils/AppError');
 const { generateOrderId } = require('../utils/helpers');
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config/env');
@@ -81,6 +84,21 @@ async function createOrder(req, res, next) {
     const totalAmount = Math.max(0, subtotal - discount + shippingCharge);
 
     const orderId = generateOrderId();
+
+    // COD validation
+    if (paymentMethod === 'cod') {
+      const [codEnabled, codMax] = await Promise.all([
+        Setting.get('payment.cod_enabled', true),
+        Setting.get('payment.cod_max_amount', 10000),
+      ]);
+      if (codEnabled === false || codEnabled === 'false') {
+        throw new AppError('Cash on Delivery is not available', 400, 'COD_DISABLED');
+      }
+      const maxAmt = parseFloat(codMax) || 10000;
+      if (totalAmount > maxAmt) {
+        throw new AppError(`Cash on Delivery is only available for orders up to ₹${maxAmt}`, 400, 'COD_LIMIT_EXCEEDED');
+      }
+    }
 
     let razorpayOrder = null;
     if (paymentMethod === 'razorpay' && razorpay) {
@@ -185,6 +203,17 @@ async function createOrder(req, res, next) {
         console.error('[createOrder] notification error:', e.message);
       }
     })();
+
+    // Track coupon usage
+    if (cart.coupon?.code) {
+      Coupon.findOneAndUpdate(
+        { code: cart.coupon.code },
+        { $inc: { usedCount: 1 }, $push: { usedBy: { user: req.user._id } } }
+      ).catch(() => {});
+    }
+
+    // Mark any abandoned cart as recovered
+    abandonedCartService.markRecovered(req.user._id).catch(() => {});
 
     // Clear cart
     await Cart.deleteOne({ user: req.user._id });

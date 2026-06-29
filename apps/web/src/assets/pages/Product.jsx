@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ShoppingCart, Star, Shield, ChevronDown, ChevronUp, MapPin, CheckCircle, XCircle, Heart, Zap, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Star, Shield, ChevronDown, ChevronUp, MapPin, CheckCircle, XCircle, Heart, Zap, Truck, ChevronLeft, ChevronRight, Link2, Check } from 'lucide-react';
 import ProductCard from '../components/product/ProductCard';
 import api from '../../utils/api';
 import { setCart, addItemOptimistic, openCartDrawer } from '../../store/slices/cartSlice';
@@ -38,6 +38,39 @@ export default function Product() {
   const [pincode, setPincode] = useState('');
   const [pincodeStatus, setPincodeStatus] = useState(null);
   const [selectedAttributes, setSelectedAttributes] = useState({});
+  const [copied, setCopied] = useState(false);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [alertEmail, setAlertEmail] = useState('');
+  const [alertSent, setAlertSent] = useState(false);
+  const [alertLoading, setAlertLoading] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const buyActionsRef = useRef(null);
+
+  function copyLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  async function subscribeStockAlert() {
+    if (!alertEmail) return;
+    setAlertLoading(true);
+    try {
+      await api.post('/catalog/stock-alert', { email: alertEmail, productId: product._id });
+      setAlertSent(true);
+      toast.success('We\'ll email you when it\'s back!');
+    } catch {
+      toast.error('Could not subscribe. Try again.');
+    } finally {
+      setAlertLoading(false);
+    }
+  }
+
+  function shareWhatsApp() {
+    const text = `Check this out: ${product?.title} — ${window.location.href}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+  }
 
   async function checkPincode() {
     if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
@@ -90,6 +123,35 @@ export default function Product() {
       type:        'product',
     });
     injectJsonLd(productJsonLd(product));
+
+    // Recently viewed: read existing, prepend current, cap at 10, write back
+    try {
+      const KEY = 'recently_viewed';
+      const existing = JSON.parse(localStorage.getItem(KEY) || '[]');
+      const snap = {
+        _id: product._id, slug: product.slug, title: product.title,
+        price: product.price, compareAt: product.compareAt,
+        images: product.images, rating: product.rating, reviewCount: product.reviewCount,
+        stock: product.stock, brand: product.brand,
+      };
+      const filtered = existing.filter((p) => p._id !== product._id);
+      const next = [snap, ...filtered].slice(0, 10);
+      localStorage.setItem(KEY, JSON.stringify(next));
+      // Expose to UI (exclude current product)
+      setRecentlyViewed(filtered.slice(0, 5));
+    } catch { /* localStorage unavailable */ }
+  }, [product]);
+
+  // Sticky mobile buy bar — show when action buttons scroll off screen
+  useEffect(() => {
+    const el = buyActionsRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [product]);
 
   // Derive selected variant
@@ -326,11 +388,34 @@ export default function Product() {
           ) : product.hasVariants && Object.keys(selectedAttributes).length < (product.variantOptions?.length || 0) ? (
             <p className="text-sm text-secondary-500 font-medium">Select options to check availability</p>
           ) : (
-            <p className="text-sm text-red-500 font-semibold flex items-center gap-1.5"><XCircle size={15} /> Out of Stock</p>
+            <div className="space-y-3">
+              <p className="text-sm text-red-500 font-semibold flex items-center gap-1.5"><XCircle size={15} /> Out of Stock</p>
+              {alertSent ? (
+                <p className="text-sm text-green-600 font-medium flex items-center gap-1.5"><Check size={14} /> We'll email you when it's back!</p>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={alertEmail}
+                    onChange={(e) => setAlertEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && subscribeStockAlert()}
+                    placeholder="Enter your email"
+                    className="input text-sm flex-1"
+                  />
+                  <button
+                    onClick={subscribeStockAlert}
+                    disabled={alertLoading || !alertEmail}
+                    className="px-4 py-2 bg-secondary-800 hover:bg-secondary-900 text-white text-sm font-semibold rounded-lg disabled:opacity-50 shrink-0 transition-colors"
+                  >
+                    {alertLoading ? '…' : 'Notify Me'}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {activeStock > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-3" ref={buyActionsRef}>
               {/* Quantity */}
               <div className="flex items-center gap-3">
                 <span className="text-sm text-secondary-600 font-medium">Quantity:</span>
@@ -374,6 +459,26 @@ export default function Product() {
                 <Heart size={16} className={wishlisted ? 'fill-red-500' : ''} />
                 {wishlisted ? 'Saved to Wishlist' : 'Add to Wishlist'}
               </button>
+
+              {/* Share */}
+              <div className="flex gap-2">
+                <button
+                  onClick={copyLink}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border border-secondary-200 text-secondary-500 hover:bg-secondary-50 text-sm font-medium transition-colors"
+                >
+                  {copied ? <Check size={14} className="text-green-500" /> : <Link2 size={14} />}
+                  {copied ? 'Copied!' : 'Copy Link'}
+                </button>
+                <button
+                  onClick={shareWhatsApp}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border border-secondary-200 text-secondary-500 hover:bg-green-50 hover:text-green-600 hover:border-green-200 text-sm font-medium transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                  WhatsApp
+                </button>
+              </div>
             </div>
           )}
 
@@ -485,7 +590,41 @@ export default function Product() {
         </section>
       )}
 
+      {/* Recently viewed */}
+      {recentlyViewed.length > 0 && (
+        <section className="mt-10 pt-8 border-t border-secondary-100">
+          <h2 className="text-xl font-black text-secondary-900 mb-5">Recently Viewed</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {recentlyViewed.map((p) => <ProductCard key={p._id} product={p} />)}
+          </div>
+        </section>
+      )}
+
       <ReviewSection key={product._id} productId={product._id} />
+
+      {/* Sticky mobile buy bar — appears when action buttons scroll off screen */}
+      {showStickyBar && activeStock > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-secondary-200 shadow-2xl px-4 py-3 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-secondary-500 truncate">{product.title}</p>
+            <p className="text-base font-black text-secondary-900">{formatCurrency(activePrice)}</p>
+          </div>
+          <button
+            onClick={addToCart}
+            disabled={adding || (product.hasVariants && !selectedVariant)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-sm disabled:opacity-50 transition-colors shrink-0"
+          >
+            <ShoppingCart size={16} /> Add to Cart
+          </button>
+          <button
+            onClick={buyNow}
+            disabled={adding || (product.hasVariants && !selectedVariant)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-secondary-800 hover:bg-secondary-900 text-white font-bold rounded-xl text-sm disabled:opacity-50 transition-colors shrink-0"
+          >
+            <Zap size={16} /> Buy Now
+          </button>
+        </div>
+      )}
     </div>
   );
 }

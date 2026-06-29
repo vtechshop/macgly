@@ -102,4 +102,27 @@ async function sendContactMessage({ name, email, phone, message }) {
   });
 }
 
-module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage };
+async function sendBackInStockEmail({ email, product }) {
+  const url = `https://macgly.com/product/${product.slug}`;
+  await sendEmail({
+    to: email,
+    subject: `Back in stock: ${product.title}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:auto">
+        <h2 style="color:#ea580c">Good news! It's back in stock.</h2>
+        <p>The item you were waiting for is now available:</p>
+        <h3 style="margin:16px 0 8px">${product.title}</h3>
+        ${product.price ? `<p style="font-size:18px;font-weight:700;color:#111">₹${product.price}</p>` : ''}
+        <p style="margin:24px 0">
+          <a href="${url}" style="background:#ea580c;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">
+            Buy Now
+          </a>
+        </p>
+        <p style="color:#999;font-size:12px">Stock may be limited. Order soon to avoid missing out again.</p>
+        <p style="color:#ccc;font-size:11px;margin-top:24px">You received this because you signed up for a back-in-stock alert on Macgly.</p>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail };

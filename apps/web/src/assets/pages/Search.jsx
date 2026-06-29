@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { SlidersHorizontal, X, Star, Search as SearchIcon } from 'lucide-react';
+import { SlidersHorizontal, X, Star, Search as SearchIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import ProductGrid from '../components/product/ProductGrid';
@@ -25,7 +25,7 @@ function StarRating({ value }) {
   );
 }
 
-function FilterPanel({ params, set, categoriesData, onClose }) {
+function FilterPanel({ params, set, setParams, categoriesData, onClose }) {
   const category  = params.get('category')  || '';
   const minPrice  = params.get('minPrice')  || '';
   const maxPrice  = params.get('maxPrice')  || '';
@@ -130,9 +130,7 @@ function FilterPanel({ params, set, categoriesData, onClose }) {
                   if (min) next.set('minPrice', min); else next.delete('minPrice');
                   if (max) next.set('maxPrice', max); else next.delete('maxPrice');
                   next.delete('page');
-                  // setParams is not in scope here — use set for each
-                  set('minPrice', min);
-                  setTimeout(() => set('maxPrice', max), 0);
+                  setParams(next);
                 }}
                 className={`text-xs px-2 py-1 rounded-lg border transition-colors ${
                   active ? 'bg-primary-600 text-white border-primary-600' : 'border-secondary-200 text-secondary-600 hover:border-primary-300'
@@ -234,6 +232,25 @@ export default function Search() {
     }
   }
 
+  function goToPage(p) {
+    const n = new URLSearchParams(params);
+    n.set('page', p);
+    setParams(n);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function getPageNumbers(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const set = new Set([1, total, current, current - 1, current + 1].filter((p) => p >= 1 && p <= total));
+    const sorted = [...set].sort((a, b) => a - b);
+    const result = [];
+    for (let i = 0; i < sorted.length; i++) {
+      if (i > 0 && sorted[i] - sorted[i - 1] > 1) result.push('…');
+      result.push(sorted[i]);
+    }
+    return result;
+  }
+
   const { products, pagination } = data || {};
 
   return (
@@ -282,7 +299,7 @@ export default function Search() {
         {/* Desktop filter sidebar */}
         <aside className="hidden lg:block w-60 shrink-0">
           <div className="card p-4 sticky top-20">
-            <FilterPanel params={params} set={set} categoriesData={categoriesData} />
+            <FilterPanel params={params} set={set} setParams={setParams} categoriesData={categoriesData} />
           </div>
         </aside>
 
@@ -290,25 +307,43 @@ export default function Search() {
           {/* Mobile filter panel */}
           {showFilters && (
             <div className="lg:hidden card p-4 mb-4">
-              <FilterPanel params={params} set={set} categoriesData={categoriesData} onClose={() => setShowFilters(false)} />
+              <FilterPanel params={params} set={set} setParams={setParams} categoriesData={categoriesData} onClose={() => setShowFilters(false)} />
             </div>
           )}
 
           <ProductGrid products={products} loading={isLoading} onAddToCart={handleAddToCart} />
 
           {pagination && pagination.pages > 1 && (
-            <div className="flex justify-center gap-2 mt-8">
-              {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => { const n = new URLSearchParams(params); n.set('page', p); setParams(n); }}
-                  className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                    p === page ? 'bg-primary-600 text-white' : 'btn-outline'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+            <div className="flex items-center justify-center gap-1.5 mt-8">
+              <button
+                onClick={() => goToPage(page - 1)}
+                disabled={page <= 1}
+                className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border border-secondary-200 text-secondary-600 hover:bg-secondary-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={15} /> Prev
+              </button>
+              {getPageNumbers(page, pagination.pages).map((p, i) =>
+                p === '…' ? (
+                  <span key={`ellipsis-${i}`} className="w-9 text-center text-secondary-400 text-sm">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => goToPage(p)}
+                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+                      p === page ? 'bg-primary-600 text-white shadow-sm' : 'border border-secondary-200 text-secondary-600 hover:bg-secondary-50'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() => goToPage(page + 1)}
+                disabled={page >= pagination.pages}
+                className="flex items-center gap-1 px-3 h-9 rounded-lg text-sm font-medium border border-secondary-200 text-secondary-600 hover:bg-secondary-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next <ChevronRight size={15} />
+              </button>
             </div>
           )}
         </div>

@@ -31,7 +31,7 @@ function urlTag({ loc, lastmod, changefreq, priority }) {
 router.get('/', async (req, res, next) => {
   try {
     const [products, categories, posts] = await Promise.all([
-      Product.find({ status: 'approved' }).select('slug updatedAt').lean(),
+      Product.find({ published: true }).select('slug updatedAt').lean(),
       Category.find({ isActive: true }).select('slug updatedAt').lean(),
       Blog.find({ status: 'published' }).select('slug updatedAt').lean(),
     ]);

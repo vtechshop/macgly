@@ -58,6 +58,8 @@ router.use('/payouts', require('./admin/payouts'));
 router.use('/warranties', require('./admin/warranties'));
 // Returns / refunds
 router.use('/returns', require('./admin/returns'));
+// Coupons
+router.use('/coupons', require('./admin/coupons'));
 // Ads management
 router.use('/ads', require('./admin/ads'));
 // Carousel slides

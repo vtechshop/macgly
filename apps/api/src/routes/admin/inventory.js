@@ -3,6 +3,7 @@ const Product  = require('../../models/Product');
 const Order    = require('../../models/Order');
 const User     = require('../../models/User');
 const AppError = require('../../utils/AppError');
+const StockAlert          = require('../../models/StockAlert');
 const emailService        = require('../../services/emailService');
 const notificationHelper  = require('../../utils/notificationHelper');
 
@@ -172,6 +173,19 @@ router.put('/:productId/stock', async (req, res, next) => {
     const previousStock = product.stock;
     product.stock = parseInt(stock);
     await product.save();
+
+    // Fire back-in-stock emails if stock went from 0 to >0
+    if (previousStock === 0 && product.stock > 0) {
+      const alerts = await StockAlert.find({ productId: product._id, notifiedAt: null }).lean();
+      if (alerts.length > 0) {
+        const notifiedAt = new Date();
+        await StockAlert.updateMany({ productId: product._id, notifiedAt: null }, { $set: { notifiedAt } });
+        Promise.all(alerts.map((a) =>
+          emailService.sendBackInStockEmail({ email: a.email, product }).catch(() => {})
+        )).catch(() => {});
+      }
+    }
+
     res.json({ success: true, productId: product._id, title: product.title, previousStock, newStock: product.stock });
   } catch (err) { next(err); }
 });

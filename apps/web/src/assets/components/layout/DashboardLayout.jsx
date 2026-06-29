@@ -27,6 +27,7 @@ const navsByRole = {
     { type: 'item', to: '/dashboard/admin/banners', label: 'Banners', icon: Image },
     { type: 'section', label: 'Marketing' },
     { type: 'item', to: '/dashboard/admin/ads', label: 'Ad Campaigns', icon: Megaphone },
+    { type: 'item', to: '/dashboard/admin/coupons', label: 'Coupons', icon: Tag },
     { type: 'section', label: 'People' },
     { type: 'item', to: '/dashboard/admin/users', label: 'Users', icon: Users },
     { type: 'item', to: '/dashboard/admin/vendors', label: 'Vendors', icon: Store },

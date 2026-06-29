@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Package, Truck, CheckCircle, Clock, XCircle, AlertCircle, FileText, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CheckCircle, Clock, XCircle, AlertCircle, FileText, RotateCcw, Printer } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
 import { formatCurrency, normalizeImageUrl } from '../../../../utils/format';
@@ -70,6 +70,7 @@ export default function CustomerOrderDetail() {
   const { id } = useParams();
   const [showReturn, setShowReturn] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [loadingInvoice, setLoadingInvoice] = useState(false);
   const [rev, setRev] = useState(0);
 
   const { data, isLoading } = useFetch(
@@ -78,6 +79,20 @@ export default function CustomerOrderDetail() {
   );
 
   const order = data?.order;
+
+  async function handleInvoice() {
+    setLoadingInvoice(true);
+    try {
+      const { data } = await api.get(`/invoices/${order.orderId}`, { responseType: 'text' });
+      const win = window.open('', '_blank');
+      win.document.write(data);
+      win.document.close();
+    } catch {
+      toast.error('Could not load invoice');
+    } finally {
+      setLoadingInvoice(false);
+    }
+  }
 
   async function handleCancel() {
     if (!confirm('Cancel this order?')) return;
@@ -224,10 +239,13 @@ export default function CustomerOrderDetail() {
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
-        <a href={`${import.meta.env.VITE_API_URL}/api/invoices/${order._id}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm font-medium border border-secondary-300 hover:bg-secondary-50 px-4 py-2 rounded-lg transition-colors">
-          <FileText size={15} /> Download Invoice
-        </a>
+        <button
+          onClick={handleInvoice}
+          disabled={loadingInvoice}
+          className="flex items-center gap-2 text-sm font-medium border border-secondary-300 hover:bg-secondary-50 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+        >
+          <Printer size={15} /> {loadingInvoice ? 'Loading…' : 'View Invoice'}
+        </button>
         {canReturn && (
           <button onClick={() => setShowReturn(true)}
             className="flex items-center gap-2 text-sm font-medium text-orange-600 border border-orange-200 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors">
