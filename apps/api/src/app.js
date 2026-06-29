@@ -12,6 +12,9 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
+// Trust Render/proxy headers for rate limiting and IP detection
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet({
   contentSecurityPolicy: {
