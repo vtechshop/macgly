@@ -26,9 +26,9 @@ export default function Footer() {
               India's trusted marketplace for professional tools, industrial machines and genuine spare parts.
             </p>
             <div className="mt-4 space-y-2 text-sm">
-              <div className="flex items-center gap-2"><Phone size={13} /><span>+91 98765 43210</span></div>
+              <div className="flex items-center gap-2"><Phone size={13} /><span>+91 99445 56683</span></div>
               <div className="flex items-center gap-2"><Mail size={13} /><span>macglyshop@gmail.com</span></div>
-              <div className="flex items-center gap-2 text-secondary-500"><MapPin size={13} /><span>Chennai, Tamil Nadu, India</span></div>
+              <div className="flex items-center gap-2 text-secondary-500"><MapPin size={13} /><span>Coimbatore, Tamil Nadu, India</span></div>
             </div>
             <div className="flex gap-3 mt-4">
               <a href="#" className="text-secondary-500 hover:text-primary-400 transition-colors"><Facebook size={18} /></a>
