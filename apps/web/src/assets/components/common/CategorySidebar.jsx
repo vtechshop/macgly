@@ -61,10 +61,11 @@ function StickyNav({ parents, childrenMap }) {
           const hasChildren = !!(childrenMap[cat._id]?.length);
           const isActive = hoveredId === cat._id;
           return (
-            <div
+            <Link
               key={cat._id}
+              to={`/category/${cat.slug}`}
               onMouseEnter={() => enterL1(cat._id)}
-              className={`flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-colors border-l-2 ${
+              className={`flex items-center gap-2.5 px-3 py-2.5 transition-colors border-l-2 ${
                 isActive
                   ? 'bg-primary-50 border-primary-500 text-primary-600'
                   : 'border-transparent text-secondary-700 hover:bg-secondary-50'
@@ -75,7 +76,7 @@ function StickyNav({ parents, childrenMap }) {
               </div>
               <span className="text-xs font-medium flex-1 leading-tight">{cat.name}</span>
               {hasChildren && <ChevronRight size={11} className={`shrink-0 transition-colors ${isActive ? 'text-primary-500' : 'text-secondary-300'}`} />}
-            </div>
+            </Link>
           );
         })}
         <Link to="/categories" className="flex items-center gap-2 px-3 py-2.5 text-xs text-primary-600 font-semibold border-t border-secondary-100 hover:bg-primary-50 transition-colors">
