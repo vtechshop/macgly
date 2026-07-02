@@ -15,7 +15,10 @@ router.get('/', async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search, published, categoryId, notInCategoryId } = req.query;
     const filter = {};
-    if (search) filter.$text = { $search: search };
+    if (search) {
+      const re = { $regex: search, $options: 'i' };
+      filter.$or = [{ title: re }, { sku: re }, { brand: re }, { tags: re }];
+    }
     if (published !== undefined) filter.published = published === 'true';
     if (categoryId) filter.categoryIds = categoryId;
     if (notInCategoryId) filter.categoryIds = { $nin: [notInCategoryId] };
