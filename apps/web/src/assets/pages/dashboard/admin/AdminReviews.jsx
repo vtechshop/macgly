@@ -45,7 +45,7 @@ const STATUS_STYLES = {
 const RESPONSE_TEMPLATES = [
   { id: 'thanks', label: 'Thank You', text: 'Thank you for taking the time to leave a review! We really appreciate your feedback and are glad you had a positive experience with us.' },
   { id: 'sorry', label: 'Apology', text: 'We sincerely apologize for the experience you had. This does not reflect our standard of service and we would love the opportunity to make it right.' },
-  { id: 'contact', label: 'Contact Us', text: 'Thank you for your feedback. Please contact our support team at support@vtechkitchen.com so we can resolve this for you as quickly as possible.' },
+  { id: 'contact', label: 'Contact Us', text: 'Thank you for your feedback. Please contact our support team at macglyshop@gmail.com so we can resolve this for you as quickly as possible.' },
   { id: 'resolved', label: 'Issue Resolved', text: 'We appreciate your patience while we addressed your concern. The issue has been resolved and we hope to serve you better going forward.' },
 ];
 

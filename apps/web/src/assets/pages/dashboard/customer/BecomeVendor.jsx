@@ -136,7 +136,7 @@ export default function BecomeVendor() {
             </p>
             <p className="text-xs text-amber-600 mt-1">
               Want both roles? Contact support at{' '}
-              <a href="mailto:vtechshop.customercare@gmail.com" className="underline">vtechshop.customercare@gmail.com</a>
+              <a href="mailto:macglyshop@gmail.com" className="underline">macglyshop@gmail.com</a>
             </p>
           </div>
         </div>
