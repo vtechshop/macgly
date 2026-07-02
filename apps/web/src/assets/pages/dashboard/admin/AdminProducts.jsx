@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Eye, EyeOff, ShieldCheck, HelpCircle, Search as SearchIcon, Upload, X, RefreshCw } from 'lucide-react';
 import api from '../../../../utils/api';
 import { formatCurrency, normalizeImageUrl } from '../../../../utils/format';
@@ -76,10 +76,10 @@ export default function AdminProducts() {
   const [viewProduct, setViewProduct] = useState(null);
 
   // Debounce search
-  useState(() => {
+  useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 350);
     return () => clearTimeout(t);
-  });
+  }, [search]);
 
   const { data, isLoading } = useFetch(
     ['admin-products', page, rev, debouncedSearch, statusFilter],
