@@ -49,7 +49,7 @@ export default function Contact() {
               {[
                 { icon: Mail, label: 'Email', value: 'macglyshop@gmail.com' },
                 { icon: Phone, label: 'Phone', value: '+91 99445 56683' },
-                { icon: MapPin, label: 'Address', value: 'Tirupur, Tamil Nadu, India' },
+                { icon: MapPin, label: 'Address', value: '9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore - 641006, Tamil Nadu, India' },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-primary-50 text-primary-600 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
