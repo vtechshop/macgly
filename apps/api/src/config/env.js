@@ -42,6 +42,8 @@ module.exports = {
 
   DELHIVERY_API_KEY: process.env.DELHIVERY_API_KEY || '',
   DELHIVERY_BASE_URL: process.env.DELHIVERY_BASE_URL || 'https://track.delhivery.com',
+  DELHIVERY_SURFACE_API_URL: process.env.DELHIVERY_SURFACE_API_URL || 'https://api.delhivery.com/v1',
+  DELHIVERY_PICKUP_LOCATION: process.env.DELHIVERY_PICKUP_LOCATION || '',
 
   SHIPROCKET_EMAIL: process.env.SHIPROCKET_EMAIL || '',
   SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD || '',
