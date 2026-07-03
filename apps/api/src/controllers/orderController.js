@@ -102,11 +102,16 @@ async function createOrder(req, res, next) {
 
     let razorpayOrder = null;
     if (paymentMethod === 'razorpay' && razorpay) {
-      razorpayOrder = await razorpay.orders.create({
-        amount: Math.round(totalAmount * 100),
-        currency: 'INR',
-        receipt: orderId,
-      });
+      try {
+        razorpayOrder = await razorpay.orders.create({
+          amount: Math.round(totalAmount * 100),
+          currency: 'INR',
+          receipt: orderId,
+        });
+      } catch (rzpErr) {
+        console.error('[Razorpay order error]', JSON.stringify(rzpErr?.error || rzpErr));
+        throw new AppError(rzpErr?.error?.description || 'Payment gateway error', 502, 'PAYMENT_GATEWAY_ERROR');
+      }
     }
 
     const totalPlatformFee = parseFloat(items.reduce((sum, i) => sum + (i.platformFee || 0), 0).toFixed(2));
