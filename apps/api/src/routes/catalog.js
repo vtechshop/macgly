@@ -33,8 +33,8 @@ router.get('/shipping-rates', async (req, res) => {
     const grams = Math.round(parseFloat(weight) * 1000);
     const origin = DELHIVERY_PICKUP_PINCODE;
     const [surfaceRes, expressRes] = await Promise.all([
-      axios.get(`${DELHIVERY_BASE_URL}/api/kinko/v1/invoice/charges/.json?md=S&cgm=${grams}&o_pin=${origin}&d_pin=${pincode}&pt=Pre-paid`, { headers }),
-      axios.get(`${DELHIVERY_BASE_URL}/api/kinko/v1/invoice/charges/.json?md=E&cgm=${grams}&o_pin=${origin}&d_pin=${pincode}&pt=Pre-paid`, { headers }),
+      axios.get(`${DELHIVERY_BASE_URL}/api/kinko/v1/invoice/charges/.json?md=S&cgm=${grams}&o_pin=${origin}&d_pin=${pincode}&pt=Pre-paid&ss=Delivered`, { headers }),
+      axios.get(`${DELHIVERY_BASE_URL}/api/kinko/v1/invoice/charges/.json?md=E&cgm=${grams}&o_pin=${origin}&d_pin=${pincode}&pt=Pre-paid&ss=Delivered`, { headers }),
     ]);
     console.log('[Delhivery surface]', JSON.stringify(surfaceRes.data));
     console.log('[Delhivery express]', JSON.stringify(expressRes.data));
