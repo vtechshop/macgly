@@ -452,22 +452,6 @@ export default function Checkout() {
                   )}
                 </label>
 
-                {/* COD */}
-                <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-blue-500 bg-blue-50' : 'border-secondary-200 hover:border-secondary-300'}`}>
-                  <input type="radio" name="payment" className="sr-only" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${paymentMethod === 'cod' ? 'bg-blue-100' : 'bg-secondary-100'}`}>
-                    <Package size={20} className={paymentMethod === 'cod' ? 'text-blue-600' : 'text-secondary-500'} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-secondary-800">Cash on Delivery</p>
-                    <p className="text-sm text-secondary-500">Pay in cash when your order arrives</p>
-                  </div>
-                  {paymentMethod === 'cod' && (
-                    <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shrink-0">
-                      <Check size={12} className="text-white" />
-                    </div>
-                  )}
-                </label>
               </div>
 
               {/* Order review summary on mobile */}
