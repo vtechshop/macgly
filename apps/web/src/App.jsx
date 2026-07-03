@@ -112,11 +112,15 @@ function AuthInit({ children }) {
   useEffect(() => {
     let cancelled = false;
     api.get('/auth/me')
-      .then(({ data }) => { if (!cancelled) dispatch(setUser(data.user)); })
+      .then(({ data }) => {
+        if (!cancelled) {
+          dispatch(setUser(data.user));
+          api.get('/cart')
+            .then(({ data: cartData }) => { if (!cancelled && cartData.cart) dispatch(setCart(cartData.cart)); })
+            .catch(() => {});
+        }
+      })
       .catch(() => { if (!cancelled) dispatch(clearUser()); });
-    api.get('/cart')
-      .then(({ data }) => { if (!cancelled && data.cart) dispatch(setCart(data.cart)); })
-      .catch(() => {});
     return () => { cancelled = true; };
   }, [dispatch]);
 
