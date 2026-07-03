@@ -237,10 +237,25 @@ export default function Checkout() {
     } catch { return null; }
   }
 
+  async function loadRazorpayScript() {
+    if (window.Razorpay) return true;
+    return new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.body.appendChild(s);
+    });
+  }
+
   async function handlePlaceOrder() {
     setPlacing(true);
     const affiliateRef = getStoredAffRef();
     try {
+      if (paymentMethod === 'razorpay') {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) { toast.error('Could not load payment gateway. Please try again.'); setPlacing(false); return; }
+      }
       const { data } = await api.post('/orders', {
         shippingAddress: address,
         paymentMethod,
