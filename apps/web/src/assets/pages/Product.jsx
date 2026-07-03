@@ -79,10 +79,8 @@ export default function Product() {
     }
     setPincodeStatus('checking');
     try {
-      const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-      const json = await res.json();
-      const status = json?.[0]?.Status;
-      setPincodeStatus(status === 'Success' ? 'available' : 'unavailable');
+      const { data } = await api.get(`/catalog/serviceability/${pincode}`);
+      setPincodeStatus(data.serviceable ? 'available' : 'unavailable');
     } catch {
       setPincodeStatus('unavailable');
     }

@@ -7,6 +7,7 @@ const { cacheMiddleware } = require('../middleware/cache');
 const TTL = require('../config/ttl');
 const StockAlert = require('../models/StockAlert');
 const AppError  = require('../utils/AppError');
+const { checkServiceability } = require('../services/delhiveryService');
 
 router.get('/products', cacheMiddleware(TTL.CATALOG), getProducts);
 router.get('/products/:slug', cacheMiddleware(TTL.PRODUCT), getProduct);
@@ -14,6 +15,18 @@ router.get('/categories', cacheMiddleware(TTL.CATEGORY), getCategories);
 router.get('/categories/:slug', cacheMiddleware(TTL.CATEGORY), getCategory);
 router.get('/banners', cacheMiddleware(TTL.BANNER), getBanners);
 router.get('/featured', cacheMiddleware(TTL.CATALOG), getFeatured);
+
+// GET /catalog/serviceability/:pincode — check Delhivery delivery availability
+router.get('/serviceability/:pincode', async (req, res, next) => {
+  try {
+    const { pincode } = req.params;
+    if (!/^\d{6}$/.test(pincode)) throw new AppError('Invalid pincode', 400, 'INVALID_PINCODE');
+    const result = await checkServiceability(pincode);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // POST /catalog/stock-alert — subscribe for back-in-stock notification
 router.post('/stock-alert', async (req, res, next) => {

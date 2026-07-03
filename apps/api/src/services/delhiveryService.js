@@ -1,7 +1,7 @@
 const axios = require('axios');
 
-const BASE_URL = process.env.DELHIVERY_API_URL || 'https://track.delhivery.com';
-const TOKEN = process.env.DELHIVERY_TOKEN;
+const BASE_URL = process.env.DELHIVERY_BASE_URL || 'https://track.delhivery.com';
+const TOKEN = process.env.DELHIVERY_API_KEY;
 
 function headers() {
   return {
