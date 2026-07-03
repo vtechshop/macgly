@@ -36,9 +36,7 @@ router.get('/shipping-rates', async (req, res) => {
       axios.get(`${DELHIVERY_BASE_URL}/api/kinko/v1/invoice/charges/.json?md=S&cgm=${grams}&o_pin=${origin}&d_pin=${pincode}&pt=Pre-paid&ss=Delivered`, { headers }),
       axios.get(`${DELHIVERY_BASE_URL}/api/kinko/v1/invoice/charges/.json?md=E&cgm=${grams}&o_pin=${origin}&d_pin=${pincode}&pt=Pre-paid&ss=Delivered`, { headers }),
     ]);
-    console.log('[Delhivery surface]', JSON.stringify(surfaceRes.data));
-    console.log('[Delhivery express]', JSON.stringify(expressRes.data));
-    const standard = Math.ceil(surfaceRes.data?.[0]?.total_amount || 70);
+const standard = Math.ceil(surfaceRes.data?.[0]?.total_amount || 70);
     const express  = Math.ceil(expressRes.data?.[0]?.total_amount || 120);
     res.json({
       options: [
