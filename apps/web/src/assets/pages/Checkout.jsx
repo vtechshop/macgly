@@ -10,9 +10,10 @@ import Button from '../components/common/Button';
 import Spinner from '../components/common/Spinner';
 import toast from 'react-hot-toast';
 
-const SHIPPING_OPTIONS = [
-  { id: 'standard', label: 'Standard Delivery', desc: '3–7 business days', charge: 70, icon: Package },
-  { id: 'express', label: 'Express Delivery', desc: '1–2 business days', charge: 120, icon: Zap },
+const SHIPPING_ICONS = { standard: Package, express: Zap };
+const DEFAULT_SHIPPING = [
+  { id: 'standard', label: 'Standard Delivery', desc: '3–7 business days', charge: 70 },
+  { id: 'express',  label: 'Express Delivery',  desc: '1–2 business days', charge: 120 },
 ];
 
 const STEPS = [
@@ -125,8 +126,10 @@ export default function Checkout() {
   });
   const [errors, setErrors] = useState({});
 
-  const [shippingOption, setShippingOption] = useState(SHIPPING_OPTIONS[0].id);
-  const shippingCharge = SHIPPING_OPTIONS.find((o) => o.id === shippingOption)?.charge ?? 70;
+  const [shippingOptions, setShippingOptions] = useState(DEFAULT_SHIPPING);
+  const [loadingRates, setLoadingRates] = useState(false);
+  const [shippingOption, setShippingOption] = useState('standard');
+  const shippingCharge = shippingOptions.find((o) => o.id === shippingOption)?.charge ?? 70;
 
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [couponCode, setCouponCode] = useState('');
@@ -205,10 +208,21 @@ export default function Checkout() {
     return errs;
   }
 
-  function handleStep1Continue() {
+  async function handleStep1Continue() {
     const errs = validateAddress();
     if (Object.keys(errs).length) { setErrors(errs); toast.error('Please fix the errors'); return; }
     setErrors({});
+    setLoadingRates(true);
+    try {
+      const totalWeight = items.reduce((s, i) => s + ((i.product?.weight || 0.5) * i.quantity), 0);
+      const { data } = await api.get(`/catalog/shipping-rates?pincode=${address.pincode}&weight=${totalWeight}`);
+      if (data.options?.length) {
+        setShippingOptions(data.options);
+        setShippingOption(data.options[0].id);
+      }
+    } catch { /* use defaults */ } finally {
+      setLoadingRates(false);
+    }
     setStep(2);
     window.scrollTo(0, 0);
   }
@@ -331,7 +345,7 @@ export default function Checkout() {
               </div>
 
               <div className="flex justify-end pt-1">
-                <Button onClick={handleStep1Continue} className="px-8">
+                <Button onClick={handleStep1Continue} loading={loadingRates} className="px-8">
                   Continue to Shipping <ChevronRight size={16} className="ml-1" />
                 </Button>
               </div>
@@ -352,8 +366,10 @@ export default function Checkout() {
               </div>
 
               <div className="space-y-3">
-                {SHIPPING_OPTIONS.map((opt) => {
-                  const Icon = opt.icon;
+                {loadingRates ? (
+                  <div className="flex justify-center py-8"><Spinner size="md" /></div>
+                ) : shippingOptions.map((opt) => {
+                  const Icon = SHIPPING_ICONS[opt.id] || Package;
                   const selected = shippingOption === opt.id;
                   return (
                     <label key={opt.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${selected ? 'border-blue-500 bg-blue-50' : 'border-secondary-200 hover:border-secondary-300'}`}>
