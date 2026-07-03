@@ -4,7 +4,7 @@ const { verifyPayment } = require('../controllers/orderController');
 const { authenticate } = require('../middleware/auth');
 const Order = require('../models/Order');
 const User = require('../models/User');
-const { RAZORPAY_KEY_SECRET } = require('../config/env');
+const { RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = require('../config/env');
 const { sendOrderConfirmation } = require('../services/emailService');
 
 router.post('/verify', authenticate, verifyPayment);
@@ -13,10 +13,11 @@ router.post('/verify', authenticate, verifyPayment);
 router.post('/webhook', async (req, res) => {
   try {
     const signature = req.headers['x-razorpay-signature'];
-    if (!signature || !RAZORPAY_KEY_SECRET) return res.status(400).json({ ok: false });
+    const secret = RAZORPAY_WEBHOOK_SECRET || RAZORPAY_KEY_SECRET;
+    if (!signature || !secret) return res.status(400).json({ ok: false });
 
     const expected = crypto
-      .createHmac('sha256', RAZORPAY_KEY_SECRET)
+      .createHmac('sha256', secret)
       .update(JSON.stringify(req.body))
       .digest('hex');
 
