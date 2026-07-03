@@ -99,7 +99,10 @@ async function getProduct(req, res, next) {
 async function getCategories(req, res, next) {
   try {
     const categories = await Category.find({ isActive: true }).sort({ displayOrder: 1, name: 1 });
-    res.json({ categories });
+    const activeCatIds = await Product.distinct('categoryIds', { published: true });
+    const activeSet = new Set(activeCatIds.map((id) => id.toString()));
+    const filtered = categories.filter((c) => activeSet.has(c._id.toString()));
+    res.json({ categories: filtered });
   } catch (err) {
     next(err);
   }
