@@ -44,7 +44,8 @@ router.get('/shipping-rates', async (req, res) => {
         { id: 'express',  label: 'Express Delivery',  desc: '1–2 business days', charge: express },
       ],
     });
-  } catch {
+  } catch (err) {
+    console.error('[Delhivery rates error]', err?.response?.status, JSON.stringify(err?.response?.data || err?.message));
     res.json({ options: fallback });
   }
 });
