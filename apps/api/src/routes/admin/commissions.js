@@ -201,20 +201,16 @@ router.patch('/:id/approve', async (req, res, next) => {
 });
 
 // ── PATCH /:id/paid — backward compat ─────────────────────────────────────────
+// NOTE: do NOT increment totalEarnings here — applyEarnings already did it on delivery
 router.patch('/:id/paid', async (req, res, next) => {
   try {
-    const { payoutId } = req.body;
+    const { payoutId, paymentRef } = req.body;
     const commission = await Commission.findByIdAndUpdate(
       req.params.id,
-      { status: 'paid', paidAt: new Date(), payoutId },
+      { status: 'paid', paidAt: new Date(), ...(payoutId && { payoutId }), ...(paymentRef && { paymentRef }) },
       { new: true },
     );
     if (!commission) throw new AppError('Commission not found', 404, 'NOT_FOUND');
-    if (commission.type === 'vendor') {
-      User.findByIdAndUpdate(commission.user, { $inc: { 'vendorProfile.totalEarnings': commission.commissionAmount } }).catch(() => {});
-    } else if (commission.type === 'affiliate') {
-      User.findByIdAndUpdate(commission.user, { $inc: { 'affiliateProfile.totalEarnings': commission.commissionAmount } }).catch(() => {});
-    }
     res.json({ commission });
   } catch (err) { next(err); }
 });

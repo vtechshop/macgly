@@ -9,6 +9,7 @@ const { slugify, generateSKU } = require('../utils/helpers');
 const { invalidateCache } = require('../middleware/cache');
 const { uploadFile } = require('../services/storageService');
 const notif = require('../utils/notificationHelper');
+const { applyEarnings } = require('../utils/earningsHelper');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -588,6 +589,11 @@ router.put('/orders/:id/status', requireApproved, async (req, res, next) => {
         throw new AppError('Assign a courier and tracking ID before marking as shipped', 400, 'CARRIER_NOT_ASSIGNED');
       }
     }
+
+    // Credit/reverse vendor+affiliate earnings on delivery or cancellation
+    await applyEarnings(order, status).catch((e) =>
+      console.error('[Vendor] applyEarnings error:', e.message)
+    );
 
     order.status = status;
     if (status === 'delivered') order.deliveredAt = new Date();

@@ -37,12 +37,13 @@ async function notifyOrderStatus(order, user) {
   });
 }
 
-async function notifyCommissionApproved(userId, amount) {
+async function notifyCommissionApproved(userId, amount, type = 'vendor') {
+  const link = type === 'affiliate' ? '/dashboard/affiliate/commissions' : '/dashboard/vendor/settlements';
   await create(userId, {
     title: 'Commission Approved',
     message: `₹${amount.toFixed(2)} commission has been approved and will be paid out soon.`,
     type: 'commission',
-    link: '/dashboard/vendor/settlements',
+    link,
   });
 }
 

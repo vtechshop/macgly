@@ -34,7 +34,7 @@ async function run() {
     });
     for (const commission of vendorCommissions) {
       await Commission.findByIdAndUpdate(commission._id, { status: 'approved' });
-      await notificationService.notifyCommissionApproved(commission.user, commission.commissionAmount);
+      await notificationService.notifyCommissionApproved(commission.user, commission.commissionAmount, 'vendor');
       released++;
     }
   }
@@ -61,7 +61,7 @@ async function run() {
 
       for (const commission of commissions) {
         await Commission.findByIdAndUpdate(commission._id, { status: 'approved' });
-        await notificationService.notifyCommissionApproved(commission.user, commission.commissionAmount);
+        await notificationService.notifyCommissionApproved(commission.user, commission.commissionAmount, 'affiliate');
         released++;
       }
     }

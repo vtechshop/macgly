@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 const User = require('../models/User');
 const { RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET } = require('../config/env');
 const { sendOrderConfirmation } = require('../services/emailService');
+const { createVendorCommissions, createAffiliateCommission } = require('../services/commissionService');
 
 router.post('/verify', authenticate, verifyPayment);
 
@@ -34,6 +35,9 @@ router.post('/webhook', async (req, res) => {
           { new: true }
         );
         if (order) {
+          // Create commission records (idempotent — safe to call even if verifyPayment already did it)
+          createVendorCommissions(order).catch(() => {});
+          if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch(() => {});
           User.findById(order.user).then((user) => {
             if (user) sendOrderConfirmation({ order, user }).catch(() => {});
           });
