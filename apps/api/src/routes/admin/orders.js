@@ -324,7 +324,24 @@ router.post('/:id/ship', async (req, res, next) => {
     if (['delivered', 'cancelled', 'returned'].includes(order.status)) {
       throw new AppError('Cannot ship an order with status: ' + order.status, 400, 'INVALID_STATUS');
     }
+
     const result = await createShipment({ order, carrier, waybill });
+    const now = new Date();
+
+    // Build intermediate history entries for statuses not yet reached
+    const historyEntries = [];
+    if (!['processing', 'packed', 'shipped'].includes(order.status)) {
+      historyEntries.push({ status: 'processing', timestamp: new Date(now - 2000), description: 'Order picked up for processing' });
+    }
+    if (!['packed', 'shipped'].includes(order.status)) {
+      historyEntries.push({ status: 'packed', timestamp: new Date(now - 1000), description: 'Order packed and ready for pickup' });
+    }
+    historyEntries.push({
+      status: 'shipped',
+      timestamp: now,
+      description: `Shipped via ${result.carrier}${result.trackingId ? ' · AWB: ' + result.trackingId : ''}`,
+    });
+
     const updated = await Order.findByIdAndUpdate(
       order._id,
       {
@@ -332,16 +349,17 @@ router.post('/:id/ship', async (req, res, next) => {
         'tracking.carrier': result.carrier,
         'tracking.trackingId': result.trackingId,
         'tracking.url': result.url,
-        $push: {
-          'tracking.history': {
-            status: 'shipped',
-            timestamp: new Date(),
-            description: `Shipped via ${result.carrier}${result.trackingId ? ' · AWB: ' + result.trackingId : ''}`,
-          },
-        },
+        $push: { 'tracking.history': { $each: historyEntries } },
       },
       { new: true },
     );
+
+    // Notify customer
+    if (order.user) {
+      notif.notifyCustomerOrderStatus({ userId: order.user, order: updated, status: 'shipped' }).catch(() => {});
+      whatsapp.notifyOrderShipped(updated, order.user).catch(() => {});
+    }
+
     res.json({ order: updated, shipment: result });
   } catch (err) { next(err); }
 });

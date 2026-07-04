@@ -143,6 +143,35 @@ function AddressEditForm({ addr, onSave, onCancel }) {
   );
 }
 
+function AutoShipButton({ carrier, orderId, onSuccess }) {
+  const [loading, setLoading] = useState(false);
+  async function handleShip() {
+    setLoading(true);
+    try {
+      const { data: res } = await api.post(`/admin/orders/${orderId}/ship`, { carrier });
+      const awb = res.shipment?.trackingId;
+      toast.success(`Shipped via ${res.shipment?.carrier || carrier}${awb ? ' · AWB: ' + awb : ''}`);
+      onSuccess();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Shipment creation failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+  return (
+    <button
+      onClick={handleShip}
+      disabled={loading}
+      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 transition-colors"
+    >
+      {loading
+        ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Creating shipment…</>
+        : <><Truck size={15} /> Ship via {carrier.charAt(0).toUpperCase() + carrier.slice(1)}</>
+      }
+    </button>
+  );
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function AdminOrderDetail() {
@@ -403,29 +432,22 @@ export default function AdminOrderDetail() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setCarrierTab('manual')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              carrierTab === 'manual'
-                ? 'bg-primary-600 text-white'
-                : 'bg-white border border-secondary-200 text-secondary-700 hover:bg-secondary-50'
-            }`}
-          >
-            Manual Entry
-          </button>
-          <button
-            onClick={() => setCarrierTab('api')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              carrierTab === 'api'
-                ? 'bg-primary-600 text-white'
-                : 'bg-white border border-secondary-200 text-secondary-700 hover:bg-secondary-50'
-            }`}
-          >
-            Auto (API)
-          </button>
+          {['manual', 'delhivery', 'shiprocket'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setCarrierTab(tab)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                carrierTab === tab
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white border border-secondary-200 text-secondary-700 hover:bg-secondary-50'
+              }`}
+            >
+              {tab === 'manual' ? 'Manual Entry' : tab === 'delhivery' ? 'Delhivery (Auto)' : 'Shiprocket (Auto)'}
+            </button>
+          ))}
         </div>
 
-        {carrierTab === 'manual' ? (
+        {carrierTab === 'manual' && (
           <div className="space-y-3">
             <p className="text-sm text-secondary-600">Enter the courier name and tracking number manually.</p>
             <div>
@@ -468,25 +490,23 @@ export default function AdminOrderDetail() {
               )}
             </button>
           </div>
-        ) : (
+        )}
+
+        {carrierTab === 'delhivery' && (
+          <div className="space-y-3">
+            <p className="text-sm text-secondary-600">
+              Creates a shipment on Delhivery automatically — AWB number is assigned instantly. Order status moves to <strong>Shipped</strong> in one click.
+            </p>
+            <AutoShipButton carrier="delhivery" orderId={id} onSuccess={() => setRev((r) => r + 1)} />
+          </div>
+        )}
+
+        {carrierTab === 'shiprocket' && (
           <div className="space-y-3">
             <p className="text-sm text-secondary-600">
               Push this order to Shiprocket automatically and get an AWB number.
             </p>
-            <button
-              onClick={async () => {
-                try {
-                  const { data: res } = await api.post(`/admin/orders/${id}/ship`, { carrier: 'shiprocket' });
-                  toast.success(`Shipped via ${res.shipment.carrier}${res.shipment.trackingId ? ' · AWB: ' + res.shipment.trackingId : ''}`);
-                  setRev((r) => r + 1);
-                } catch (err) {
-                  toast.error(err?.response?.data?.message || 'Shipment creation failed');
-                }
-              }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
-            >
-              <Truck size={15} /> Create Shipment via Shiprocket
-            </button>
+            <AutoShipButton carrier="shiprocket" orderId={id} onSuccess={() => setRev((r) => r + 1)} />
           </div>
         )}
 
