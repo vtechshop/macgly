@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { MapPin, Truck, CreditCard, Check, ChevronRight, Zap, Package } from 'lucide-react';
+import { MapPin, Truck, CreditCard, Check, ChevronRight, Zap, Package, LocateFixed } from 'lucide-react';
 import api from '../../utils/api';
 import { clearCart } from '../../store/slices/cartSlice';
 import { formatCurrency } from '../../utils/format';
@@ -126,6 +126,7 @@ export default function Checkout() {
   });
   const [errors, setErrors] = useState({});
 
+  const [locating, setLocating] = useState(false);
   const [shippingOptions, setShippingOptions] = useState(DEFAULT_SHIPPING);
   const [loadingRates, setLoadingRates] = useState(false);
   const [shippingOption, setShippingOption] = useState('standard');
@@ -193,6 +194,47 @@ export default function Checkout() {
         if (po) setAddress((p) => ({ ...p, state: po.State || p.state, city: po.District || p.city }));
       } catch { /* silent */ }
     }
+  }
+
+  async function useCurrentLocation() {
+    if (!navigator.geolocation) { toast.error('Geolocation not supported by your browser'); return; }
+    setLocating(true);
+    try {
+      const pos = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
+      );
+      const { latitude: lat, longitude: lon } = pos.coords;
+      const resp = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const geo = await resp.json();
+      const a = geo.address || {};
+      const line1 = [a.house_number, a.road, a.neighbourhood, a.suburb].filter(Boolean).join(', ');
+      const city   = a.city || a.town || a.district || a.village || '';
+      const state  = a.state || '';
+      const pincode = (a.postcode || '').replace(/\D/g, '').slice(0, 6);
+      setAddress((prev) => ({
+        ...prev,
+        line1:   line1   || prev.line1,
+        city:    city    || prev.city,
+        state:   state   || prev.state,
+        pincode: pincode || prev.pincode,
+      }));
+      // Confirm city/state via postal API if pincode is valid
+      if (pincode.length === 6) {
+        try {
+          const r = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+          const j = await r.json();
+          const po = j?.[0]?.PostOffice?.[0];
+          if (po) setAddress((p) => ({ ...p, state: po.State || p.state, city: po.District || p.city }));
+        } catch { /* silent */ }
+      }
+      toast.success('Address filled from your location');
+    } catch (err) {
+      if (err.code === 1) toast.error('Location permission denied. Please allow location access.');
+      else toast.error('Could not detect location. Please enter your address manually.');
+    } finally { setLocating(false); }
   }
 
   function validateAddress() {
@@ -348,6 +390,16 @@ export default function Checkout() {
                   </div>
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={useCurrentLocation}
+                disabled={locating}
+                className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-4 py-2.5 rounded-xl transition-colors w-full justify-center disabled:opacity-60"
+              >
+                {locating ? <Spinner size="sm" /> : <LocateFixed size={16} />}
+                {locating ? 'Detecting location…' : 'Use my current location'}
+              </button>
 
               <div className="grid grid-cols-2 gap-4">
                 <Input label="Full Name *" value={address.name} onChange={(e) => { setField('name')(e); setErrors((p) => ({ ...p, name: '' })); }} error={errors.name} className="col-span-2" />
