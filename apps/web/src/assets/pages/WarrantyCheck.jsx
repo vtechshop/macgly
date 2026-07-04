@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Shield, Search, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Shield, Search, CheckCircle, XCircle, Clock } from 'lucide-react';
 import api from '../../utils/api';
 import Spinner from '../components/common/Spinner';
 
-function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'; }
+function fmtDate(iso) {
+  return iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+}
 
 export default function WarrantyCheck() {
   const [serial, setSerial] = useState('');
@@ -17,15 +19,44 @@ export default function WarrantyCheck() {
     setWarranty(null);
     setLoading(true);
     try {
-      const res = await api.get(`/warranties/check/${serial.trim()}`);
+      const res = await api.get(`/warranties/check/${encodeURIComponent(serial.trim())}`);
       setWarranty(res.data.warranty);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'No warranty found for this serial number');
     } finally { setLoading(false); }
   }
 
-  const isExpired = warranty?.status === 'expired' || (warranty?.expiryDate && new Date(warranty.expiryDate) < new Date());
-  const daysLeft = warranty?.expiryDate ? Math.max(0, Math.ceil((new Date(warranty.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))) : 0;
+  const isExpired = warranty?.status === 'expired';
+  const isVoid    = warranty?.status === 'void';
+  const daysLeft  = warranty?.warrantyEndDate
+    ? Math.max(0, Math.ceil((new Date(warranty.warrantyEndDate) - new Date()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  function statusColor() {
+    if (isExpired || isVoid) return 'border-red-200';
+    if (warranty?.status === 'expiring_soon') return 'border-yellow-200';
+    return 'border-green-200';
+  }
+
+  function StatusIcon() {
+    if (isExpired || isVoid) return <XCircle size={28} className="text-red-500 shrink-0" />;
+    if (warranty?.status === 'expiring_soon') return <Clock size={28} className="text-yellow-500 shrink-0" />;
+    return <CheckCircle size={28} className="text-green-500 shrink-0" />;
+  }
+
+  function statusLabel() {
+    if (isVoid) return 'Warranty Void';
+    if (isExpired) return 'Warranty Expired';
+    if (warranty?.status === 'expiring_soon') return 'Expiring Soon';
+    if (warranty?.status === 'claimed') return 'Claim In Progress';
+    return 'Warranty Valid';
+  }
+
+  function statusTextColor() {
+    if (isExpired || isVoid) return 'text-red-700';
+    if (warranty?.status === 'expiring_soon') return 'text-yellow-700';
+    return 'text-green-700';
+  }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-12">
@@ -38,43 +69,52 @@ export default function WarrantyCheck() {
       <form onSubmit={handleSearch} className="card p-6 space-y-4 mb-6">
         <div>
           <label className="block text-sm font-medium mb-1">Serial Number / IMEI</label>
-          <input className="input w-full font-mono" placeholder="Enter serial number" value={serial} onChange={(e) => setSerial(e.target.value)} required />
+          <input
+            className="input w-full font-mono"
+            placeholder="Enter serial number"
+            value={serial}
+            onChange={(e) => setSerial(e.target.value)}
+            required
+          />
         </div>
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-          {loading ? <Spinner size="sm" /> : <Search size={15} />} {loading ? 'Checking…' : 'Check Warranty'}
+          {loading ? <Spinner size="sm" /> : <Search size={15} />}
+          {loading ? 'Checking…' : 'Check Warranty'}
         </button>
       </form>
 
       {warranty && (
         <div className="space-y-4">
-          <div className={`card p-5 border-2 ${isExpired ? 'border-red-200' : 'border-green-200'}`}>
+          <div className={`card p-5 border-2 ${statusColor()}`}>
             <div className="flex items-start gap-3 mb-4">
-              {isExpired ? <XCircle size={28} className="text-red-500 shrink-0" /> : <CheckCircle size={28} className="text-green-500 shrink-0" />}
+              <StatusIcon />
               <div>
-                <p className={`font-bold text-lg ${isExpired ? 'text-red-700' : 'text-green-700'}`}>
-                  {isExpired ? 'Warranty Expired' : 'Warranty Valid'}
-                </p>
-                {!isExpired && <p className="text-sm text-green-600">{daysLeft} days remaining</p>}
+                <p className={`font-bold text-lg ${statusTextColor()}`}>{statusLabel()}</p>
+                {!isExpired && !isVoid && warranty.status !== 'claimed' && (
+                  <p className={`text-sm ${warranty.status === 'expiring_soon' ? 'text-yellow-600' : 'text-green-600'}`}>
+                    {daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining
+                  </p>
+                )}
               </div>
             </div>
 
             {warranty.product && (
               <div className="flex items-center gap-3 mb-4 p-3 bg-secondary-50 rounded-lg">
-                {warranty.product.images?.[0] && <img src={warranty.product.images[0]} alt="" className="w-12 h-12 rounded object-cover shrink-0" />}
                 <div>
-                  <p className="font-semibold">{warranty.product.title}</p>
-                  <p className="text-xs text-secondary-400">Serial: {warranty.serialNumber}</p>
+                  <p className="font-semibold">{warranty.product.name}</p>
+                  {warranty.product.model && <p className="text-xs text-secondary-400">Model: {warranty.product.model}</p>}
+                  {warranty.product.serial && <p className="text-xs text-secondary-400">Serial: {warranty.product.serial}</p>}
                 </div>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3 text-sm">
               {[
-                { label: 'Purchase Date', value: fmtDate(warranty.purchaseDate) },
-                { label: 'Expiry Date', value: fmtDate(warranty.expiryDate) },
-                { label: 'Warranty Period', value: `${warranty.warrantyPeriodMonths} months` },
-                { label: 'Status', value: warranty.status },
+                { label: 'Purchase Date',  value: fmtDate(warranty.purchaseDate) },
+                { label: 'Expires On',     value: fmtDate(warranty.warrantyEndDate) },
+                { label: 'Period',         value: `${Math.round((warranty.warrantyPeriodDays || 365) / 30)} months` },
+                { label: 'Type',           value: warranty.warrantyType || 'Manufacturer' },
               ].map(({ label, value }) => (
                 <div key={label}>
                   <p className="text-secondary-400 text-xs">{label}</p>
@@ -84,10 +124,10 @@ export default function WarrantyCheck() {
             </div>
           </div>
 
-          {!isExpired && (
+          {!isExpired && !isVoid && warranty.status !== 'claimed' && (
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
               <p className="font-semibold mb-1">Need to raise a warranty claim?</p>
-              <p>Log in to your account → My Orders → Register/Claim Warranty</p>
+              <p>Log in to your account → My Orders → Raise a Warranty Claim</p>
             </div>
           )}
         </div>
