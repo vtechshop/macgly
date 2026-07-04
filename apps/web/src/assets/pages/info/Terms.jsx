@@ -87,7 +87,11 @@ const SECTIONS = [
       {
         num: '4.3',
         title: 'Order Cancellation',
-        content: 'Orders may be cancelled before they are shipped. Once shipped, cancellations are not accepted. To cancel, contact our support team or use the "Cancel Order" option in your dashboard.',
+        bullets: [
+          'Orders can be cancelled before shipment via "My Orders" in your dashboard',
+          'Once shipped, cancellations are not accepted — please follow the return process instead',
+          'Refunds for cancellations are processed immediately to the original payment method',
+        ],
       },
     ],
   },
@@ -121,27 +125,75 @@ const SECTIONS = [
   {
     id: 'returns',
     num: '6.',
-    title: 'Returns and Refunds',
+    title: 'Returns, Refunds & Exchange',
     subsections: [
       {
         num: '6.1',
-        title: 'Return Eligibility',
+        title: 'Return Policy',
         bullets: [
-          'Return requests must be raised within 7 days of delivery',
-          'Items must be unused and in original packaging',
-          'Original invoice must be included with the return',
-          'Damaged, used, or incomplete items are not eligible',
+          'Items can be returned within 30 days of delivery',
+          'Product must be unused, unwashed, and in original packaging with all tags, labels, and invoice intact',
+          'Raise a return request via "My Orders" in your dashboard or by emailing ledvtech@gmail.com',
         ],
       },
       {
         num: '6.2',
-        title: 'Refund Process',
-        content: 'Once your return is received and inspected, we will notify you of approval or rejection. Approved refunds are processed within 5–7 business days to the original payment method.',
+        title: 'Non-Returnable Items',
+        bullets: [
+          'Products marked "Non-Returnable" on the listing',
+          'Personal care, intimate, and hygiene products',
+          'Customized / personalized items',
+          'Perishable goods and gift cards',
+          'Products with tampered or missing serial numbers',
+          'Items damaged due to misuse or mishandling',
+        ],
       },
       {
         num: '6.3',
-        title: 'Non-Returnable Items',
-        content: 'Certain items such as consumables, custom-ordered machinery, and items marked "non-returnable" on the product page cannot be returned.',
+        title: 'Return Process',
+        bullets: [
+          'Raise a return request within 30 days of delivery via "My Orders"',
+          'Pack the item securely in original packaging',
+          'Our delivery partner will do a free pickup from your address',
+          'Item is inspected — if approved, refund is initiated',
+        ],
+      },
+      {
+        num: '6.4',
+        title: 'Refund Timeline',
+        content: (
+          <div className="mt-2 overflow-x-auto">
+            <table className="text-sm text-secondary-600 border-collapse w-full">
+              <thead>
+                <tr className="border-b border-secondary-200">
+                  <th className="text-left py-2 pr-8 font-semibold text-secondary-700">Payment Method</th>
+                  <th className="text-left py-2 font-semibold text-secondary-700">Refund Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['Credit / Debit Card', '5–7 business days'],
+                  ['UPI / Net Banking',   '3–5 business days'],
+                  ['Wallet',             '2–3 business days'],
+                ].map(([method, time]) => (
+                  <tr key={method} className="border-b border-secondary-100">
+                    <td className="py-2 pr-8">{method}</td>
+                    <td className="py-2">{time}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ),
+      },
+      {
+        num: '6.5',
+        title: 'Exchange',
+        bullets: [
+          'Exchange is available for a different size, colour, or variant of the same product',
+          'Exchange requests are processed faster than refunds',
+          'Contact us via "My Orders" or email to initiate an exchange',
+        ],
       },
     ],
   },
@@ -277,7 +329,9 @@ export default function Terms() {
                 Have questions about these terms?{' '}
                 <Link to="/info/contact" className="text-primary-600 hover:underline font-medium">Contact our support team</Link>{' '}
                 or email us at{' '}
-                <a href="mailto:legal@macgly.com" className="text-primary-600 hover:underline font-medium">legal@macgly.com</a>.
+                <a href="mailto:macglyshop@gmail.com" className="text-primary-600 hover:underline font-medium">macglyshop@gmail.com</a>
+                {' '}/ <a href="mailto:ledvtech@gmail.com" className="text-primary-600 hover:underline font-medium">ledvtech@gmail.com</a>
+                {' '}or call <a href="tel:+919944556683" className="text-primary-600 hover:underline font-medium">+91 99445 56683</a>.
               </p>
             </div>
           </div>
