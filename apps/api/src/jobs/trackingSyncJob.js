@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const delhiveryService = require('../services/delhiveryService');
 const notificationService = require('../services/notificationService');
+const { applyEarnings } = require('../utils/earningsHelper');
 
 async function run() {
   const orders = await Order.find({
@@ -30,6 +31,10 @@ async function run() {
         // Auto-advance order status
         if (newStatus.toLowerCase().includes('delivered')) {
           update.status = 'delivered';
+          update.deliveredAt = new Date();
+          await applyEarnings(order, 'delivered').catch((e) =>
+            console.error(`[TrackingSync] earnings error for ${order.orderId}:`, e.message)
+          );
         }
         await Order.findByIdAndUpdate(order._id, update);
         // Notify customer

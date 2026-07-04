@@ -6,6 +6,10 @@ const DEFAULT_VENDOR_RATE = 10;    // 10% platform fee, vendor keeps 90%
 const DEFAULT_AFFILIATE_RATE = 5;  // 5% of sale goes to affiliate
 
 async function createVendorCommissions(order) {
+  // Idempotency guard — don't double-create
+  const existing = await Commission.findOne({ order: order._id, type: 'vendor' });
+  if (existing) return [];
+
   const commissions = [];
   for (const item of order.items) {
     if (!item.vendorId) continue;
@@ -34,6 +38,9 @@ async function createVendorCommissions(order) {
 
 async function createAffiliateCommission(order, affiliateUserId) {
   if (!affiliateUserId) return null;
+  // Idempotency guard
+  const existing = await Commission.findOne({ order: order._id, type: 'affiliate' });
+  if (existing) return existing;
   const affiliate = await User.findById(affiliateUserId).select('affiliateProfile.commissionRate');
   const rate = affiliate?.affiliateProfile?.commissionRate ?? DEFAULT_AFFILIATE_RATE;
   const commissionAmount = (order.totalAmount * rate) / 100;

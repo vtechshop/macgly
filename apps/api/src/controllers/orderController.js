@@ -12,6 +12,7 @@ const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config/env');
 const { sendOrderConfirmation } = require('../services/emailService');
 const notif = require('../utils/notificationHelper');
 const whatsapp = require('../services/whatsappService');
+const { createVendorCommissions, createAffiliateCommission } = require('../services/commissionService');
 
 const razorpay = RAZORPAY_KEY_ID
   ? new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET })
@@ -175,8 +176,10 @@ async function createOrder(req, res, next) {
       throw new AppError('One or more items went out of stock. Please review your cart.', 409, 'OUT_OF_STOCK');
     }
 
-    // Send COD confirmation email + WhatsApp async
+    // COD: create commission records + send confirmation
     if (paymentMethod === 'cod') {
+      createVendorCommissions(order).catch(() => {});
+      if (affiliateId) createAffiliateCommission(order, affiliateId).catch(() => {});
       const User = require('../models/User');
       User.findById(req.user._id).then((u) => {
         if (u) {
@@ -248,6 +251,10 @@ async function verifyPayment(req, res, next) {
       { new: true }
     );
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
+
+    // Create commission records for vendor and affiliate
+    createVendorCommissions(order).catch(() => {});
+    if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch(() => {});
 
     // Send confirmation email + fire notifications async — don't block response
     const User = require('../models/User');

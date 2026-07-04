@@ -3,50 +3,11 @@ const Order   = require('../../models/Order');
 const User    = require('../../models/User');
 const Product = require('../../models/Product');
 const AppError = require('../../utils/AppError');
+const { applyEarnings } = require('../../utils/earningsHelper');
 const { createShipment } = require('../../services/shippingService');
 const notif      = require('../../utils/notificationHelper');
 const whatsapp   = require('../../services/whatsappService');
 const { sendShippingUpdate } = require('../../services/emailService');
-
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-async function applyEarnings(order, newStatus) {
-  const prev = order.status;
-  const nowDelivered = newStatus === 'delivered';
-  const wasDelivered = prev === 'delivered';
-  const nowReversed  = ['cancelled', 'returned'].includes(newStatus);
-
-  // Affiliate earnings
-  if (order.affiliateId && order.affiliateCommission > 0) {
-    if (!wasDelivered && nowDelivered) {
-      await User.findByIdAndUpdate(order.affiliateId, {
-        $inc: { 'affiliateProfile.totalEarnings': order.affiliateCommission },
-      });
-    } else if (wasDelivered && nowReversed) {
-      await User.findByIdAndUpdate(order.affiliateId, {
-        $inc: { 'affiliateProfile.totalEarnings': -order.affiliateCommission },
-      });
-    }
-  }
-
-  // Vendor earnings
-  const vendorItems = (order.items || []).filter((i) => i.vendorId && i.vendorEarning > 0);
-  if (vendorItems.length > 0) {
-    if (!wasDelivered && nowDelivered) {
-      await Promise.all(vendorItems.map((item) =>
-        User.findByIdAndUpdate(item.vendorId, {
-          $inc: { 'vendorProfile.totalEarnings': item.vendorEarning },
-        }),
-      ));
-    } else if (wasDelivered && nowReversed) {
-      await Promise.all(vendorItems.map((item) =>
-        User.findByIdAndUpdate(item.vendorId, {
-          $inc: { 'vendorProfile.totalEarnings': -item.vendorEarning },
-        }),
-      ));
-    }
-  }
-}
 
 // ── POST /admin/orders/bulk-status ───────────────────────────────────────────
 // MUST be defined BEFORE /:id routes
@@ -314,6 +275,7 @@ router.patch('/:id/status', async (req, res, next) => {
       { ...update, $push: { 'tracking.history': { status, timestamp: new Date(), description: note || '' } } },
       { new: true },
     );
+    await applyEarnings(prev, status).catch((e) => console.error('[Orders PATCH] earnings error:', e.message));
     res.json({ order });
   } catch (err) { next(err); }
 });

@@ -9,7 +9,7 @@ async function run() {
   // Find delivered orders older than hold period with pending commissions
   const orders = await Order.find({
     status: 'delivered',
-    updatedAt: { $lte: cutoff },
+    deliveredAt: { $exists: true, $ne: null, $lte: cutoff },
   }).select('_id');
 
   const orderIds = orders.map((o) => o._id);

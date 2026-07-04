@@ -17,6 +17,12 @@ router.post('/', async (req, res, next) => {
     if (!['delivered'].includes(order.status)) {
       throw new AppError('Returns can only be requested for delivered orders', 400, 'INVALID_STATUS');
     }
+    if (order.deliveredAt) {
+      const daysSince = (Date.now() - new Date(order.deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSince > 30) {
+        throw new AppError('Return window has closed. Returns must be raised within 30 days of delivery.', 400, 'RETURN_WINDOW_CLOSED');
+      }
+    }
     const existing = await Return.findOne({ order: orderId });
     if (existing) throw new AppError('Return already requested for this order', 400, 'DUPLICATE');
 
