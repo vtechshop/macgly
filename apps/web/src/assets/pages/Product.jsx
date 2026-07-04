@@ -314,10 +314,9 @@ export default function Product() {
             <div className="flex">{Array.from({ length: 5 }, (_, i) => (
               <Star key={i} size={15} className={product.rating > 0 && i < Math.round(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-secondary-200 fill-secondary-200'} />
             ))}</div>
-            {product.rating > 0
-              ? <span className="text-sm text-secondary-500">{product.rating.toFixed(1)} ({product.reviewCount || 0} reviews)</span>
-              : <span className="text-sm text-secondary-400">No reviews yet</span>
-            }
+            <span className="text-sm text-secondary-500">
+              {product.rating > 0 ? product.rating.toFixed(1) : '0'} ({product.reviewCount || 0} reviews)
+            </span>
           </div>
 
           {/* Variant selectors */}
@@ -361,8 +360,13 @@ export default function Product() {
 
           {/* Price card */}
           <div className="bg-primary-50 border border-primary-100 rounded-xl p-4 space-y-1">
-            <div className="flex items-baseline gap-3">
+            <div className="flex items-baseline gap-3 flex-wrap">
               <span className="text-3xl font-black text-secondary-900">{formatCurrency(activePrice)}</span>
+              {product.taxRate > 0 && (
+                <span className="text-sm text-green-600 font-medium">
+                  ({product.taxIncluded ? 'incl. GST' : 'excl. GST'})
+                </span>
+              )}
               {activeCompareAt > activePrice && (
                 <>
                   <span className="text-base text-secondary-400 line-through">{formatCurrency(activeCompareAt)}</span>
@@ -375,12 +379,14 @@ export default function Product() {
               const gstAmt = product.taxIncluded
                 ? activePrice * rate / (100 + rate)
                 : activePrice * rate / 100;
-              const base = product.taxIncluded ? activePrice - gstAmt : activePrice;
+              const total = product.taxIncluded ? activePrice : activePrice + gstAmt;
               return (
-                <p className="text-xs text-secondary-500">
-                  Base {formatCurrency(base)} + GST ({rate}%) {formatCurrency(gstAmt)}
-                  {!product.taxIncluded && <span className="ml-1 font-semibold text-secondary-700">= {formatCurrency(activePrice + gstAmt)}</span>}
-                </p>
+                <>
+                  <p className="text-sm text-green-600">+ {formatCurrency(gstAmt)} GST ({rate}%)</p>
+                  <p className="text-base font-bold text-secondary-900">
+                    = {formatCurrency(total)} <span className="text-xs font-normal text-secondary-400">(incl. of all taxes)</span>
+                  </p>
+                </>
               );
             })()}
             {activeCompareAt > activePrice && (
