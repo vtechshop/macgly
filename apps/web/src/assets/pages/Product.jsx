@@ -252,7 +252,7 @@ export default function Product() {
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 items-start">
         <div className="space-y-3 lg:sticky lg:top-24">
           {/* Main image */}
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-secondary-50 to-white border border-secondary-100 shadow-md flex items-center justify-center group" style={{ height: 520 }}>
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-secondary-50 to-white border border-secondary-100 shadow-md flex items-center justify-center group h-72 sm:h-96 lg:h-[520px]">
             <ShoppingCart size={48} className="text-secondary-100" />
             {product.images?.[activeImg] && (
               <img
@@ -266,13 +266,13 @@ export default function Product() {
               <>
                 <button
                   onClick={() => setActiveImg((i) => (i - 1 + product.images.length) % product.images.length)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-secondary-100 flex items-center justify-center text-secondary-500 hover:text-primary-600 hover:border-primary-300 hover:shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-secondary-100 flex items-center justify-center text-secondary-500 hover:text-primary-600 hover:border-primary-300 hover:shadow-xl opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 z-10"
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <button
                   onClick={() => setActiveImg((i) => (i + 1) % product.images.length)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-secondary-100 flex items-center justify-center text-secondary-500 hover:text-primary-600 hover:border-primary-300 hover:shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-secondary-100 flex items-center justify-center text-secondary-500 hover:text-primary-600 hover:border-primary-300 hover:shadow-xl opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 z-10"
                 >
                   <ChevronRight size={18} />
                 </button>

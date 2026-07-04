@@ -6,9 +6,9 @@ export default function Footer() {
     <footer className="bg-secondary-900 text-secondary-300 mt-auto">
       {/* Main footer */}
       <div className="px-4 sm:px-6 lg:px-10 py-10">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
-          <div className="col-span-2 md:col-span-2">
+          <div className="col-span-1 sm:col-span-2 md:col-span-2">
             <Link to="/" className="inline-flex items-center gap-2 select-none">
               <svg width="32" height="32" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M19 2L34.5 11V27L19 36L3.5 27V11L19 2Z" fill="#3B1F0A"/>

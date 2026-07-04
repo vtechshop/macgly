@@ -49,7 +49,7 @@ function HeroSection({ banners }) {
           <span className="inline-flex items-center gap-1.5 bg-primary-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-[0.15em] mb-4">
             <Sprout size={9} /> {banner?.subtitle || 'Premium Collection'}
           </span>
-          <h1 className="text-[2.4rem] md:text-[3rem] font-black text-white leading-[1.08] tracking-tight">
+          <h1 className="text-2xl sm:text-[2.4rem] md:text-[3rem] font-black text-white leading-[1.08] tracking-tight">
             {banner?.title || <>Professional<br />Tools &amp; Machinery</>}
           </h1>
           <p className="mt-3 text-sm leading-relaxed max-w-sm" style={{ color: '#8898b3' }}>

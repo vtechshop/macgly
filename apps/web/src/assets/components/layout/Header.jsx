@@ -278,7 +278,7 @@ export default function Header() {
             {!user && (
               <div className="flex gap-2 pt-2 border-t border-secondary-200">
                 <Link to="/login" onClick={() => setMenuOpen(false)} className="btn-primary flex-1 text-center text-xs">Sign In</Link>
-                <Link to="/register" onClick={() => setMenuOpen(false)} className="btn-outline flex-1 text-center text-xs border-white/20 text-white hover:bg-white/10">Register</Link>
+                <Link to="/register" onClick={() => setMenuOpen(false)} className="flex-1 text-center text-xs py-2 rounded-lg border border-secondary-200 text-secondary-700 hover:bg-secondary-50 font-semibold transition-colors">Register</Link>
               </div>
             )}
           </div>
