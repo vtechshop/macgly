@@ -12,8 +12,8 @@ router.get('/', async (req, res, next) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [warranties, total] = await Promise.all([
       Warranty.find(filter)
-        .populate('user', 'name email')
-        .populate('product', 'title sku')
+        .populate('userId', 'name email')
+        .populate('productId', 'title sku')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit)),

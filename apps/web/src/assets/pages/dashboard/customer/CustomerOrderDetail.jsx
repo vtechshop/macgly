@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Package, Truck, CheckCircle, Clock, XCircle, AlertCircle, FileText, RotateCcw, Printer } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CheckCircle, Clock, XCircle, AlertCircle, FileText, RotateCcw, Printer, Shield } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
 import { formatCurrency, normalizeImageUrl } from '../../../../utils/format';
@@ -20,6 +20,133 @@ const STATUS_CONFIG = {
 const STATUS_STEPS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
 
 const RETURN_REASONS = ['Defective product', 'Wrong item delivered', 'Item not as described', 'Damaged in transit', 'Changed my mind', 'Other'];
+
+function WarrantyClaimModal({ warrantyId, productName, onClose, onSuccess }) {
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!description.trim()) return toast.error('Please describe the issue');
+    setLoading(true);
+    try {
+      await api.post(`/warranties/${warrantyId}/claim`, { description: description.trim() });
+      toast.success('Warranty claim submitted');
+      onSuccess();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to submit claim');
+    } finally { setLoading(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Shield size={20} className="text-blue-600" />
+          <h2 className="font-bold text-lg">Raise Warranty Claim</h2>
+        </div>
+        {productName && <p className="text-sm text-secondary-500">{productName}</p>}
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Describe the issue</label>
+            <textarea
+              className="input w-full"
+              rows={4}
+              placeholder="Describe what's wrong with the product…"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+            />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="btn flex-1">Cancel</button>
+            <button type="submit" disabled={loading} className="btn-primary flex-1">
+              {loading ? 'Submitting…' : 'Submit Claim'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function WarrantySection({ orderId, onRefresh }) {
+  const [claimModal, setClaimModal] = useState(null); // { warrantyId, productName }
+  const { data, isLoading } = useFetch(
+    ['order-warranties', orderId],
+    () => api.get(`/warranties/order/${orderId}`).then((r) => r.data)
+  );
+
+  const warranties = data?.warranties || [];
+  if (isLoading || !warranties.length) return null;
+
+  function statusBadge(status) {
+    if (status === 'active') return 'bg-green-100 text-green-700';
+    if (status === 'expiring_soon') return 'bg-yellow-100 text-yellow-700';
+    if (status === 'expired') return 'bg-red-100 text-red-700';
+    if (status === 'claimed') return 'bg-blue-100 text-blue-700';
+    return 'bg-secondary-100 text-secondary-500';
+  }
+
+  function statusLabel(status) {
+    return { active: 'Active', expiring_soon: 'Expiring Soon', expired: 'Expired', claimed: 'Claimed', void: 'Void' }[status] || status;
+  }
+
+  return (
+    <div className="card p-5">
+      <h2 className="font-bold text-secondary-800 mb-3 flex items-center gap-2">
+        <Shield size={16} className="text-blue-600" /> Warranty
+      </h2>
+      <div className="space-y-3">
+        {warranties.map((w) => {
+          const daysLeft = w.warrantyEndDate
+            ? Math.max(0, Math.ceil((new Date(w.warrantyEndDate) - new Date()) / 86400000))
+            : 0;
+          const canClaim = ['active', 'expiring_soon'].includes(w.status);
+          return (
+            <div key={w._id} className="border border-secondary-100 rounded-xl p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <p className="font-medium text-sm">{w.product?.name || 'Product'}</p>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusBadge(w.status)}`}>
+                  {statusLabel(w.status)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-secondary-500">
+                <span>Expires: <span className="text-secondary-700 font-medium">{w.warrantyEndDate ? new Date(w.warrantyEndDate).toLocaleDateString('en-IN') : '—'}</span></span>
+                {canClaim && <span className="text-green-600 font-medium">{daysLeft} days left</span>}
+              </div>
+              {w.claims?.length > 0 && (
+                <div className="text-xs text-secondary-500 mt-1">
+                  {w.claims.length} claim{w.claims.length > 1 ? 's' : ''} raised
+                  {w.claims[w.claims.length - 1]?.status && (
+                    <span className="ml-1 font-medium capitalize">— {w.claims[w.claims.length - 1].status}</span>
+                  )}
+                </div>
+              )}
+              {canClaim && (
+                <button
+                  onClick={() => setClaimModal({ warrantyId: w._id, productName: w.product?.name })}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 mt-1 flex items-center gap-1"
+                >
+                  <Shield size={12} /> Raise Warranty Claim
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {claimModal && (
+        <WarrantyClaimModal
+          warrantyId={claimModal.warrantyId}
+          productName={claimModal.productName}
+          onClose={() => setClaimModal(null)}
+          onSuccess={onRefresh}
+        />
+      )}
+    </div>
+  );
+}
 
 function ReturnModal({ orderId, onClose, onSuccess }) {
   const [reason, setReason] = useState('');
@@ -235,6 +362,11 @@ export default function CustomerOrderDetail() {
           <p className="text-sm text-secondary-500">{order.shippingAddress.city}, {order.shippingAddress.state} â€” {order.shippingAddress.pincode}</p>
           <p className="text-sm text-secondary-500">{order.shippingAddress.phone}</p>
         </div>
+      )}
+
+      {/* Warranty */}
+      {order.status === 'delivered' && (
+        <WarrantySection orderId={order.orderId} onRefresh={() => setRev((r) => r + 1)} />
       )}
 
       {/* Actions */}

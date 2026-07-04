@@ -58,6 +58,18 @@ router.post('/register', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Protected: warranties for a specific order (by orderId string like MGY-XXXXX)
+router.get('/order/:orderId', authenticate, async (req, res, next) => {
+  try {
+    const warranties = await Warranty.find({
+      userId: req.user._id,
+      purchaseId: req.params.orderId,
+    }).populate('productId', 'title images sku');
+    warranties.forEach((w) => w.updateStatus());
+    res.json({ warranties });
+  } catch (err) { next(err); }
+});
+
 // Protected: my warranties
 router.get('/my', authenticate, async (req, res, next) => {
   try {
