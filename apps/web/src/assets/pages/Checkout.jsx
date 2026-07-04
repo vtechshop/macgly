@@ -205,7 +205,7 @@ export default function Checkout() {
       );
       const { latitude: lat, longitude: lon } = pos.coords;
       const resp = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
         { headers: { 'Accept-Language': 'en' } }
       );
       const geo = await resp.json();
@@ -213,7 +213,23 @@ export default function Checkout() {
       const line1 = [a.house_number, a.road, a.neighbourhood, a.suburb].filter(Boolean).join(', ');
       const city   = a.city || a.town || a.district || a.village || '';
       const state  = a.state || '';
-      const pincode = (a.postcode || '').replace(/\D/g, '').slice(0, 6);
+      const nominatimPin = (a.postcode || '').replace(/\D/g, '').slice(0, 6);
+
+      // OSM pincode data in India is often inaccurate — look up by area name instead
+      let pincode = nominatimPin;
+      const stateNorm = state.toLowerCase().replace(/\s+/g, '');
+      const candidates = [a.suburb, a.quarter, a.city_district, a.neighbourhood]
+        .filter((n) => n && !/^ward\s*\d/i.test(n)); // skip generic "Ward 48" entries
+      for (const name of candidates) {
+        try {
+          const pr = await fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(name)}`);
+          const pj = await pr.json();
+          const offices = pj?.[0]?.PostOffice || [];
+          const match = offices.find((o) => o.State?.toLowerCase().replace(/\s+/g, '') === stateNorm);
+          if (match) { pincode = match.Pincode; break; }
+        } catch { /* try next */ }
+      }
+
       setAddress((prev) => ({
         ...prev,
         line1:   line1   || prev.line1,
@@ -221,7 +237,7 @@ export default function Checkout() {
         state:   state   || prev.state,
         pincode: pincode || prev.pincode,
       }));
-      // Confirm city/state via postal API if pincode is valid
+      // Confirm city/state from the resolved pincode
       if (pincode.length === 6) {
         try {
           const r = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
