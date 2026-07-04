@@ -80,7 +80,6 @@ const SECTIONS = [
         title: 'Payment Methods',
         bullets: [
           'Online payment via Razorpay (UPI, debit/credit cards, net banking)',
-          'Cash on Delivery (COD) where available',
           'Macgly does not store card or banking credentials',
           'All online transactions are secured with 256-bit SSL encryption',
         ],
@@ -106,10 +105,10 @@ const SECTIONS = [
         num: '5.2',
         title: 'Shipping Charges',
         bullets: [
-          'Standard delivery: ₹70 per order',
-          'Express delivery: ₹120 per order',
-          'Free shipping on orders above ₹5,000 (standard only)',
-          'Remote area surcharges may apply',
+          'Shipping charges are calculated at checkout based on destination pincode and order weight',
+          'Standard and Express delivery options are available at competitive rates',
+          'Free shipping on orders above ₹5,000 (standard delivery)',
+          'Remote area surcharges may apply as determined by our logistics partner',
         ],
       },
       {
