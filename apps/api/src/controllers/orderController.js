@@ -117,21 +117,16 @@ async function createOrder(req, res, next) {
 
     const totalPlatformFee = parseFloat(items.reduce((sum, i) => sum + (i.platformFee || 0), 0).toFixed(2));
 
-    // Affiliate attribution — prefer referredBy (registration link), fall back to aff_ref cookie (tracking link)
+    // Affiliate attribution — 24-hour click window only (Amazon-style, no permanent attribution)
     let affiliateId;
     let affiliateCommission = 0;
     const buyer = await User.findById(req.user._id);
 
     let affiliate = null;
-    if (buyer?.referredBy) {
-      // Permanent attribution from registration link
-      affiliate = await User.findById(buyer.referredBy);
-    } else {
-      // Priority: server-side stored ref (most reliable) → body param → cookie
-      const refCode = buyer?.pendingAffiliateRef || req.body.affiliateRef || req.cookies?.aff_ref;
-      if (refCode) {
-        affiliate = await User.findOne({ 'affiliateProfile.referralCode': refCode, role: 'affiliate' });
-      }
+    // pendingAffiliateRef is set at registration (first-order only) — treat as a one-time 24hr click
+    const refCode = buyer?.pendingAffiliateRef || req.body.affiliateRef || req.cookies?.aff_ref;
+    if (refCode) {
+      affiliate = await User.findOne({ 'affiliateProfile.referralCode': refCode, role: 'affiliate' });
     }
 
     if (affiliate?.role === 'affiliate') {

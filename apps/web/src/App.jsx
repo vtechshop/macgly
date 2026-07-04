@@ -128,7 +128,7 @@ function AuthInit({ children }) {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('aff') || params.get('aff_ref');
     if (ref && /^[A-Z0-9]{6,12}$/.test(ref)) {
-      localStorage.setItem('aff_ref', JSON.stringify({ ref, expires: Date.now() + 30 * 24 * 60 * 60 * 1000 }));
+      localStorage.setItem('aff_ref', JSON.stringify({ ref, expires: Date.now() + 24 * 60 * 60 * 1000 }));
       api.get(`/affiliates/record-click?ref=${ref}`).catch(() => {});
       params.delete('aff');
       params.delete('aff_ref');

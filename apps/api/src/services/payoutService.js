@@ -31,10 +31,22 @@ async function createFundAccount(user) {
   return fundAccount.id;
 }
 
+const AFFILIATE_MIN_PAYOUT = parseFloat(process.env.AFFILIATE_MIN_PAYOUT) || 500;
+
 async function initiatePayout(commissionId) {
   const commission = await Commission.findById(commissionId).populate('user');
   if (!commission) throw new Error('Commission not found');
   if (commission.status !== 'approved') throw new Error('Commission must be approved before payout');
+
+  // Affiliate minimum payout threshold: sum of all approved affiliate commissions must be >= ₹500
+  if (commission.type === 'affiliate') {
+    const { _id: userId } = commission.user;
+    const approved = await Commission.find({ user: userId, type: 'affiliate', status: 'approved' });
+    const total = approved.reduce((sum, c) => sum + c.commissionAmount, 0);
+    if (total < AFFILIATE_MIN_PAYOUT) {
+      throw new Error(`Affiliate payout requires minimum ₹${AFFILIATE_MIN_PAYOUT}. Current approved balance: ₹${total.toFixed(2)}`);
+    }
+  }
 
   if (!process.env.RAZORPAY_KEY_ID) {
     console.log(`[Payout DEV] Would pay ₹${commission.commissionAmount} to ${commission.user.email}`);
