@@ -310,14 +310,15 @@ export default function Product() {
 
           <h1 className="text-2xl md:text-3xl font-bold text-secondary-900 leading-snug">{product.title}</h1>
 
-          {product.rating > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="flex">{Array.from({ length: 5 }, (_, i) => (
-                <Star key={i} size={15} className={i < Math.round(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-secondary-200 fill-secondary-200'} />
-              ))}</div>
-              <span className="text-sm text-secondary-500">{product.rating.toFixed(1)} ({product.reviewCount} reviews)</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <div className="flex">{Array.from({ length: 5 }, (_, i) => (
+              <Star key={i} size={15} className={product.rating > 0 && i < Math.round(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-secondary-200 fill-secondary-200'} />
+            ))}</div>
+            {product.rating > 0
+              ? <span className="text-sm text-secondary-500">{product.rating.toFixed(1)} ({product.reviewCount || 0} reviews)</span>
+              : <span className="text-sm text-secondary-400">No reviews yet</span>
+            }
+          </div>
 
           {/* Variant selectors */}
           {product.hasVariants && product.variantOptions?.length > 0 && (
@@ -369,6 +370,19 @@ export default function Product() {
                 </>
               )}
             </div>
+            {product.taxRate > 0 && (() => {
+              const rate = product.taxRate;
+              const gstAmt = product.taxIncluded
+                ? activePrice * rate / (100 + rate)
+                : activePrice * rate / 100;
+              const base = product.taxIncluded ? activePrice - gstAmt : activePrice;
+              return (
+                <p className="text-xs text-secondary-500">
+                  Base {formatCurrency(base)} + GST ({rate}%) {formatCurrency(gstAmt)}
+                  {!product.taxIncluded && <span className="ml-1 font-semibold text-secondary-700">= {formatCurrency(activePrice + gstAmt)}</span>}
+                </p>
+              );
+            })()}
             {activeCompareAt > activePrice && (
               <p className="text-xs text-secondary-500">You save {formatCurrency(activeCompareAt - activePrice)}</p>
             )}
