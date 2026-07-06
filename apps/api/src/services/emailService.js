@@ -1,6 +1,6 @@
 const { MAILERSEND_API_KEY, MAILERSEND_FROM_EMAIL, MAILERSEND_FROM_NAME } = require('../config/env');
 
-async function sendEmail({ to, subject, html, text }) {
+async function sendEmail({ to, subject, html, text, attachments }) {
   if (!MAILERSEND_API_KEY) {
     console.log(`[Email DEV] To: ${to} | Subject: ${subject}`);
     return;
@@ -12,6 +12,7 @@ async function sendEmail({ to, subject, html, text }) {
     subject,
     html,
     text: text || subject,
+    ...(attachments?.length ? { attachments } : {}),
   };
 
   const res = await fetch('https://api.mailersend.com/v1/email', {
@@ -30,22 +31,53 @@ async function sendEmail({ to, subject, html, text }) {
 }
 
 async function sendOrderConfirmation({ order, user }) {
+  const { generateInvoicePDF } = require('./invoiceService');
   const items = order.items.map((i) =>
-    `<tr><td>${i.title}</td><td>×${i.quantity}</td><td>₹${i.price * i.quantity}</td></tr>`
+    `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb">${i.title}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center">×${i.quantity}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right">₹${(i.price * i.quantity).toLocaleString('en-IN')}</td>
+    </tr>`
   ).join('');
+
+  let attachments = [];
+  try {
+    const pdfBuf = await generateInvoicePDF(order, user);
+    attachments = [{ content: pdfBuf.toString('base64'), filename: `Invoice-${order.orderId}.pdf`, disposition: 'attachment' }];
+  } catch (e) {
+    console.error('Invoice PDF generation failed:', e.message);
+  }
 
   await sendEmail({
     to: user.email,
     subject: `Order Confirmed — ${order.orderId}`,
     html: `
-      <h2>Order Confirmed!</h2>
-      <p>Hi ${user.name}, your order <strong>${order.orderId}</strong> has been placed.</p>
-      <table border="1" cellpadding="8">
-        <thead><tr><th>Product</th><th>Qty</th><th>Total</th></tr></thead>
-        <tbody>${items}</tbody>
-      </table>
-      <p><strong>Order Total: ₹${order.totalAmount}</strong></p>
+      <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#1f2937">
+        <div style="background:#111827;padding:24px 32px;border-radius:8px 8px 0 0">
+          <span style="color:#ea580c;font-size:22px;font-weight:800">MACGLY</span>
+          <span style="color:#9ca3af;font-size:11px;margin-left:8px">TOOLS & MACHINERY</span>
+        </div>
+        <div style="background:#fff;padding:28px 32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 8px;color:#111827">Order Confirmed! 🎉</h2>
+          <p style="margin:0 0 20px;color:#6b7280">Hi ${user.name}, your order has been placed successfully.</p>
+          <p style="margin:0 0 4px"><strong>Order ID:</strong> ${order.orderId}</p>
+          <p style="margin:0 0 20px"><strong>Payment:</strong> <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600">PAID</span></p>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+            <thead><tr style="background:#f9fafb">
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#6b7280;font-weight:600">Item</th>
+              <th style="padding:8px 12px;text-align:center;font-size:12px;color:#6b7280;font-weight:600">Qty</th>
+              <th style="padding:8px 12px;text-align:right;font-size:12px;color:#6b7280;font-weight:600">Total</th>
+            </tr></thead>
+            <tbody>${items}</tbody>
+          </table>
+          <div style="text-align:right;font-size:18px;font-weight:700;color:#111827">Total: ₹${(order.totalAmount || 0).toLocaleString('en-IN')}</div>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0"/>
+          <p style="margin:0;color:#6b7280;font-size:13px">📎 Your tax invoice is attached to this email.</p>
+          <p style="margin:8px 0 0;color:#6b7280;font-size:13px">For support: <a href="mailto:support@macgly.com" style="color:#ea580c">support@macgly.com</a></p>
+        </div>
+      </div>
     `,
+    attachments,
   });
 }
 

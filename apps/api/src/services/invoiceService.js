@@ -98,4 +98,99 @@ function generateInvoiceHTML(order, user) {
 </html>`;
 }
 
-module.exports = { generateInvoiceHTML };
+function generateInvoicePDF(order, user) {
+  const PDFDocument = require('pdfkit');
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const orange = '#EA580C';
+    const dark   = '#111827';
+    const gray   = '#6B7280';
+    const light  = '#F3F4F6';
+
+    const fmt = (n) => 'Rs.' + Number(n || 0).toFixed(2);
+
+    // Header bar
+    doc.rect(0, 0, doc.page.width, 80).fill(dark);
+    doc.fillColor('#FFFFFF').fontSize(22).font('Helvetica-Bold').text('MACGLY', 50, 24);
+    doc.fillColor(orange).fontSize(9).font('Helvetica').text('TOOLS & MACHINERY', 50, 50);
+    doc.fillColor('#CCCCCC').fontSize(8).text('macgly.com  |  support@macgly.com', 50, 63);
+    doc.fillColor(orange).fontSize(16).font('Helvetica-Bold').text('TAX INVOICE', 0, 26, { align: 'right', width: doc.page.width - 50 });
+    doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica').text(`Invoice: ${order.orderId}`, 0, 48, { align: 'right', width: doc.page.width - 50 });
+    const dateStr = new Date(order.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    doc.text(`Date: ${dateStr}`, 0, 60, { align: 'right', width: doc.page.width - 50 });
+
+    let y = 100;
+
+    // Bill To
+    doc.fillColor(dark).fontSize(9).font('Helvetica-Bold').text('BILL TO', 50, y);
+    doc.moveTo(50, y + 13).lineTo(180, y + 13).strokeColor(orange).lineWidth(1.5).stroke();
+    y += 20;
+    const addr = order.shippingAddress || {};
+    [user?.name || addr.name, addr.line1, addr.line2, [addr.city, addr.state].filter(Boolean).join(', '), addr.pincode, user?.phone || addr.phone, user?.email]
+      .filter(Boolean).forEach((l) => { doc.fillColor(dark).fontSize(8).font('Helvetica').text(l, 50, y); y += 13; });
+
+    // Payment info (right column)
+    let ry = 100;
+    doc.fillColor(dark).fontSize(9).font('Helvetica-Bold').text('PAYMENT INFO', 360, ry);
+    doc.moveTo(360, ry + 13).lineTo(545, ry + 13).strokeColor(orange).lineWidth(1.5).stroke();
+    ry += 20;
+    [['Payment ID', order.razorpayPaymentId || '—'], ['Method', 'Online (Razorpay)'], ['Status', 'PAID']].forEach(([k, v]) => {
+      doc.fillColor(gray).fontSize(8).font('Helvetica').text(k, 360, ry);
+      doc.fillColor(dark).text(v, 460, ry); ry += 13;
+    });
+
+    y = Math.max(y, ry) + 16;
+
+    // Table header
+    doc.rect(50, y, 495, 20).fill(dark);
+    doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica-Bold');
+    [['#', 50], ['Item', 72], ['Qty', 340], ['Rate', 385], ['GST', 445], ['Total', 495]].forEach(([t, x]) => doc.text(t, x, y + 6));
+    y += 20;
+
+    let subEx = 0, gstTot = 0;
+    (order.items || []).forEach((item, i) => {
+      const h = 20;
+      if (i % 2 === 0) doc.rect(50, y, 495, h).fill(light);
+      const rate = item.gstRate || 18;
+      const line = (item.price || 0) * (item.quantity || 1);
+      const gst  = line * rate / (100 + rate);
+      subEx += line - gst; gstTot += gst;
+      doc.fillColor(dark).fontSize(8).font('Helvetica');
+      doc.text(String(i + 1), 50, y + 6);
+      doc.text(item.title || '', 72, y + 6, { width: 255, ellipsis: true });
+      doc.text(String(item.quantity || 1), 340, y + 6);
+      doc.text(fmt(item.price), 385, y + 6);
+      doc.text(`${rate}%`, 445, y + 6);
+      doc.text(fmt(line), 495, y + 6);
+      y += h;
+    });
+
+    doc.moveTo(50, y).lineTo(545, y).strokeColor('#E5E7EB').lineWidth(1).stroke();
+    y += 10;
+
+    // Totals
+    const rows = [['Subtotal (excl. GST)', fmt(subEx)], ['GST', fmt(gstTot)]];
+    if (order.shippingCharge > 0) rows.push(['Shipping', fmt(order.shippingCharge)]);
+    if (order.discount > 0)       rows.push(['Discount', `-${fmt(order.discount)}`]);
+    rows.forEach(([k, v]) => {
+      doc.fillColor(gray).fontSize(9).font('Helvetica').text(k, 355, y);
+      doc.fillColor(dark).text(v, 490, y, { align: 'right', width: 55 }); y += 15;
+    });
+    y += 4;
+    doc.rect(348, y, 197, 22).fill(dark);
+    doc.fillColor('#FFFFFF').fontSize(10).font('Helvetica-Bold').text('TOTAL', 358, y + 6).text(fmt(order.totalAmount), 490, y + 6, { align: 'right', width: 55 });
+    y += 32;
+
+    doc.fillColor(gray).fontSize(8).font('Helvetica').text('This is a computer-generated invoice and does not require a signature.', 50, y, { align: 'center', width: 495 });
+    doc.fillColor(orange).fontSize(8).text('Thank you for shopping with Macgly!', 50, y + 13, { align: 'center', width: 495 });
+
+    doc.end();
+  });
+}
+
+module.exports = { generateInvoiceHTML, generateInvoicePDF };
