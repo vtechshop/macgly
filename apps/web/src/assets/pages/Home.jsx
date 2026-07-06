@@ -128,10 +128,10 @@ export default function Home() {
                 const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
                 return (
                   <Link key={cat._id} to={`/category/${cat.slug}`}
-                    className="flex flex-col items-center justify-center gap-2 p-3 h-36 bg-white border border-secondary-200 rounded-xl hover:border-primary-300 hover:shadow-md transition-all group">
+                    className="flex flex-col items-center justify-center gap-2 p-3 h-36 bg-white border border-secondary-200 rounded-xl hover:border-primary-300 hover:shadow-md transition-all group overflow-hidden">
                     {cat.image
-                      ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-16 h-16 object-contain" onError={(e) => e.currentTarget.remove()} />
-                      : <Icon size={40} className="text-secondary-300 group-hover:text-primary-500 transition-colors" />
+                      ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-24 h-24 object-contain group-hover:scale-105 transition-transform duration-200" onError={(e) => e.currentTarget.remove()} />
+                      : <Icon size={52} className="text-secondary-300 group-hover:text-primary-500 transition-colors" />
                     }
                     <span className="text-xs font-semibold text-secondary-600 group-hover:text-secondary-900 text-center leading-tight transition-colors">
                       {cat.name}
