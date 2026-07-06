@@ -88,23 +88,6 @@ function OrderSummary({ items, subtotal, shippingCharge, discount, coupon, coupo
       <div className="flex justify-between font-bold text-lg border-t border-secondary-200 pt-2">
         <span>Total</span><span>{formatCurrency(total)}</span>
       </div>
-      {!coupon ? (
-        <div className="flex gap-2">
-          <input
-            className="input flex-1 text-sm py-1.5"
-            placeholder="Coupon code"
-            value={couponCode}
-            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === 'Enter' && onApplyCoupon()}
-          />
-          <Button variant="outline" onClick={onApplyCoupon} loading={applyingCoupon} className="shrink-0 text-sm py-1.5 px-3">Apply</Button>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-3 py-2 text-sm">
-          <span className="text-green-700 font-medium">{coupon.code} applied</span>
-          <button onClick={onRemoveCoupon} className="text-green-600 hover:text-green-800 text-xs underline">Remove</button>
-        </div>
-      )}
     </div>
   );
 }

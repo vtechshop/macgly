@@ -82,13 +82,44 @@ async function sendOrderConfirmation({ order, user }) {
 }
 
 async function sendShippingUpdate({ order, user }) {
+  const statusLabels = {
+    confirmed: 'Order Confirmed', processing: 'Being Processed',
+    packed: 'Packed & Ready', shipped: 'Shipped 🚚',
+    out_for_delivery: 'Out for Delivery 📦', delivered: 'Delivered ✅',
+    cancelled: 'Cancelled',
+  };
+  const label = statusLabels[order.status] || order.status;
+  const trackUrl = `https://macgly.com/track-order?id=${encodeURIComponent(order.orderId)}`;
+
+  const trackingBlock = order.tracking?.trackingId ? `
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:16px 0">
+      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Tracking Details</p>
+      <p style="margin:0 0 4px;font-size:14px;color:#1f2937"><strong>Carrier:</strong> ${order.tracking.carrier || 'Courier'}</p>
+      <p style="margin:0 0 4px;font-size:14px;color:#1f2937"><strong>AWB / Tracking ID:</strong> ${order.tracking.trackingId}</p>
+      ${order.tracking.url ? `<p style="margin:8px 0 0"><a href="${order.tracking.url}" style="background:#16a34a;color:#fff;padding:8px 18px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Track on Carrier →</a></p>` : ''}
+    </div>` : '';
+
   await sendEmail({
     to: user.email,
-    subject: `Your order ${order.orderId} is ${order.status}`,
+    subject: `${label} — Order ${order.orderId}`,
     html: `
-      <h2>Shipping Update</h2>
-      <p>Hi ${user.name}, your order <strong>${order.orderId}</strong> is now <strong>${order.status}</strong>.</p>
-      ${order.tracking?.trackingId ? `<p>Tracking: <a href="${order.tracking.url}">${order.tracking.trackingId}</a></p>` : ''}
+      <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#1f2937">
+        <div style="background:#111827;padding:20px 28px;border-radius:8px 8px 0 0">
+          <span style="color:#ea580c;font-size:20px;font-weight:800">MACGLY</span>
+          <span style="color:#9ca3af;font-size:11px;margin-left:8px">TOOLS & MACHINERY</span>
+        </div>
+        <div style="background:#fff;padding:24px 28px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 4px;color:#111827;font-size:20px">${label}</h2>
+          <p style="margin:0 0 16px;color:#6b7280">Hi ${user.name}, here's an update on your order.</p>
+          <p style="margin:0 0 4px"><strong>Order ID:</strong> <span style="font-family:monospace">${order.orderId}</span></p>
+          ${trackingBlock}
+          <p style="margin:20px 0">
+            <a href="${trackUrl}" style="background:#ea580c;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600">Track Your Order →</a>
+          </p>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0"/>
+          <p style="margin:0;color:#9ca3af;font-size:12px">Questions? <a href="mailto:support@macgly.com" style="color:#ea580c">support@macgly.com</a> | <a href="tel:+919944556683" style="color:#ea580c">+91 99445 56683</a></p>
+        </div>
+      </div>
     `,
   });
 }

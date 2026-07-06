@@ -10,6 +10,7 @@ const { invalidateCache } = require('../middleware/cache');
 const { uploadFile } = require('../services/storageService');
 const notif = require('../utils/notificationHelper');
 const { applyEarnings } = require('../utils/earningsHelper');
+const { sendShippingUpdate } = require('../services/emailService');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -603,6 +604,16 @@ router.put('/orders/:id/status', requireApproved, async (req, res, next) => {
     order.tracking.history.push({ status, timestamp: new Date(), description: `Status updated to ${status}` });
 
     await order.save();
+
+    // Notify customer by email on key status changes
+    const notifyStatuses = ['shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+    if (notifyStatuses.includes(status)) {
+      Order.findById(order._id).populate('user', 'name email').then((populated) => {
+        if (populated?.user?.email) {
+          sendShippingUpdate({ order: populated, user: populated.user }).catch(() => {});
+        }
+      }).catch(() => {});
+    }
 
     // Auto-create warranties on delivery for products with hasWarranty: true
     if (status === 'delivered') {
