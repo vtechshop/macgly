@@ -63,8 +63,13 @@ app.use(cors({
   credentials: true,
 }));
 
-// Body parsing
-app.use(express.json({ limit: '10mb' }));
+// Body parsing — capture raw body for webhook HMAC verification
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, _res, buf) => {
+    if (req.path.startsWith('/api/payments/webhook')) req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 

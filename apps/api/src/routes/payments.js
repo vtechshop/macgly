@@ -19,7 +19,7 @@ router.post('/webhook', async (req, res) => {
 
     const expected = crypto
       .createHmac('sha256', secret)
-      .update(JSON.stringify(req.body))
+      .update(req.rawBody || Buffer.from(JSON.stringify(req.body)))
       .digest('hex');
 
     if (signature !== expected) return res.status(400).json({ error: 'Invalid signature' });
@@ -35,13 +35,22 @@ router.post('/webhook', async (req, res) => {
           { new: true }
         );
         if (order) {
-          // Create commission records (idempotent — safe to call even if verifyPayment already did it)
           createVendorCommissions(order).catch(() => {});
           if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch(() => {});
           User.findById(order.user).then((user) => {
             if (user) sendOrderConfirmation({ order, user }).catch(() => {});
           });
         }
+      }
+    }
+
+    if (event === 'payment.failed') {
+      const razorpayOrderId = req.body.payload?.payment?.entity?.order_id;
+      if (razorpayOrderId) {
+        await Order.findOneAndUpdate(
+          { razorpayOrderId, paymentStatus: 'pending' },
+          { paymentStatus: 'failed' }
+        );
       }
     }
 
