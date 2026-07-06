@@ -306,10 +306,12 @@ async function cancelOrder(req, res, next) {
   try {
     const order = await Order.findOne({ _id: req.params.id, user: req.user._id });
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
-    if (!['pending', 'confirmed'].includes(order.status)) {
-      throw new AppError('Order cannot be cancelled at this stage', 400, 'INVALID_STATUS');
+    if (!['pending', 'pending_payment', 'confirmed'].includes(order.status)) {
+      throw new AppError('Order cannot be cancelled at this stage. Contact support if already shipped.', 400, 'INVALID_STATUS');
     }
+
     order.status = 'cancelled';
+    order.cancellation = { reason: 'Cancelled by customer', cancelledAt: new Date(), cancelledBy: req.user._id };
     await order.save();
 
     // Restore stock
@@ -317,7 +319,12 @@ async function cancelOrder(req, res, next) {
       Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } })
     ));
 
-    res.json({ order });
+    // If already paid, flag for admin to process refund manually
+    if (order.paymentStatus === 'paid') {
+      await Order.findByIdAndUpdate(order._id, { paymentStatus: 'pending_refund' });
+    }
+
+    res.json({ order, refundPending: order.paymentStatus === 'paid' });
   } catch (err) { next(err); }
 }
 

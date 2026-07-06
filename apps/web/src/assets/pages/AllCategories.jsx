@@ -1,23 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Sprout, Wrench, Hammer, Cpu, Settings, Package, Home as HomeIcon, Pipette, UtensilsCrossed, Trees, ChevronRight } from 'lucide-react';
 import { useFetch } from '../../hooks';
 import api from '../../utils/api';
-import { normalizeImageUrl } from '../../utils/format';
 import Spinner from '../components/common/Spinner';
-
-const CATEGORY_ICONS = {
-  'agricultural-industry-farm-tools': Sprout,
-  'engineering-workshop-kits':        Wrench,
-  'hardware-tools':                   Hammer,
-  'electronics-instruments':          Cpu,
-  'general-machineries':              Settings,
-  'spare-parts':                      Package,
-  'household-cleaning-equipment':     HomeIcon,
-  'plumbing-hardware-construction':   Pipette,
-  'hotel-food-processing':            UtensilsCrossed,
-  'wood-carvings':                    Trees,
-  default: Package,
-};
 
 export default function AllCategories() {
   const { data, isLoading } = useFetch(
@@ -26,7 +10,10 @@ export default function AllCategories() {
   );
 
   const categories = data?.categories || [];
-  const parents = categories.filter((c) => !c.parentId).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  const parents = categories
+    .filter((c) => !c.parentId)
+    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+
   const childrenMap = {};
   categories.forEach((c) => {
     if (c.parentId) {
@@ -39,45 +26,34 @@ export default function AllCategories() {
   if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
 
   return (
-    <div className="px-4 sm:px-6 lg:px-10 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-secondary-900">All Categories</h1>
-        <p className="text-sm text-secondary-400 mt-1">Browse all categories and subcategories</p>
-      </div>
+    <div className="px-4 sm:px-6 lg:px-10 py-8 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold text-center text-secondary-800 mb-8">Shop by Categories</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="space-y-6">
         {parents.map((cat) => {
-          const Icon = CATEGORY_ICONS[cat.slug] || CATEGORY_ICONS.default;
-          const subs = (childrenMap[String(cat._id)] || []).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+          const subs = (childrenMap[String(cat._id)] || [])
+            .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+
           return (
-            <div key={cat._id} className="bg-white rounded-xl border border-secondary-200 overflow-hidden">
-              {/* Parent category header with full image */}
+            <div key={cat._id} className="border border-secondary-200 rounded-lg overflow-hidden">
+              {/* Parent header */}
               <Link
                 to={`/category/${cat.slug}`}
-                className="relative block h-32 bg-secondary-100 overflow-hidden group"
+                className="block w-full px-5 py-3 bg-teal-50 border-b border-teal-200 hover:bg-teal-100 transition-colors"
               >
-                {cat.image
-                  ? <img src={normalizeImageUrl(cat.image)} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.style.display='none'; }} />
-                  : <div className="w-full h-full flex items-center justify-center"><Icon size={40} className="text-secondary-300" /></div>
-                }
-                <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 flex items-center justify-between">
-                  <span className="text-white font-bold text-sm leading-tight drop-shadow">{cat.name}</span>
-                  <ChevronRight size={14} className="text-white/80 shrink-0" />
-                </div>
+                <span className="text-base font-bold text-teal-700">{cat.name}</span>
               </Link>
 
-              {/* Subcategories */}
+              {/* Subcategories grid */}
               {subs.length > 0 && (
-                <div className="divide-y divide-secondary-50">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-1 px-5 py-4 bg-white">
                   {subs.map((sub) => (
                     <Link
                       key={sub._id}
                       to={`/category/${sub.slug}`}
-                      className="flex items-center gap-2 px-4 py-2.5 hover:bg-primary-50 hover:text-primary-700 transition-colors group"
+                      className="text-sm text-secondary-600 hover:text-teal-700 hover:underline py-1.5 truncate"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-secondary-300 group-hover:bg-primary-400 shrink-0" />
-                      <span className="text-sm text-secondary-600 group-hover:text-primary-700">{sub.name}</span>
+                      {sub.name}
                     </Link>
                   ))}
                 </div>

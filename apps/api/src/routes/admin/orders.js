@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const Razorpay = require('razorpay');
 const Order   = require('../../models/Order');
 const User    = require('../../models/User');
 const Product = require('../../models/Product');
@@ -8,6 +9,7 @@ const { createShipment } = require('../../services/shippingService');
 const notif      = require('../../utils/notificationHelper');
 const whatsapp   = require('../../services/whatsappService');
 const { sendShippingUpdate } = require('../../services/emailService');
+const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../../config/env');
 
 // ── POST /admin/orders/bulk-status ───────────────────────────────────────────
 // MUST be defined BEFORE /:id routes
@@ -402,6 +404,28 @@ router.put('/:id/affiliate', async (req, res, next) => {
     }
 
     res.json({ order, affiliate: { name: affiliate.name, commission } });
+  } catch (err) { next(err); }
+});
+
+// ── POST /admin/orders/:id/refund — trigger Razorpay refund for cancelled/paid order ─
+router.post('/:id/refund', async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
+    if (!['pending_refund', 'paid'].includes(order.paymentStatus)) {
+      throw new AppError('Order is not in a refundable state', 400, 'INVALID_STATE');
+    }
+    if (!order.razorpayPaymentId) {
+      throw new AppError('No Razorpay payment ID on this order (COD or manual order)', 400, 'NO_PAYMENT_ID');
+    }
+
+    const rz = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
+    const amtPaise = Math.round((req.body.amount || order.totalAmount) * 100);
+    const refund = await rz.payments.refund(order.razorpayPaymentId, { amount: amtPaise });
+
+    await Order.findByIdAndUpdate(order._id, { paymentStatus: 'refunded' });
+
+    res.json({ success: true, refund });
   } catch (err) { next(err); }
 });
 

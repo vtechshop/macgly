@@ -225,8 +225,12 @@ export default function CustomerOrderDetail() {
     if (!confirm('Cancel this order?')) return;
     setCancelling(true);
     try {
-      await api.post(`/orders/${order._id}/cancel`);
-      toast.success('Order cancelled');
+      const { data } = await api.post(`/orders/${order._id}/cancel`);
+      if (data.refundPending) {
+        toast.success('Order cancelled. Refund will be processed by our team shortly.');
+      } else {
+        toast.success('Order cancelled.');
+      }
       setRev((r) => r + 1);
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Could not cancel order');
@@ -245,7 +249,7 @@ export default function CustomerOrderDetail() {
   const StatusIcon = cfg.icon;
   const stepIdx = STATUS_STEPS.indexOf(order.status);
   const isActive = !['delivered', 'cancelled', 'returned'].includes(order.status);
-  const canCancel = ['pending', 'confirmed'].includes(order.status);
+  const canCancel = ['pending', 'pending_payment', 'confirmed'].includes(order.status);
   const canReturn = order.status === 'delivered';
 
   return (

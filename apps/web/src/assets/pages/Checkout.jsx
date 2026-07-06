@@ -322,8 +322,18 @@ export default function Checkout() {
           },
           prefill: { name: user?.name, email: user?.email, contact: user?.phone },
           theme: { color: '#2563eb' },
+          modal: {
+            ondismiss: () => {
+              setPlacing(false);
+              toast.error('Payment cancelled. Your order has not been placed.');
+            },
+          },
         };
         const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', (response) => {
+          setPlacing(false);
+          toast.error(response.error?.description || 'Payment failed. Please try again.');
+        });
         rzp.open();
       } else {
         localStorage.removeItem('aff_ref');

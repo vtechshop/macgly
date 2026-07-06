@@ -191,6 +191,7 @@ export default function AdminOrderDetail() {
   // Address edit
   const [editingAddress, setEditingAddress] = useState(false);
   const [savingAddress, setSavingAddress]   = useState(false);
+  const [processingRefund, setProcessingRefund] = useState(false);
 
   const { data, isLoading } = useFetch(
     ['admin-order-detail', id, rev],
@@ -257,6 +258,20 @@ export default function AdminOrderDetail() {
     }
   }
 
+  async function handleRefund() {
+    if (!confirm(`Process full refund of ₹${order.totalAmount?.toLocaleString('en-IN')} to customer?`)) return;
+    setProcessingRefund(true);
+    try {
+      await api.post(`/admin/orders/${id}/refund`);
+      toast.success('Refund initiated via Razorpay. Will reflect in 5–7 business days.');
+      setRev((r) => r + 1);
+    } catch (err) {
+      toast.error(err?.response?.data?.error?.message || 'Refund failed');
+    } finally {
+      setProcessingRefund(false);
+    }
+  }
+
   // ── loading / error ───────────────────────────────────────────────────────
 
   if (isLoading) {
@@ -283,6 +298,10 @@ export default function AdminOrderDetail() {
   const statusMeta = STATUS_META[order.status] || { label: order.status, color: 'text-secondary-900', dot: 'bg-secondary-400' };
   const paymentMeta = order.paymentStatus === 'paid'
     ? { label: 'Paid', color: 'text-green-700' }
+    : order.paymentStatus === 'pending_refund'
+    ? { label: 'Refund Pending', color: 'text-red-600' }
+    : order.paymentStatus === 'refunded'
+    ? { label: 'Refunded', color: 'text-secondary-500' }
     : { label: order.paymentStatus?.charAt(0).toUpperCase() + order.paymentStatus?.slice(1) || 'Pending', color: 'text-yellow-700' };
 
   return (
@@ -607,12 +626,13 @@ export default function AdminOrderDetail() {
 
       {/* ─── Actions ─────────────────────────────────────────────────────────*/}
       <div className="flex gap-3 flex-wrap">
-        {order.status === 'delivered' && (
+        {['pending_refund', 'paid'].includes(order.paymentStatus) && order.status === 'cancelled' && (
           <button
-            onClick={() => toast('Use the Payments page to initiate a refund', { icon: 'ℹ️' })}
-            className="flex items-center gap-2 text-sm font-medium text-orange-600 border border-orange-200 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors"
+            onClick={handleRefund}
+            disabled={processingRefund}
+            className="flex items-center gap-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
           >
-            <RotateCcw size={14} /> Initiate Refund
+            <RotateCcw size={14} /> {processingRefund ? 'Processing…' : 'Process Refund'}
           </button>
         )}
       </div>
