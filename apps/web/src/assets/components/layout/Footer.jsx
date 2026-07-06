@@ -81,7 +81,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-secondary-800">
         <div className="px-4 sm:px-6 lg:px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-secondary-500">
-          <span>© {new Date().getFullYear()} Macgly. All rights reserved. GST: 33XXXXX0000X1ZX</span>
+          <span>© {new Date().getFullYear()} Macgly. All rights reserved.</span>
           <div className="flex items-center gap-3">
             <span>Secure Payments</span>
             <div className="flex gap-2">
