@@ -230,8 +230,8 @@ export default function Header() {
 
       {/* ── Nav bar ──────────────────────────────────────────── */}
       <div className="bg-white hidden md:block border-b border-secondary-100">
-        <div className="px-4 sm:px-6 lg:px-10">
-          <div className="flex items-center">
+        <div className="px-4 sm:px-6 lg:px-10 overflow-x-auto scrollbar-none">
+          <div className="flex items-center min-w-max">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.to}

@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Search, Package, MapPin, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Package, Share2, Check } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import Spinner from '../components/common/Spinner';
 
@@ -8,23 +9,41 @@ function fmtDate(iso) { return iso ? new Date(iso).toLocaleString('en-IN', { day
 const STATUS_STEPS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
 
 export default function TrackOrder() {
-  const [orderId, setOrderId] = useState('');
-  const [phone, setPhone] = useState('');
+  const [searchParams] = useSearchParams();
+  const [orderId, setOrderId] = useState(searchParams.get('id') || '');
+  const [phone, setPhone] = useState(searchParams.get('phone') || '');
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   async function handleSearch(e) {
-    e.preventDefault();
+    e?.preventDefault();
     setError('');
     setOrder(null);
     setLoading(true);
     try {
       const res = await api.get('/orders/track', { params: { orderId: orderId.trim(), phone: phone.trim() } });
       setOrder(res.data.order);
+      // Update URL so the link is shareable
+      window.history.replaceState(null, '', `/track-order?id=${encodeURIComponent(orderId.trim())}`);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Order not found. Check the order ID and phone number.');
     } finally { setLoading(false); }
+  }
+
+  // Auto-search if both params are in URL
+  useEffect(() => {
+    const id = searchParams.get('id');
+    const ph = searchParams.get('phone');
+    if (id && ph) { setOrderId(id); setPhone(ph); setTimeout(() => handleSearch(), 100); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function copyLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    });
   }
 
   const currentStep = order ? STATUS_STEPS.indexOf(order.status) : -1;
@@ -61,9 +80,14 @@ export default function TrackOrder() {
                 <p className="font-bold text-lg capitalize">{order.status}</p>
                 <p className="text-sm text-secondary-500">Placed {fmtDate(order.createdAt)}</p>
               </div>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold capitalize ${order.status === 'delivered' ? 'bg-green-100 text-green-700' : order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                {order.status}
-              </span>
+              <div className="flex flex-col items-end gap-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold capitalize ${order.status === 'delivered' ? 'bg-green-100 text-green-700' : order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                  {order.status}
+                </span>
+                <button onClick={copyLink} className="flex items-center gap-1.5 text-xs text-secondary-500 hover:text-primary-600 transition-colors">
+                  {copied ? <><Check size={13} className="text-green-500" /> Copied!</> : <><Share2 size={13} /> Share tracking</>}
+                </button>
+              </div>
             </div>
 
             {/* Progress bar */}

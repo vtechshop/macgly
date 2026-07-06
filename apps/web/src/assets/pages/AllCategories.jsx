@@ -51,19 +51,20 @@ export default function AllCategories() {
           const subs = (childrenMap[String(cat._id)] || []).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
           return (
             <div key={cat._id} className="bg-white rounded-xl border border-secondary-200 overflow-hidden">
-              {/* Parent category header */}
+              {/* Parent category header with full image */}
               <Link
                 to={`/category/${cat.slug}`}
-                className="flex items-center gap-3 px-4 py-3 bg-secondary-50 hover:bg-primary-50 border-b border-secondary-200 group transition-colors"
+                className="relative block h-32 bg-secondary-100 overflow-hidden group"
               >
-                <div className="w-8 h-8 rounded-lg bg-white border border-secondary-200 flex items-center justify-center shrink-0 overflow-hidden">
-                  {cat.image
-                    ? <img src={normalizeImageUrl(cat.image)} alt="" className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display = 'none'; }} />
-                    : <Icon size={16} className="text-primary-500" />
-                  }
+                {cat.image
+                  ? <img src={normalizeImageUrl(cat.image)} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.style.display='none'; }} />
+                  : <div className="w-full h-full flex items-center justify-center"><Icon size={40} className="text-secondary-300" /></div>
+                }
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 flex items-center justify-between">
+                  <span className="text-white font-bold text-sm leading-tight drop-shadow">{cat.name}</span>
+                  <ChevronRight size={14} className="text-white/80 shrink-0" />
                 </div>
-                <span className="flex-1 font-bold text-sm text-secondary-800 group-hover:text-primary-700 leading-tight">{cat.name}</span>
-                <ChevronRight size={14} className="text-secondary-400 group-hover:text-primary-500 shrink-0" />
               </Link>
 
               {/* Subcategories */}

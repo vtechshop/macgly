@@ -603,6 +603,40 @@ router.put('/orders/:id/status', requireApproved, async (req, res, next) => {
     order.tracking.history.push({ status, timestamp: new Date(), description: `Status updated to ${status}` });
 
     await order.save();
+
+    // Auto-create warranties on delivery for products with hasWarranty: true
+    if (status === 'delivered') {
+      const Warranty = require('../models/Warranty');
+      const full = await Order.findById(order._id)
+        .populate('user', 'name email phone')
+        .populate('items.product', 'title sku hasWarranty warranty');
+      for (const item of (full?.items || [])) {
+        const prod = item.product;
+        if (!prod?.hasWarranty || !prod?.warranty?.duration) continue;
+        const exists = await Warranty.findOne({ purchaseId: order.orderId, productId: prod._id });
+        if (exists) continue;
+        const dur = prod.warranty;
+        const days = dur.durationType === 'lifetime' ? 36500 : dur.durationType === 'years' ? (dur.duration || 1) * 365 : (dur.duration || 1) * 30;
+        const now = new Date();
+        const end = new Date(now.getTime() + days * 86400000);
+        const wid = `WR-${Date.now()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+        try {
+          await Warranty.create({
+            warrantyId: wid, purchaseId: order.orderId, orderId: order._id,
+            productId: prod._id, userId: full.user?._id || null,
+            customerName: full.user?.name || full.shippingAddress?.name || '',
+            customerEmail: full.user?.email || '',
+            customerPhone: full.user?.phone || full.shippingAddress?.phone || '',
+            product: { name: prod.title, model: prod.sku || '' },
+            warrantyType: 'manufacturer',
+            purchaseDate: order.createdAt, warrantyStartDate: now, warrantyEndDate: end,
+            warrantyPeriodDays: days, status: 'active',
+            extraInfo: { invoiceNo: order.orderId },
+          });
+        } catch { /* skip duplicate */ }
+      }
+    }
+
     res.json({ success: true, data: order });
   } catch (err) { next(err); }
 });
