@@ -319,9 +319,20 @@ router.get('/products', requireApproved, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+const VENDOR_PRODUCT_FIELDS = [
+  'title','slug','description','shortDescription','brand','sku','tags','images','imageAlts',
+  'videoUrl','price','compareAt','cost','hsnCode','taxable','taxRate','taxIncluded',
+  'stock','lowStockThreshold','trackInventory','weight','shippingCharge',
+  'delhiveryEnabled','shippingZones','dimensions','hasVariants','variantOptions',
+  'variants','attributes','specifications','faqs','seo','structuredData',
+  'hasWarranty','warranty','categoryIds','category','displayOrder',
+];
+
 router.post('/products', requireApproved, requireApprovedKYC, async (req, res, next) => {
   try {
-    const data = { ...req.body, vendorId: req.user._id };
+    const allowed = {};
+    VENDOR_PRODUCT_FIELDS.forEach((k) => { if (req.body[k] !== undefined) allowed[k] = req.body[k]; });
+    const data = { ...allowed, vendorId: req.user._id };
     if (!data.slug) data.slug = slugify(data.title || '');
     if (!data.sku) data.sku = generateSKU('VND');
     const product = await Product.create(data);
@@ -339,9 +350,11 @@ router.post('/products', requireApproved, requireApprovedKYC, async (req, res, n
 
 router.put('/products/:id', requireApproved, async (req, res, next) => {
   try {
+    const allowed = {};
+    VENDOR_PRODUCT_FIELDS.forEach((k) => { if (req.body[k] !== undefined) allowed[k] = req.body[k]; });
     const product = await Product.findOneAndUpdate(
       { _id: req.params.id, vendorId: req.user._id },
-      req.body,
+      allowed,
       { new: true, runValidators: true }
     );
     if (!product) throw new AppError('Product not found', 404, 'NOT_FOUND');
@@ -574,7 +587,9 @@ router.get('/orders/:id', requireApproved, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// PUT /vendors/orders/:id/status — sequential forward-only status update
+const ORDER_SEQUENCE = ['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered'];
+
+// PUT /vendors/orders/:id/status — forward-only status update
 router.put('/orders/:id/status', requireApproved, async (req, res, next) => {
   try {
     const { status } = req.body;
@@ -584,6 +599,15 @@ router.put('/orders/:id/status', requireApproved, async (req, res, next) => {
     }
     const order = await Order.findOne({ _id: req.params.id, 'items.vendorId': req.user._id });
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
+
+    // Enforce forward-only progression (cancellation is always allowed)
+    if (status !== 'cancelled') {
+      const currentIdx = ORDER_SEQUENCE.indexOf(order.status);
+      const newIdx     = ORDER_SEQUENCE.indexOf(status);
+      if (newIdx <= currentIdx) {
+        throw new AppError(`Cannot move order from '${order.status}' to '${status}'`, 400, 'INVALID_STATUS_TRANSITION');
+      }
+    }
 
     if (status === 'shipped') {
       if (!order.tracking?.carrier || !order.tracking?.trackingId) {
@@ -1227,8 +1251,9 @@ router.put('/kyc', async (req, res, next) => {
   try {
     const {
       businessName, businessType, businessAddress, taxId, phoneNumber,
-      gstVerified, gstDetails, submit,
+      submit,
     } = req.body;
+    // gstVerified and gstDetails are server-controlled only — never trust client values
 
     if (submit) {
       const user = await require('../models/User').findById(req.user._id).select('vendorProfile');
@@ -1239,7 +1264,7 @@ router.put('/kyc', async (req, res, next) => {
       if (!businessType)    missing.push('Business Type');
       if (!businessAddress) missing.push('Business Address');
       if (!phoneNumber)     missing.push('Phone Number');
-      if (!gstVerified)     missing.push('GST Verification');
+      if (!vp.gstVerified)  missing.push('GST Verification');
       if (!docs.some((d) => d.type === 'id_proof'))      missing.push('ID Proof Document');
       if (!docs.some((d) => d.type === 'address_proof')) missing.push('Address Proof Document');
       if (missing.length) {
@@ -1256,8 +1281,6 @@ router.put('/kyc', async (req, res, next) => {
     if (businessAddress !== undefined) update['vendorProfile.businessAddress'] = businessAddress;
     if (taxId           !== undefined) update['vendorProfile.gstin']           = taxId;
     if (phoneNumber     !== undefined) update['vendorProfile.businessPhone']   = phoneNumber;
-    if (gstVerified     !== undefined) update['vendorProfile.gstVerified']     = gstVerified;
-    if (gstDetails      !== undefined) update['vendorProfile.gstDetails']      = gstDetails;
     if (submit)                        update['vendorProfile.kycStatus']       = 'pending';
 
     const updated = await require('../models/User').findByIdAndUpdate(

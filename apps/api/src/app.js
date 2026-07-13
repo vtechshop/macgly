@@ -44,20 +44,17 @@ app.use(helmet({
   },
 }));
 
-// CORS
-const allowedOrigins = [
+// CORS — exact allowlist only, no prefix/suffix matching
+const allowedOrigins = new Set([
   FRONTEND_URL,
   'https://macgly.vercel.app',
   'https://macgly.com',
   'https://www.macgly.com',
-].filter(Boolean);
+].filter(Boolean));
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    if (origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com') || allowedOrigins.some(o => origin.startsWith(o))) {
-      return cb(null, true);
-    }
-    // Return false (blocked) instead of throwing — avoids unhandled error crash
+    if (allowedOrigins.has(origin)) return cb(null, true);
     return cb(null, false);
   },
   credentials: true,

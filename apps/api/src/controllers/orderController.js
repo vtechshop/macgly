@@ -81,7 +81,11 @@ async function createOrder(req, res, next) {
       items.reduce((sum, i) => sum + (i.price * i.quantity * i.gstRate) / (100 + i.gstRate), 0).toFixed(2)
     );
     const discount = cart.coupon?.discount || 0;
-    const shippingCharge = Math.min(Math.max(parseInt(req.body.shippingCharge) || 0, 0), 500);
+    const [freeThreshold, defaultRate] = await Promise.all([
+      Setting.get('shipping.free_threshold', 5000),
+      Setting.get('shipping.default_rate', 70),
+    ]);
+    const shippingCharge = subtotal >= parseFloat(freeThreshold) ? 0 : parseFloat(defaultRate);
     const totalAmount = Math.max(0, subtotal - discount + shippingCharge);
 
     const orderId = generateOrderId();
