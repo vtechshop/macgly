@@ -255,7 +255,7 @@ export default function Search() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="section-title">
             {search
@@ -273,7 +273,7 @@ export default function Search() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <select className="input w-auto text-sm" value={sort} onChange={(e) => set('sort', e.target.value)}>
             <option value="displayOrder">Featured</option>
             <option value="newest">Newest</option>
