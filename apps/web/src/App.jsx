@@ -1,5 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 import { useDispatch, useSelector } from 'react-redux';
 import { setUser, clearUser } from './store/slices/authSlice';
 import { setCart } from './store/slices/cartSlice';
@@ -149,6 +155,7 @@ function RequireAuth({ children }) {
 export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ScrollToTop />
       <AuthInit>
         <Suspense fallback={<PageLoader />}>
           <Routes>
