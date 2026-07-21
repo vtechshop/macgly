@@ -22,8 +22,7 @@ export default defineConfig(({ mode }) => {
             if (!id.includes('node_modules/')) return;
             // Charts only used in admin — keep separate so storefront visitors don't download them
             if (id.includes('recharts') || id.includes('/d3-') || id.includes('victory')) return 'charts';
-            // React ecosystem must be in one chunk to avoid singleton conflicts
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('redux') || id.includes('react-redux')) return 'react';
+            // Everything else in one vendor chunk to avoid React singleton conflicts
             return 'vendor';
           },
         },
