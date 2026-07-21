@@ -29,7 +29,7 @@ function HeroSection({ banners }) {
   const banner = banners?.[0];
   return (
     <div className="relative overflow-hidden rounded-2xl" style={{
-      minHeight: 220,
+      minHeight: 280,
       background: 'linear-gradient(135deg, #0c1520 0%, #162035 50%, #1a2a3e 100%)',
     }}>
       {banner?.image && (
@@ -97,52 +97,55 @@ export default function Home() {
 
   const categories = categoriesData?.categories || [];
   const topCats    = categories.filter((c) => !c.parentId).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  const loading    = !categoriesData;
 
   return (
     <div className="flex w-full">
 
-      {categories.length > 0 && (
-        <aside className="hidden lg:block w-48 shrink-0 self-start sticky z-40" style={{ top: '110px' }}>
-          <CategorySidebar categories={categories} sticky />
-        </aside>
-      )}
+      {/* Always reserve sidebar space on desktop to prevent layout shift */}
+      <aside className="hidden lg:block w-48 shrink-0 self-start sticky z-40" style={{ top: '110px' }}>
+        {categories.length > 0 && <CategorySidebar categories={categories} sticky />}
+      </aside>
 
       <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-5 space-y-6">
 
         <HeroSection banners={bannersData?.banners} />
 
-        {/* Shop by Category */}
-        {topCats.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-xl font-bold text-secondary-900">Shop by Category</h2>
-                <p className="text-sm text-secondary-400 mt-0.5">Select a category to explore products</p>
-              </div>
-              <Link to="/categories" className="text-sm font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                All Categories <ChevronRight size={14} />
-              </Link>
+        {/* Shop by Category — always rendered to prevent CLS */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-secondary-900">Shop by Category</h2>
+              <p className="text-sm text-secondary-400 mt-0.5">Select a category to explore products</p>
             </div>
+            <Link to="/categories" className="text-sm font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+              All Categories <ChevronRight size={14} />
+            </Link>
+          </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-              {topCats.map((cat) => {
-                const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
-                return (
-                  <Link key={cat._id} to={`/category/${cat.slug}`}
-                    className="relative rounded-xl overflow-hidden bg-secondary-100 aspect-square group hover:shadow-lg transition-all duration-200">
-                    {cat.image
-                      ? <img src={normalizeImageUrl(cat.image)} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onError={(e) => e.currentTarget.closest('a').classList.add('no-img')} />
-                      : <div className="w-full h-full flex items-center justify-center"><Icon size={56} className="text-secondary-300 group-hover:text-primary-400 transition-colors" /></div>
-                    }
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2.5">
-                      <span className="text-white text-xs font-semibold leading-tight line-clamp-2 drop-shadow">{cat.name}</span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+            {loading
+              ? Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-xl bg-secondary-100 animate-pulse" />
+                ))
+              : topCats.map((cat) => {
+                  const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
+                  return (
+                    <Link key={cat._id} to={`/category/${cat.slug}`}
+                      className="relative rounded-xl overflow-hidden bg-secondary-100 aspect-square group hover:shadow-lg transition-all duration-200">
+                      {cat.image
+                        ? <img src={normalizeImageUrl(cat.image)} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onError={(e) => e.currentTarget.closest('a').classList.add('no-img')} />
+                        : <div className="w-full h-full flex items-center justify-center"><Icon size={56} className="text-secondary-300 group-hover:text-primary-400 transition-colors" /></div>
+                      }
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2.5">
+                        <span className="text-white text-xs font-semibold leading-tight line-clamp-2 drop-shadow">{cat.name}</span>
+                      </div>
+                    </Link>
+                  );
+                })
+            }
+          </div>
+        </section>
 
         {/* CTA */}
         <div className="relative overflow-hidden rounded-2xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6"
