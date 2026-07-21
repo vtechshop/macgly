@@ -29,7 +29,14 @@ async function setCache(key, value, ttlSeconds = 300) {
 async function deleteCache(pattern) {
   const redis = getRedis();
   if (redis) {
-    const keys = await redis.keys(pattern.replace('*', '*'));
+    const prefix = pattern.replace('*', '');
+    const stream = redis.scanStream({ match: `${prefix}*`, count: 100 });
+    const keys = [];
+    await new Promise((resolve, reject) => {
+      stream.on('data', (batch) => keys.push(...batch));
+      stream.on('end', resolve);
+      stream.on('error', reject);
+    });
     if (keys.length) await redis.del(...keys);
     return;
   }

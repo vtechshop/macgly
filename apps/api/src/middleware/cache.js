@@ -13,8 +13,9 @@ function cacheMiddleware(ttl) {
     const originalJson = res.json.bind(res);
     res.json = function (data) {
       res.json = originalJson;
-      // fire-and-forget — never block the response
-      setCache(key, data, ttl).catch(() => {});
+      if (res.statusCode < 400) {
+        setCache(key, data, ttl).catch(() => {});
+      }
       return originalJson(data);
     };
     next();

@@ -117,13 +117,11 @@ function AuthInit({ children }) {
   const dispatch = useDispatch();
   useEffect(() => {
     let cancelled = false;
-    api.get('/auth/me')
-      .then(({ data }) => {
+    Promise.all([api.get('/auth/me'), api.get('/cart')])
+      .then(([{ data }, { data: cartData }]) => {
         if (!cancelled) {
           dispatch(setUser(data.user));
-          api.get('/cart')
-            .then(({ data: cartData }) => { if (!cancelled && cartData.cart) dispatch(setCart(cartData.cart)); })
-            .catch(() => {});
+          if (cartData.cart) dispatch(setCart(cartData.cart));
         }
       })
       .catch(() => { if (!cancelled) dispatch(clearUser()); });

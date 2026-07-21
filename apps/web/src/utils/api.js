@@ -7,6 +7,7 @@ const BASE = '/api';
 const api = axios.create({
   baseURL: BASE,
   withCredentials: true,
+  timeout: 15000,
 });
 
 let csrfToken = null;

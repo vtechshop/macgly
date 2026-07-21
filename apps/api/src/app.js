@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -14,6 +15,9 @@ const app = express();
 
 // Trust Render/proxy headers for rate limiting and IP detection
 app.set('trust proxy', 1);
+
+// Gzip compression — must be before routes
+app.use(compression());
 
 // Security headers
 app.use(helmet({
@@ -62,19 +66,19 @@ app.use(cors({
 
 // Body parsing — capture raw body for webhook HMAC verification
 app.use(express.json({
-  limit: '10mb',
+  limit: '1mb',
   verify: (req, _res, buf) => {
     if (req.path.startsWith('/api/payments/webhook')) req.rawBody = buf;
   },
 }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 
 // Sanitize MongoDB operators from req.body/params/query
 app.use(mongoSanitize());
 
 // Logging
-if (NODE_ENV !== 'test') app.use(morgan('dev'));
+if (NODE_ENV !== 'test') app.use(morgan(isProd() ? 'combined' : 'dev'));
 
 // Rate limiting
 app.use('/api', apiLimiter);
@@ -146,7 +150,16 @@ app.get('/robots.txt', (req, res) => {
 if (isProd()) {
   // __dirname = apps/api/src — go up 3 levels to repo root, then into web/dist
   const DIST = path.join(__dirname, '../../../apps/web/dist');
-  app.use(express.static(DIST, { index: false }));
+  app.use(express.static(DIST, {
+    index: false,
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     res.sendFile(path.join(DIST, 'index.html'));

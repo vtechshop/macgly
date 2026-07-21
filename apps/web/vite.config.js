@@ -16,14 +16,15 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 800,
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // Keep all React-ecosystem libs together to avoid singleton conflicts
-            if (id.includes('node_modules/')) {
-              return 'vendor';
-            }
+            if (!id.includes('node_modules/')) return;
+            // Charts only used in admin — keep separate so storefront visitors don't download them
+            if (id.includes('recharts') || id.includes('/d3-') || id.includes('victory')) return 'charts';
+            // React ecosystem must be in one chunk to avoid singleton conflicts
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('redux') || id.includes('react-redux')) return 'react';
+            return 'vendor';
           },
         },
       },

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Zap, Plus, Minus, Heart, Eye } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -7,7 +7,7 @@ import { addWishlistId, removeWishlistId } from '../../../store/slices/wishlistS
 import { formatCurrency, normalizeImageUrl } from '../../../utils/format';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
-import QuickViewModal from './QuickViewModal';
+const QuickViewModal = lazy(() => import('./QuickViewModal'));
 
 export default function ProductCard({ product, onAddToCart }) {
   const dispatch = useDispatch();
@@ -207,7 +207,9 @@ export default function ProductCard({ product, onAddToCart }) {
       </div>
 
       {quickViewOpen && (
-        <QuickViewModal product={product} onClose={() => setQuickViewOpen(false)} />
+        <Suspense fallback={null}>
+          <QuickViewModal product={product} onClose={() => setQuickViewOpen(false)} />
+        </Suspense>
       )}
     </>
   );
