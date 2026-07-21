@@ -120,7 +120,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="initial-loader" style="display:flex;align-items:center;justify-content:center;height:100vh;width:100%;background:#ffffff;position:fixed;inset:0;z-index:9999">
+        <div style="text-align:center">
+          <div style="font-family:sans-serif;font-size:22px;font-weight:800;color:#ea580c;letter-spacing:-0.5px;margin-bottom:16px">MACGLY</div>
+          <div style="width:36px;height:36px;border:3px solid #e5e7eb;border-top-color:#ea580c;border-radius:50%;animation:spin 0.75s linear infinite;margin:0 auto"></div>
+        </div>
+      </div>
+    </div>
+    <style>#initial-loader{transition:opacity 0.2s}@keyframes spin{to{transform:rotate(360deg)}}</style>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

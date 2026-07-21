@@ -6,6 +6,9 @@ import store from './store';
 import App from './App';
 import './index.css';
 
+const loader = document.getElementById('initial-loader');
+if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.remove(), 200); }
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
