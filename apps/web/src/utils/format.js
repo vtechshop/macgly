@@ -14,10 +14,15 @@ export function formatDate(date, opts = {}) {
   }).format(new Date(date));
 }
 
-export function normalizeImageUrl(url) {
+export function normalizeImageUrl(url, { width } = {}) {
   if (!url) return url;
   if (url.includes('localhost:') && url.includes('/uploads/')) {
     return url.substring(url.indexOf('/uploads/'));
+  }
+  // Auto-format (WebP/AVIF) + quality compression for Cloudinary URLs
+  if (url.includes('res.cloudinary.com') && url.includes('/upload/') && !url.includes('f_auto')) {
+    const t = ['f_auto', 'q_auto', width ? `w_${width}` : null].filter(Boolean).join(',');
+    return url.replace('/upload/', `/upload/${t}/`);
   }
   return url;
 }
