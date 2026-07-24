@@ -35,7 +35,7 @@ function HeroSection({ banners }) {
       {banner?.image && (
         <img src={normalizeImageUrl(banner.image)} alt={banner.title}
           className="absolute inset-0 w-full h-full object-cover opacity-15"
-          fetchpriority="high" />
+          fetchPriority="high" />
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
@@ -88,7 +88,7 @@ export default function Home() {
     setMeta({
       title: 'Macgly — Professional Tools & Machinery in India',
       description: 'Buy genuine tools, machines, spare parts and equipment. Pan India delivery.',
-      canonical: 'https://macgly.com/',
+      canonical: 'https://www.macgly.com/',
     });
   }, []);
 

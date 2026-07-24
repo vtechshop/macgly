@@ -1,9 +1,19 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useFetch } from '../../hooks';
 import api from '../../utils/api';
 import Spinner from '../components/common/Spinner';
+import { setMeta } from '../../utils/seo';
 
 export default function AllCategories() {
+  useEffect(() => {
+    setMeta({
+      title: 'All Categories — Tools & Machinery | Macgly',
+      description: 'Browse all product categories at Macgly: agricultural tools, engineering kits, spare parts, electronics, general machinery and more. Pan India delivery.',
+      canonical: 'https://www.macgly.com/categories',
+    });
+  }, []);
+
   const { data, isLoading } = useFetch(
     ['categories'],
     () => api.get('/catalog/categories').then((r) => r.data)

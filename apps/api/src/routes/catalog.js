@@ -6,10 +6,20 @@ const {
 const { cacheMiddleware } = require('../middleware/cache');
 const TTL = require('../config/ttl');
 const StockAlert = require('../models/StockAlert');
+const Product   = require('../models/Product');
 const AppError  = require('../utils/AppError');
 const { checkServiceability } = require('../services/delhiveryService');
 const { DELHIVERY_API_KEY, DELHIVERY_BASE_URL, DELHIVERY_PICKUP_PINCODE } = require('../config/env');
 const axios = require('axios');
+
+router.get('/brands', async (req, res, next) => {
+  try {
+    const brands = await Product.distinct('brand', { published: true, brand: { $nin: [null, ''] } });
+    res.json({ brands: brands.filter(Boolean).sort((a, b) => a.localeCompare(b)) });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get('/products', cacheMiddleware(TTL.CATALOG), getProducts);
 router.get('/products/:slug', cacheMiddleware(TTL.PRODUCT), getProduct);

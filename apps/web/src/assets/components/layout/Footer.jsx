@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Facebook, Youtube, Instagram } from 'lucide-react';
+import { Phone, Mail, MapPin } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -29,11 +29,6 @@ export default function Footer() {
               <div className="flex items-center gap-2"><Phone size={13} /><span>+91 99445 56683</span></div>
               <div className="flex items-center gap-2"><Mail size={13} /><span>macglyshop@gmail.com</span></div>
               <div className="flex items-center gap-2 text-secondary-500"><MapPin size={13} /><span>9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore - 641006, Tamil Nadu, India</span></div>
-            </div>
-            <div className="flex gap-3 mt-4">
-              <a href="#" className="text-secondary-500 hover:text-primary-400 transition-colors"><Facebook size={18} /></a>
-              <a href="#" className="text-secondary-500 hover:text-primary-400 transition-colors"><Youtube size={18} /></a>
-              <a href="#" className="text-secondary-500 hover:text-primary-400 transition-colors"><Instagram size={18} /></a>
             </div>
           </div>
 
@@ -67,6 +62,9 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-bold text-white mb-3 uppercase tracking-wide">Help</h4>
             <ul className="space-y-2 text-sm">
+              <li><Link to="/info/faq" className="hover:text-primary-400 transition-colors">FAQs</Link></li>
+              <li><Link to="/info/buyer-guide" className="hover:text-primary-400 transition-colors">Buyer's Guide</Link></li>
+              <li><Link to="/info/seller-guide" className="hover:text-primary-400 transition-colors">Seller's Guide</Link></li>
               <li><Link to="/track-order" className="hover:text-primary-400 transition-colors">Track Order</Link></li>
               <li><Link to="/warranty-check" className="hover:text-primary-400 transition-colors">Warranty Check</Link></li>
               <li><Link to="/info/about" className="hover:text-primary-400 transition-colors">About Us</Link></li>

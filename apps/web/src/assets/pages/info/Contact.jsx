@@ -1,13 +1,24 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, Mail, Phone, MapPin } from 'lucide-react';
+import { CheckCircle, Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 import api from '../../../utils/api';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { setMeta } from '../../../utils/seo';
 import toast from 'react-hot-toast';
 
+const SUBJECTS = [
+  { value: '', label: 'Select inquiry type' },
+  { value: 'Bulk / B2B Order', label: 'Bulk / B2B Order' },
+  { value: 'Product Question', label: 'Product Question' },
+  { value: 'Technical Support', label: 'Technical Support' },
+  { value: 'Shipping & Delivery', label: 'Shipping & Delivery' },
+  { value: 'Returns & Warranty', label: 'Returns & Warranty' },
+  { value: 'Partnership / Vendor', label: 'Partnership / Vendor' },
+  { value: 'Other', label: 'Other' },
+];
+
 export default function Contact() {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -25,7 +36,7 @@ export default function Contact() {
     try {
       await api.post('/contact', form);
       setSent(true);
-      setForm({ name: '', email: '', phone: '', message: '' });
+      setForm({ name: '', email: '', phone: '', subject: '', message: '' });
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Could not send message. Please try again.');
     } finally {
@@ -69,6 +80,17 @@ export default function Contact() {
             <p>Mon–Sat: 9:00 AM – 6:00 PM IST</p>
             <p>Sunday: Closed</p>
           </div>
+
+          <a
+            href="https://wa.me/919944556683?text=Hi%2C+I%27d+like+to+get+in+touch+with+Macgly."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl font-semibold text-sm text-white transition-colors"
+            style={{ background: '#25D366' }}
+          >
+            <MessageCircle size={16} />
+            Quick reply on WhatsApp
+          </a>
         </div>
 
         {/* Form */}
@@ -87,6 +109,19 @@ export default function Contact() {
                 <Input label="Email" type="email" value={form.email} onChange={set('email')} required className="col-span-2 sm:col-span-1" />
               </div>
               <Input label="Phone (optional)" type="tel" value={form.phone} onChange={set('phone')} placeholder="Enter phone number" />
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-secondary-700">Inquiry Type *</label>
+                <select
+                  className="input w-full text-sm"
+                  value={form.subject}
+                  onChange={set('subject')}
+                  required
+                >
+                  {SUBJECTS.map(({ value, label }) => (
+                    <option key={value} value={value} disabled={value === ''}>{label}</option>
+                  ))}
+                </select>
+              </div>
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-secondary-700">Message *</label>
                 <textarea

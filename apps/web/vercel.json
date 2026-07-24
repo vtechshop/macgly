@@ -5,6 +5,14 @@
       "destination": "https://macgly.onrender.com/api/:path*"
     },
     {
+      "source": "/sitemap.xml",
+      "destination": "https://macgly.onrender.com/sitemap.xml"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "https://macgly.onrender.com/robots.txt"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

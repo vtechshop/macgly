@@ -42,14 +42,13 @@ async function getProducts(req, res, next) {
     }
     if (search) {
       const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      filter.$or = [
-        { title: re },
-        { brand: re },
-        { tags: re },
-        { category: re },
-        { sku: re },
-        { description: re },
-      ];
+      const searchOr = [{ title: re }, { brand: re }, { tags: re }, { category: re }, { sku: re }, { description: re }];
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: searchOr }];
+        delete filter.$or;
+      } else {
+        filter.$or = searchOr;
+      }
     }
 
     const sortMap = {

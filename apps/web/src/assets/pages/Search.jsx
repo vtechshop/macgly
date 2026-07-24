@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { SlidersHorizontal, X, Star, Search as SearchIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SlidersHorizontal, X, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import ProductGrid from '../components/product/ProductGrid';
@@ -25,7 +25,7 @@ function StarRating({ value }) {
   );
 }
 
-function FilterPanel({ params, set, setParams, categoriesData, onClose }) {
+function FilterPanel({ params, set, setParams, categoriesData, brandsData, onClose }) {
   const category  = params.get('category')  || '';
   const minPrice  = params.get('minPrice')  || '';
   const maxPrice  = params.get('maxPrice')  || '';
@@ -33,19 +33,13 @@ function FilterPanel({ params, set, setParams, categoriesData, onClose }) {
   const minRating = params.get('minRating') || '';
   const featured  = params.get('featured')  || '';
 
-  const [brandInput, setBrandInput] = useState(brand);
-
-  function applyBrand() {
-    set('brand', brandInput.trim());
-  }
-
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-sm">Filters</h3>
         <div className="flex items-center gap-3">
           <button className="text-xs text-primary-600 hover:underline"
-            onClick={() => { setBrandInput(''); set('', ''); }}>
+            onClick={() => setParams(new URLSearchParams())}>
             Clear all
           </button>
           {onClose && <button onClick={onClose}><X size={14} /></button>}
@@ -66,28 +60,12 @@ function FilterPanel({ params, set, setParams, categoriesData, onClose }) {
       {/* Brand */}
       <div>
         <label className="text-xs font-semibold text-secondary-500 uppercase tracking-wide">Brand</label>
-        <div className="flex gap-2 mt-1.5">
-          <input
-            className="input text-sm flex-1"
-            placeholder="Enter brand name"
-            value={brandInput}
-            onChange={(e) => setBrandInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && applyBrand()}
-          />
-          <button onClick={applyBrand} className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shrink-0">
-            <SearchIcon size={14} />
-          </button>
-        </div>
-        {brand && (
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-              {brand}
-              <button onClick={() => { setBrandInput(''); set('brand', ''); }} className="hover:text-primary-900">
-                <X size={10} />
-              </button>
-            </span>
-          </div>
-        )}
+        <select className="input mt-1.5 text-sm w-full" value={brand} onChange={(e) => set('brand', e.target.value)}>
+          <option value="">All Brands</option>
+          {brandsData?.brands?.map((b) => (
+            <option key={b} value={b}>{b}</option>
+          ))}
+        </select>
       </div>
 
       {/* Price Range */}
@@ -213,6 +191,11 @@ export default function Search() {
     () => api.get('/catalog/categories').then((r) => r.data)
   );
 
+  const { data: brandsData } = useFetch(
+    ['brands'],
+    () => api.get('/catalog/brands').then((r) => r.data)
+  );
+
   function set(key, value) {
     setParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -299,7 +282,7 @@ export default function Search() {
         {/* Desktop filter sidebar */}
         <aside className="hidden lg:block w-60 shrink-0">
           <div className="card p-4 sticky top-20">
-            <FilterPanel params={params} set={set} setParams={setParams} categoriesData={categoriesData} />
+            <FilterPanel params={params} set={set} setParams={setParams} categoriesData={categoriesData} brandsData={brandsData} />
           </div>
         </aside>
 
@@ -307,7 +290,7 @@ export default function Search() {
           {/* Mobile filter panel */}
           {showFilters && (
             <div className="lg:hidden card p-4 mb-4">
-              <FilterPanel params={params} set={set} setParams={setParams} categoriesData={categoriesData} onClose={() => setShowFilters(false)} />
+              <FilterPanel params={params} set={set} setParams={setParams} categoriesData={categoriesData} brandsData={brandsData} onClose={() => setShowFilters(false)} />
             </div>
           )}
 

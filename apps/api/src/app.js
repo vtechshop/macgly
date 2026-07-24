@@ -143,7 +143,26 @@ app.use('/api/referrals', require('./routes/referrals'));
 app.get('/sitemap.xml', require('./routes/sitemap'));
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain');
-  res.send(`User-agent: *\nAllow: /\nDisallow: /dashboard/\nDisallow: /api/\nSitemap: https://macgly.com/sitemap.xml`);
+  res.send([
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /dashboard/',
+    'Disallow: /checkout',
+    'Disallow: /order-confirmation/',
+    'Disallow: /login',
+    'Disallow: /register',
+    'Disallow: /forgot-password',
+    'Disallow: /reset-password/',
+    'Disallow: /api/',
+    'Disallow: /*?search=',
+    'Disallow: /*?page=',
+    'Disallow: /*?sort=',
+    'Disallow: /*?filter=',
+    'Disallow: /*?min=',
+    'Disallow: /*?max=',
+    '',
+    'Sitemap: https://www.macgly.com/sitemap.xml',
+  ].join('\n'));
 });
 
 // Serve React app in production (Vite handles it in dev)

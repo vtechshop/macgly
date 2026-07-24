@@ -1,11 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
-
-function ScrollToTop() {
-  const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
-  return null;
-}
 import { useDispatch, useSelector } from 'react-redux';
 import { setUser, clearUser } from './store/slices/authSlice';
 import { setCart } from './store/slices/cartSlice';
@@ -40,6 +34,9 @@ const Contact               = lazy(() => import('./assets/pages/info/Contact'));
 const Privacy               = lazy(() => import('./assets/pages/info/Privacy'));
 const NotFound              = lazy(() => import('./assets/pages/NotFound'));
 const Terms                 = lazy(() => import('./assets/pages/info/Terms'));
+const Faq                   = lazy(() => import('./assets/pages/info/Faq'));
+const BuyerGuide            = lazy(() => import('./assets/pages/info/BuyerGuide'));
+const SellerGuide           = lazy(() => import('./assets/pages/info/SellerGuide'));
 
 // Admin pages — lazy loaded
 const AdminDashboard        = lazy(() => import('./assets/pages/dashboard/admin/AdminDashboard'));
@@ -104,6 +101,12 @@ const AffiliateProductLinks = lazy(() => import('./assets/pages/dashboard/affili
 const AffiliateSettings     = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateSettings'));
 const AffiliateKYC          = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateKYC'));
 const AffiliateSupport      = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateSupport'));
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 
 function PageLoader() {
   return (
@@ -175,6 +178,9 @@ export default function App() {
               <Route path="/info/contact" element={<Contact />} />
               <Route path="/info/privacy" element={<Privacy />} />
               <Route path="/info/terms" element={<Terms />} />
+              <Route path="/info/faq" element={<Faq />} />
+              <Route path="/info/buyer-guide" element={<BuyerGuide />} />
+              <Route path="/info/seller-guide" element={<SellerGuide />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/track-order" element={<TrackOrder />} />
