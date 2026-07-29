@@ -9,7 +9,7 @@ const abandonedCartService = require('../services/abandonedCartService');
 const AppError = require('../utils/AppError');
 const { generateOrderId } = require('../utils/helpers');
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config/env');
-const { sendOrderConfirmation } = require('../services/emailService');
+const { sendOrderConfirmation, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendShippingUpdate } = require('../services/emailService');
 const notif = require('../utils/notificationHelper');
 const whatsapp = require('../services/whatsappService');
 const { createVendorCommissions, createAffiliateCommission } = require('../services/commissionService');
@@ -90,19 +90,8 @@ async function createOrder(req, res, next) {
 
     const orderId = generateOrderId();
 
-    // COD validation
     if (paymentMethod === 'cod') {
-      const [codEnabled, codMax] = await Promise.all([
-        Setting.get('payment.cod_enabled', true),
-        Setting.get('payment.cod_max_amount', 10000),
-      ]);
-      if (codEnabled === false || codEnabled === 'false') {
-        throw new AppError('Cash on Delivery is not available', 400, 'COD_DISABLED');
-      }
-      const maxAmt = parseFloat(codMax) || 10000;
-      if (totalAmount > maxAmt) {
-        throw new AppError(`Cash on Delivery is only available for orders up to ₹${maxAmt}`, 400, 'COD_LIMIT_EXCEEDED');
-      }
+      throw new AppError('Cash on Delivery is not available', 400, 'COD_DISABLED');
     }
 
     let razorpayOrder = null;
@@ -183,6 +172,7 @@ async function createOrder(req, res, next) {
       User.findById(req.user._id).then((u) => {
         if (u) {
           sendOrderConfirmation({ order, user: u }).catch(() => {});
+          sendAdminNewOrderEmail({ order, customer: u }).catch(() => {});
           whatsapp.notifyOrderPlaced(order, u).catch(() => {});
         }
       });
@@ -205,6 +195,14 @@ async function createOrder(req, res, next) {
         }
         for (const [vendorId, vendorItems] of Object.entries(vendorItemsMap)) {
           await notif.notifyVendorNewOrder({ vendorUserId: vendorId, order, items: vendorItems });
+          if (paymentMethod === 'cod') {
+            const User = require('../models/User');
+            User.findById(vendorId).then((v) => {
+              if (v?.email) {
+                sendVendorNewOrderEmail({ order, vendorEmail: v.email, vendorName: v.vendorProfile?.storeName || v.name || 'Vendor', vendorItems }).catch(() => {});
+              }
+            }).catch(() => {});
+          }
         }
       } catch (e) {
         console.error('[createOrder] notification error:', e.message);
@@ -260,9 +258,34 @@ async function verifyPayment(req, res, next) {
     User.findById(order.user).then((user) => {
       if (user) {
         sendOrderConfirmation({ order, user }).catch(console.error);
+        sendAdminNewOrderEmail({ order, customer: user }).catch(() => {});
         whatsapp.notifyOrderPlaced(order, user).catch(() => {});
       }
     });
+
+    // Vendor emails for this Razorpay-paid order
+    (async () => {
+      try {
+        const User = require('../models/User');
+        const vendorItemsMap = {};
+        for (const item of order.items) {
+          if (item.vendorId) {
+            const key = item.vendorId.toString();
+            if (!vendorItemsMap[key]) vendorItemsMap[key] = [];
+            vendorItemsMap[key].push(item);
+          }
+        }
+        for (const [vendorId, vendorItems] of Object.entries(vendorItemsMap)) {
+          User.findById(vendorId).then((v) => {
+            if (v?.email) {
+              sendVendorNewOrderEmail({ order, vendorEmail: v.email, vendorName: v.vendorProfile?.storeName || v.name || 'Vendor', vendorItems }).catch(() => {});
+            }
+          }).catch(() => {});
+        }
+      } catch (e) {
+        console.error('[verifyPayment] vendor email error:', e.message);
+      }
+    })();
 
     // Payment success notification to customer
     if (order.user) {
@@ -324,11 +347,16 @@ async function cancelOrder(req, res, next) {
     ));
 
     // If already paid, flag for admin to process refund manually
-    if (order.paymentStatus === 'paid') {
+    const wasPaid = order.paymentStatus === 'paid';
+    if (wasPaid) {
       await Order.findByIdAndUpdate(order._id, { paymentStatus: 'pending_refund' });
     }
 
-    res.json({ order, refundPending: order.paymentStatus === 'paid' });
+    // Notify customer by email
+    sendShippingUpdate({ order, user: req.user }).catch(() => {});
+    whatsapp.notifyOrderCancelled(order, req.user).catch(() => {});
+
+    res.json({ order, refundPending: wasPaid });
   } catch (err) { next(err); }
 }
 

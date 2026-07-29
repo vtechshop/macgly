@@ -188,4 +188,103 @@ async function sendBackInStockEmail({ email, product }) {
   });
 }
 
-module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail };
+async function sendVendorNewOrderEmail({ order, vendorEmail, vendorName, vendorItems }) {
+  const itemRows = vendorItems.map((i) =>
+    `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb">${i.title}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center">×${i.quantity}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right">₹${(i.price * i.quantity).toLocaleString('en-IN')}</td>
+    </tr>`
+  ).join('');
+  const itemTotal = vendorItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const addr = order.shippingAddress;
+  const addrLine = addr
+    ? `${addr.name}, ${addr.phone}<br>${addr.address}, ${addr.city} – ${addr.pincode}, ${addr.state}`
+    : 'N/A';
+
+  await sendEmail({
+    to: vendorEmail,
+    subject: `New Order — ${order.orderId} (${vendorItems.length} item${vendorItems.length > 1 ? 's' : ''})`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#1f2937">
+        <div style="background:#111827;padding:24px 32px;border-radius:8px 8px 0 0">
+          <span style="color:#ea580c;font-size:22px;font-weight:800">MACGLY</span>
+          <span style="color:#9ca3af;font-size:11px;margin-left:8px">VENDOR NOTIFICATION</span>
+        </div>
+        <div style="background:#fff;padding:28px 32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 4px;color:#111827">New Order Received</h2>
+          <p style="margin:0 0 20px;color:#6b7280">Hi ${vendorName}, a customer just placed an order for your product${vendorItems.length > 1 ? 's' : ''}.</p>
+          <p style="margin:0 0 4px"><strong>Order ID:</strong> <span style="font-family:monospace">${order.orderId}</span></p>
+          <p style="margin:0 0 20px"><strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Paid Online'}</p>
+          <table style="width:100%;border-collapse:collapse;margin:0 0 8px">
+            <thead><tr style="background:#f9fafb">
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#6b7280;font-weight:600">Item</th>
+              <th style="padding:8px 12px;text-align:center;font-size:12px;color:#6b7280;font-weight:600">Qty</th>
+              <th style="padding:8px 12px;text-align:right;font-size:12px;color:#6b7280;font-weight:600">Total</th>
+            </tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+          <div style="text-align:right;font-weight:700;color:#111827;margin-bottom:20px">Your items total: ₹${itemTotal.toLocaleString('en-IN')}</div>
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:20px">
+            <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Ship To</p>
+            <p style="margin:0;font-size:14px;line-height:1.7">${addrLine}</p>
+          </div>
+          <p style="margin:0 0 20px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;font-size:13px;color:#92400e">
+            Please arrange dispatch within <strong>1–2 business days</strong> and update the tracking details in your dashboard.
+          </p>
+          <a href="https://www.macgly.com/dashboard/vendor/orders" style="display:inline-block;background:#ea580c;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px">View in Vendor Dashboard →</a>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
+          <p style="margin:0;color:#9ca3af;font-size:12px">Questions? <a href="mailto:macglyshop@gmail.com" style="color:#ea580c">macglyshop@gmail.com</a> | +91 99445 56683</p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+async function sendAdminNewOrderEmail({ order, customer }) {
+  const adminEmail = process.env.ADMIN_EMAIL || 'macglyshop@gmail.com';
+  const itemRows = order.items.map((i) =>
+    `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb">${i.title}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center">×${i.quantity}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right">₹${(i.price * i.quantity).toLocaleString('en-IN')}</td>
+    </tr>`
+  ).join('');
+  const addr = order.shippingAddress;
+  const addrLine = addr
+    ? `${addr.name}, ${addr.phone} — ${addr.address}, ${addr.city} – ${addr.pincode}, ${addr.state}`
+    : 'N/A';
+
+  await sendEmail({
+    to: adminEmail,
+    subject: `New Order — ${order.orderId} (₹${(order.totalAmount || 0).toLocaleString('en-IN')})`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#1f2937">
+        <div style="background:#111827;padding:24px 32px;border-radius:8px 8px 0 0">
+          <span style="color:#ea580c;font-size:22px;font-weight:800">MACGLY</span>
+          <span style="color:#9ca3af;font-size:11px;margin-left:8px">ADMIN NOTIFICATION</span>
+        </div>
+        <div style="background:#fff;padding:28px 32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 4px;color:#111827">New Order Placed</h2>
+          <p style="margin:0 0 20px;color:#6b7280">A new order has been placed on Macgly.</p>
+          <p style="margin:0 0 4px"><strong>Order ID:</strong> <span style="font-family:monospace">${order.orderId}</span></p>
+          <p style="margin:0 0 4px"><strong>Customer:</strong> ${customer?.name || 'N/A'} (${customer?.email || 'N/A'})</p>
+          <p style="margin:0 0 4px"><strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Paid Online'}</p>
+          <p style="margin:0 0 20px"><strong>Ship to:</strong> ${addrLine}</p>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:8px">
+            <thead><tr style="background:#f9fafb">
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#6b7280;font-weight:600">Item</th>
+              <th style="padding:8px 12px;text-align:center;font-size:12px;color:#6b7280;font-weight:600">Qty</th>
+              <th style="padding:8px 12px;text-align:right;font-size:12px;color:#6b7280;font-weight:600">Total</th>
+            </tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+          <div style="text-align:right;font-size:18px;font-weight:700;color:#111827;margin-bottom:24px">Order Total: ₹${(order.totalAmount || 0).toLocaleString('en-IN')}</div>
+          <a href="https://www.macgly.com/dashboard/admin/orders" style="display:inline-block;background:#ea580c;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px">View in Admin Dashboard →</a>
+        </div>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail };
