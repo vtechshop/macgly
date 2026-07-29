@@ -11,6 +11,8 @@ const { uploadFile } = require('../services/storageService');
 const notif = require('../utils/notificationHelper');
 const { applyEarnings } = require('../utils/earningsHelper');
 const { sendShippingUpdate } = require('../services/emailService');
+const { createShipment } = require('../services/shippingService');
+const whatsapp = require('../services/whatsappService');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -676,24 +678,46 @@ router.put('/orders/:id/status', requireApproved, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Vendor: can only mark as shipped
+// Vendor: create Delhivery shipment and mark as shipped
 router.patch('/orders/:id/ship', requireApproved, async (req, res, next) => {
   try {
     const { carrier, trackingId, trackingUrl } = req.body;
-    const order = await Order.findOne({ _id: req.params.id, 'items.vendorId': req.user._id });
+    const order = await Order.findOne({ _id: req.params.id, 'items.vendorId': req.user._id })
+      .populate('user', 'name email phone');
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
     if (!['confirmed', 'processing'].includes(order.status)) {
       throw new AppError('Can only ship confirmed or processing orders', 400, 'INVALID_STATUS');
     }
-    const historyEntry = { status: 'shipped', timestamp: new Date(), description: `Shipped via ${carrier || 'courier'}` };
-    await Order.findByIdAndUpdate(order._id, {
+
+    // Auto-create Delhivery/Shiprocket shipment unless vendor manually provided tracking
+    let tracking = { carrier, trackingId, url: trackingUrl };
+    if (!trackingId) {
+      try {
+        const result = await createShipment({ order, carrier: carrier || 'auto' });
+        tracking = { carrier: result.carrier, trackingId: result.trackingId, url: result.url };
+      } catch (e) {
+        console.error('[Vendor ship] Auto-shipment failed:', e.message);
+        if (!carrier) throw new AppError('Shipment creation failed. Please enter tracking details manually.', 500, 'SHIPMENT_FAILED');
+      }
+    }
+
+    const historyEntry = { status: 'shipped', timestamp: new Date(), description: `Shipped via ${tracking.carrier || 'courier'}${tracking.trackingId ? ' · AWB: ' + tracking.trackingId : ''}` };
+    const updated = await Order.findByIdAndUpdate(order._id, {
       status: 'shipped',
-      'tracking.carrier': carrier,
-      'tracking.trackingId': trackingId,
-      'tracking.url': trackingUrl,
+      'tracking.carrier': tracking.carrier,
+      'tracking.trackingId': tracking.trackingId,
+      'tracking.url': tracking.url,
       $push: { 'tracking.history': historyEntry },
-    });
-    res.json({ ok: true });
+    }, { new: true });
+
+    // Notify customer
+    if (order.user) {
+      sendShippingUpdate({ order: updated, user: order.user }).catch(() => {});
+      whatsapp.notifyOrderShipped(updated, order.user).catch(() => {});
+      notif.notifyCustomerOrderStatus({ userId: order.user._id, order: updated, status: 'shipped' }).catch(() => {});
+    }
+
+    res.json({ ok: true, tracking });
   } catch (err) { next(err); }
 });
 
