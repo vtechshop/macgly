@@ -351,20 +351,7 @@ async function cancelOrder(req, res, next) {
 
     const wasPaid = order.paymentStatus === 'paid';
     if (wasPaid) {
-      if (razorpay && order.razorpayPaymentId) {
-        razorpay.payments.refund(order.razorpayPaymentId, {
-          amount: Math.round((order.totalAmount || 0) * 100),
-          speed: 'normal',
-          notes: { reason: 'Customer cancelled order', orderId: order.orderId },
-        })
-        .then(() => Order.findByIdAndUpdate(order._id, { paymentStatus: 'refunded' }))
-        .catch((e) => {
-          console.error('[cancelOrder] Razorpay refund error:', e.message);
-          Order.findByIdAndUpdate(order._id, { paymentStatus: 'pending_refund' }).catch(() => {});
-        });
-      } else {
-        await Order.findByIdAndUpdate(order._id, { paymentStatus: 'pending_refund' });
-      }
+      await Order.findByIdAndUpdate(order._id, { paymentStatus: 'pending_refund' });
     }
 
     // Notify customer by email
