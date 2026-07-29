@@ -9,7 +9,7 @@ const abandonedCartService = require('../services/abandonedCartService');
 const AppError = require('../utils/AppError');
 const { generateOrderId } = require('../utils/helpers');
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config/env');
-const { sendOrderConfirmation, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendShippingUpdate } = require('../services/emailService');
+const { sendOrderConfirmation, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendShippingUpdate, sendAdminOrderCancelledEmail } = require('../services/emailService');
 const notif = require('../utils/notificationHelper');
 const whatsapp = require('../services/whatsappService');
 const { createVendorCommissions, createAffiliateCommission } = require('../services/commissionService');
@@ -354,9 +354,11 @@ async function cancelOrder(req, res, next) {
       await Order.findByIdAndUpdate(order._id, { paymentStatus: 'pending_refund' });
     }
 
-    // Notify customer by email
+    // Notify customer
     sendShippingUpdate({ order, user: req.user }).catch(() => {});
     whatsapp.notifyOrderCancelled(order, req.user).catch(() => {});
+    // Notify admin if refund is needed
+    if (wasPaid) sendAdminOrderCancelledEmail({ order, customer: req.user }).catch(() => {});
 
     res.json({ order, refundPending: wasPaid });
   } catch (err) { next(err); }

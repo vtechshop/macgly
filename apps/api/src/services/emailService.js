@@ -287,4 +287,44 @@ async function sendAdminNewOrderEmail({ order, customer }) {
   });
 }
 
-module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail };
+async function sendAdminOrderCancelledEmail({ order, customer }) {
+  const adminEmail = process.env.ADMIN_EMAIL || 'macglyshop@gmail.com';
+  const itemRows = order.items.map((i) =>
+    `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb">${i.title}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center">×${i.quantity}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right">₹${(i.price * i.quantity).toLocaleString('en-IN')}</td>
+    </tr>`
+  ).join('');
+
+  await sendEmail({
+    to: adminEmail,
+    subject: `⚠️ Order Cancelled — ${order.orderId} (Refund Pending)`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#1f2937">
+        <div style="background:#111827;padding:24px 32px;border-radius:8px 8px 0 0">
+          <span style="color:#ea580c;font-size:22px;font-weight:800">MACGLY</span>
+          <span style="color:#9ca3af;font-size:11px;margin-left:8px">ADMIN NOTIFICATION</span>
+        </div>
+        <div style="background:#fff;padding:28px 32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 4px;color:#dc2626">Order Cancelled — Refund Required</h2>
+          <p style="margin:0 0 20px;color:#6b7280">A customer has cancelled a paid order. Please process the refund.</p>
+          <p style="margin:0 0 4px"><strong>Order ID:</strong> <span style="font-family:monospace">${order.orderId}</span></p>
+          <p style="margin:0 0 4px"><strong>Customer:</strong> ${customer?.name || 'N/A'} (${customer?.email || 'N/A'})</p>
+          <p style="margin:0 0 20px"><strong>Refund Amount:</strong> <span style="font-size:18px;font-weight:700;color:#dc2626">₹${(order.totalAmount || 0).toLocaleString('en-IN')}</span></p>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+            <thead><tr style="background:#f9fafb">
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#6b7280;font-weight:600">Item</th>
+              <th style="padding:8px 12px;text-align:center;font-size:12px;color:#6b7280;font-weight:600">Qty</th>
+              <th style="padding:8px 12px;text-align:right;font-size:12px;color:#6b7280;font-weight:600">Total</th>
+            </tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+          <a href="https://www.macgly.com/dashboard/admin/orders" style="display:inline-block;background:#dc2626;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px">Process Refund in Dashboard →</a>
+        </div>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendAdminOrderCancelledEmail };
