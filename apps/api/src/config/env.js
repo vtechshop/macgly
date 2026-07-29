@@ -37,9 +37,7 @@ module.exports = {
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',
 
-  MAILERSEND_API_KEY: process.env.MAILERSEND_API_KEY || '',
-  MAILERSEND_FROM_EMAIL: process.env.MAILERSEND_FROM_EMAIL || 'no-reply@localhost',
-  MAILERSEND_FROM_NAME: process.env.MAILERSEND_FROM_NAME || 'Shop',
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
 
   DELHIVERY_API_KEY: process.env.DELHIVERY_API_KEY || '',
   DELHIVERY_BASE_URL: process.env.DELHIVERY_BASE_URL || 'https://track.delhivery.com',

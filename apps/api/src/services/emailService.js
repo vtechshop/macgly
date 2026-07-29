@@ -1,24 +1,24 @@
-const { MAILERSEND_API_KEY, MAILERSEND_FROM_EMAIL, MAILERSEND_FROM_NAME } = require('../config/env');
+const { RESEND_API_KEY } = require('../config/env');
 
 async function sendEmail({ to, subject, html, text, attachments }) {
-  if (!MAILERSEND_API_KEY) {
+  if (!RESEND_API_KEY) {
     console.log(`[Email DEV] To: ${to} | Subject: ${subject}`);
     return;
   }
 
   const body = {
-    from: { email: MAILERSEND_FROM_EMAIL, name: MAILERSEND_FROM_NAME },
-    to: [{ email: to }],
+    from: 'Macgly <noreply@macgly.com>',
+    to: [to],
     subject,
     html,
     text: text || subject,
     ...(attachments?.length ? { attachments } : {}),
   };
 
-  const res = await fetch('https://api.mailersend.com/v1/email', {
+  const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${MAILERSEND_API_KEY}`,
+      Authorization: `Bearer ${RESEND_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
@@ -26,7 +26,7 @@ async function sendEmail({ to, subject, html, text, attachments }) {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error(`MailerSend error [${res.status}] to=${to}:`, err);
+    console.error(`Resend error [${res.status}] to=${to}:`, err);
   }
 }
 
@@ -146,7 +146,7 @@ async function sendPasswordReset({ email, name, resetUrl }) {
 }
 
 async function sendContactMessage({ name, email, phone, message }) {
-  const adminEmail = process.env.ADMIN_EMAIL || process.env.MAILERSEND_FROM_EMAIL || 'support@macgly.com';
+  const adminEmail = process.env.ADMIN_EMAIL || 'macglyshop@gmail.com';
   await sendEmail({
     to: adminEmail,
     subject: `New Contact Message from ${name}`,
