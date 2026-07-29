@@ -242,57 +242,60 @@ async function verifyPayment(req, res, next) {
     const expected = crypto.createHmac('sha256', RAZORPAY_KEY_SECRET).update(body).digest('hex');
     if (expected !== razorpay_signature) throw new AppError('Payment verification failed', 400, 'PAYMENT_INVALID');
 
-    const order = await Order.findOneAndUpdate(
-      { razorpayOrderId: razorpay_order_id },
+    // Guard: if webhook already processed this payment, skip emails/notifications (prevent duplicates)
+    let order = await Order.findOneAndUpdate(
+      { razorpayOrderId: razorpay_order_id, paymentStatus: { $ne: 'paid' } },
       { paymentStatus: 'paid', status: 'confirmed', razorpayPaymentId: razorpay_payment_id },
       { new: true }
     );
+    const alreadyProcessed = !order;
+    if (!order) order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
 
-    // Create commission records for vendor and affiliate
-    createVendorCommissions(order).catch(() => {});
-    if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch(() => {});
+    if (!alreadyProcessed) {
+      // Create commission records for vendor and affiliate
+      createVendorCommissions(order).catch(() => {});
+      if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch(() => {});
 
-    // Send confirmation email + fire notifications async — don't block response
-    const User = require('../models/User');
-    User.findById(order.user).then((user) => {
-      if (user) {
-        sendOrderConfirmation({ order, user }).catch(console.error);
-        sendAdminNewOrderEmail({ order, customer: user }).catch(() => {});
-        whatsapp.notifyOrderPlaced(order, user).catch(() => {});
-      }
-    });
-
-    // Vendor emails for this Razorpay-paid order
-    (async () => {
-      try {
-        const User = require('../models/User');
-        const vendorItemsMap = {};
-        for (const item of order.items) {
-          if (item.vendorId) {
-            const key = item.vendorId.toString();
-            if (!vendorItemsMap[key]) vendorItemsMap[key] = [];
-            vendorItemsMap[key].push(item);
-          }
+      // Send confirmation email + fire notifications async — don't block response
+      const User = require('../models/User');
+      User.findById(order.user).then((user) => {
+        if (user) {
+          sendOrderConfirmation({ order, user }).catch(console.error);
+          sendAdminNewOrderEmail({ order, customer: user }).catch(() => {});
+          whatsapp.notifyOrderPlaced(order, user).catch(() => {});
         }
-        for (const [vendorId, vendorItems] of Object.entries(vendorItemsMap)) {
-          User.findById(vendorId).then((v) => {
-            if (v?.email) {
-              sendVendorNewOrderEmail({ order, vendorEmail: v.email, vendorName: v.vendorProfile?.storeName || v.name || 'Vendor', vendorItems }).catch(() => {});
+      });
+
+      // Vendor emails
+      (async () => {
+        try {
+          const User = require('../models/User');
+          const vendorItemsMap = {};
+          for (const item of order.items) {
+            if (item.vendorId) {
+              const key = item.vendorId.toString();
+              if (!vendorItemsMap[key]) vendorItemsMap[key] = [];
+              vendorItemsMap[key].push(item);
             }
-          }).catch(() => {});
+          }
+          for (const [vendorId, vendorItems] of Object.entries(vendorItemsMap)) {
+            User.findById(vendorId).then((v) => {
+              if (v?.email) sendVendorNewOrderEmail({ order, vendorEmail: v.email, vendorName: v.vendorProfile?.storeName || v.name || 'Vendor', vendorItems }).catch(() => {});
+            }).catch(() => {});
+          }
+        } catch (e) {
+          console.error('[verifyPayment] vendor email error:', e.message);
         }
-      } catch (e) {
-        console.error('[verifyPayment] vendor email error:', e.message);
-      }
-    })();
+      })();
 
-    // Payment success notification to customer
-    if (order.user) {
-      notif.notifyUserPaymentSuccess({ userId: order.user, order, amount: order.totalAmount }).catch(() => {});
+      // Payment success notification to customer
+      if (order.user) {
+        notif.notifyUserPaymentSuccess({ userId: order.user, order, amount: order.totalAmount }).catch(() => {});
+      }
+      // Notify admins order is paid
+      notif.notifyAdminNewOrder({ order }).catch(() => {});
     }
-    // Notify admins order is paid
-    notif.notifyAdminNewOrder({ order }).catch(() => {});
 
     res.json({ order });
   } catch (err) { next(err); }
@@ -346,10 +349,22 @@ async function cancelOrder(req, res, next) {
       Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } })
     ));
 
-    // If already paid, flag for admin to process refund manually
     const wasPaid = order.paymentStatus === 'paid';
     if (wasPaid) {
-      await Order.findByIdAndUpdate(order._id, { paymentStatus: 'pending_refund' });
+      if (razorpay && order.razorpayPaymentId) {
+        razorpay.payments.refund(order.razorpayPaymentId, {
+          amount: Math.round((order.totalAmount || 0) * 100),
+          speed: 'normal',
+          notes: { reason: 'Customer cancelled order', orderId: order.orderId },
+        })
+        .then(() => Order.findByIdAndUpdate(order._id, { paymentStatus: 'refunded' }))
+        .catch((e) => {
+          console.error('[cancelOrder] Razorpay refund error:', e.message);
+          Order.findByIdAndUpdate(order._id, { paymentStatus: 'pending_refund' }).catch(() => {});
+        });
+      } else {
+        await Order.findByIdAndUpdate(order._id, { paymentStatus: 'pending_refund' });
+      }
     }
 
     // Notify customer by email

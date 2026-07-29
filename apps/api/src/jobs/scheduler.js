@@ -4,6 +4,7 @@ const reviewRequestJob = require('./reviewRequestJob');
 const trackingSyncJob = require('./trackingSyncJob');
 const abandonedCartService = require('../services/abandonedCartService');
 const inventoryAlertService = require('../services/inventoryAlertService');
+const cleanupStaleOrders = require('./cleanupStaleOrders');
 
 function schedule(name, fn, intervalMs) {
   fn().catch((e) => console.error(`[Job:${name}] startup error:`, e.message));
@@ -21,6 +22,7 @@ function startJobs() {
   const MINUTE = 60 * 1000;
   const HOUR = 60 * MINUTE;
 
+  schedule('CleanupStaleOrders', () => cleanupStaleOrders.run(), 30 * MINUTE);
   schedule('TrackingSync', () => trackingSyncJob.run(), 15 * MINUTE);
   schedule('AutoRelease', () => autoReleaseTransfers.run(), 4 * HOUR);
   schedule('Reconcile', () => reconcilePayments.run(), 2 * HOUR);

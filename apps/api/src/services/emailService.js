@@ -26,7 +26,7 @@ async function sendEmail({ to, subject, html, text, attachments }) {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error('MailerSend error:', err);
+    console.error(`MailerSend error [${res.status}] to=${to}:`, err);
   }
 }
 
