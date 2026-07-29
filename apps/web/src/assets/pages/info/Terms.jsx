@@ -131,7 +131,7 @@ const SECTIONS = [
         num: '6.1',
         title: 'Return Policy',
         bullets: [
-          'Items can be returned within 30 days of delivery',
+          'Items can be returned within 7 days of delivery',
           'Product must be unused, unwashed, and in original packaging with all tags, labels, and invoice intact',
           'Raise a return request via "My Orders" in your dashboard or by emailing ledvtech@gmail.com',
         ],
@@ -152,7 +152,7 @@ const SECTIONS = [
         num: '6.3',
         title: 'Return Process',
         bullets: [
-          'Raise a return request within 30 days of delivery via "My Orders"',
+          'Raise a return request within 7 days of delivery via "My Orders"',
           'Pack the item securely in original packaging',
           'Our delivery partner will do a free pickup from your address',
           'Item is inspected — if approved, refund is initiated',
