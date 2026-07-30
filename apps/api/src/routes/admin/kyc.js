@@ -2,6 +2,7 @@ const router = require('express').Router();
 const User   = require('../../models/User');
 const AppError = require('../../utils/AppError');
 const notif  = require('../../utils/notificationHelper');
+const { sendVendorKYCDecisionEmail } = require('../../services/emailService');
 
 // ── GET /admin/kyc/pending — merged queue with type tag ───────────────────────
 // MUST be before / so Express doesn't treat 'pending' as an :id param
@@ -116,6 +117,7 @@ router.put('/vendors/:id/approve', async (req, res, next) => {
       { new: true },
     );
     notif.notifyVendorApprovalStatus({ vendorUserId: updated._id, vendor: updated.vendorProfile, status: 'approved' }).catch(() => {});
+    sendVendorKYCDecisionEmail({ vendor: updated, status: 'approved' }).catch(() => {});
     res.json({ ok: true, user: updated });
   } catch (err) { next(err); }
 });
@@ -135,6 +137,7 @@ router.put('/vendors/:id/reject', async (req, res, next) => {
     );
     if (!updated) throw new AppError('Vendor not found', 404, 'NOT_FOUND');
     notif.notifyVendorApprovalStatus({ vendorUserId: updated._id, vendor: updated.vendorProfile, status: 'rejected', rejectionReason: reason }).catch(() => {});
+    sendVendorKYCDecisionEmail({ vendor: updated, status: 'rejected', rejectionReason: reason }).catch(() => {});
     res.json({ ok: true, user: updated });
   } catch (err) { next(err); }
 });

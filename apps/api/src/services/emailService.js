@@ -327,6 +327,37 @@ async function sendAdminOrderCancelledEmail({ order, customer }) {
   });
 }
 
+async function sendVendorKYCDecisionEmail({ vendor, status, rejectionReason }) {
+  const name = vendor.vendorProfile?.businessName || vendor.name || 'Vendor';
+  const approved = status === 'approved';
+  await sendEmail({
+    to: vendor.email,
+    subject: approved ? '🎉 Your Macgly vendor account is approved!' : '❌ Your Macgly vendor application was not approved',
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <h2 style="color:${approved ? '#16a34a' : '#dc2626'}">${approved ? '🎉 Congratulations!' : '❌ Application Not Approved'}</h2>
+        <p>Hi ${vendor.name || name},</p>
+        ${approved
+          ? `<p>Your vendor application for <strong>${name}</strong> has been <strong style="color:#16a34a">approved</strong>! You now have full access to the Macgly vendor dashboard.</p>
+             <p>You can start listing your products immediately.</p>
+             <a href="${process.env.FRONTEND_URL || 'https://macgly.com'}/dashboard/vendor/products"
+               style="display:inline-block;padding:12px 24px;background:#ea580c;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;margin-top:8px">
+               Start Listing Products →
+             </a>`
+          : `<p>Unfortunately, your vendor application for <strong>${name}</strong> was <strong style="color:#dc2626">not approved</strong> at this time.</p>
+             ${rejectionReason ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin:12px 0"><strong>Reason:</strong> ${rejectionReason}</div>` : ''}
+             <p>Please fix the issue mentioned above and resubmit your application.</p>
+             <a href="${process.env.FRONTEND_URL || 'https://macgly.com'}/dashboard/vendor/kyc"
+               style="display:inline-block;padding:12px 24px;background:#ea580c;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;margin-top:8px">
+               Update & Resubmit →
+             </a>`
+        }
+        <p style="color:#9ca3af;font-size:12px;margin-top:24px">Macgly · macgly.com · support@macgly.com</p>
+      </div>
+    `,
+  });
+}
+
 async function sendVendorKYCSubmittedEmail({ vendor, adminEmail }) {
   const name = vendor.vendorProfile?.businessName || vendor.name || 'A vendor';
   const email = vendor.email;
@@ -374,4 +405,4 @@ async function sendVendorKYCSubmittedEmail({ vendor, adminEmail }) {
   });
 }
 
-module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendAdminOrderCancelledEmail, sendVendorKYCSubmittedEmail };
+module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendAdminOrderCancelledEmail, sendVendorKYCSubmittedEmail, sendVendorKYCDecisionEmail };
