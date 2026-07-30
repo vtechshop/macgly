@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { MapPin, Truck, CreditCard, Check, ChevronRight, Zap, Package, LocateFixed } from 'lucide-react';
 import api from '../../utils/api';
 import { clearCart } from '../../store/slices/cartSlice';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, normalizeImageUrl } from '../../utils/format';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Spinner from '../components/common/Spinner';
@@ -60,11 +60,32 @@ function OrderSummary({ items, subtotal, shippingCharge, discount, coupon, coupo
   return (
     <div className="bg-white border border-secondary-200 rounded-xl p-5 space-y-3 sticky top-4">
       <h3 className="font-semibold text-secondary-800">Order Summary</h3>
-      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+      <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
         {items.map((item) => (
-          <div key={item._id} className="flex justify-between text-sm gap-2">
-            <span className="text-secondary-600 line-clamp-1 flex-1">{item.product?.title} × {item.quantity}</span>
-            <span className="shrink-0 font-medium">{formatCurrency(item.price * item.quantity)}</span>
+          <div key={item._id} className="flex items-center gap-3">
+            <div className="relative shrink-0">
+              <div className="w-14 h-14 rounded-lg border border-secondary-100 bg-secondary-50 overflow-hidden">
+                {item.product?.images?.[0] ? (
+                  <img
+                    src={normalizeImageUrl(item.product.images[0])}
+                    alt={item.product?.title}
+                    className="w-full h-full object-contain p-1"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-secondary-300">
+                    <Package size={18} />
+                  </div>
+                )}
+              </div>
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-secondary-700 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                {item.quantity}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-secondary-800 line-clamp-2 leading-tight">{item.product?.title}</p>
+            </div>
+            <span className="shrink-0 text-sm font-semibold">{formatCurrency(item.price * item.quantity)}</span>
           </div>
         ))}
       </div>
