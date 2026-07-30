@@ -368,9 +368,7 @@ export default function Product() {
             <div className="flex items-baseline gap-3 flex-wrap">
               <span className="text-3xl font-black text-secondary-900">{formatCurrency(activePrice)}</span>
               {product.taxRate > 0 && (
-                <span className="text-sm text-green-600 font-medium">
-                  ({product.taxIncluded ? 'incl. GST' : 'excl. GST'})
-                </span>
+                <span className="text-sm text-green-600 font-medium">(incl. GST)</span>
               )}
               {activeCompareAt > activePrice && (
                 <>
@@ -381,17 +379,9 @@ export default function Product() {
             </div>
             {product.taxRate > 0 && (() => {
               const rate = product.taxRate;
-              const gstAmt = product.taxIncluded
-                ? activePrice * rate / (100 + rate)
-                : activePrice * rate / 100;
-              const total = product.taxIncluded ? activePrice : activePrice + gstAmt;
+              const gstAmt = activePrice * rate / (100 + rate);
               return (
-                <>
-                  <p className="text-sm text-green-600">+ {formatCurrency(gstAmt)} GST ({rate}%)</p>
-                  <p className="text-base font-bold text-secondary-900">
-                    = {formatCurrency(total)} <span className="text-xs font-normal text-secondary-400">(incl. of all taxes)</span>
-                  </p>
-                </>
+                <p className="text-sm text-green-600">Includes {formatCurrency(gstAmt)} GST ({rate}%)</p>
               );
             })()}
             {activeCompareAt > activePrice && (
