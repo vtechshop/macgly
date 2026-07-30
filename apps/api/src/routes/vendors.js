@@ -1398,19 +1398,26 @@ router.post('/gst/verify', async (req, res, next) => {
     };
     const stateName = stateNames[stateCode] || 'India';
 
-    res.json({
-      success: true,
-      data: {
-        tradeName:   `Business (PAN: ${pan})`,
-        legalName:   `Registered Entity ${pan}`,
-        gstNumber:   gstin,
-        status:      'Active',
-        address:     `${stateName}, India`,
-        stateCode,
-        pan,
+    const gstDetails = {
+      tradeName: `Business (PAN: ${pan})`,
+      legalName: `Registered Entity ${pan}`,
+      gstNumber: gstin,
+      status:    'Active',
+      address:   `${stateName}, India`,
+      stateCode,
+      pan,
+    };
+
+    // Save verified status server-side — never trust client to set this
+    await require('../models/User').findByIdAndUpdate(req.user._id, {
+      $set: {
+        'vendorProfile.gstVerified': true,
+        'vendorProfile.gstDetails':  gstDetails,
+        'vendorProfile.gstin':       gstin,
       },
-      active: true,
     });
+
+    res.json({ success: true, data: gstDetails, active: true });
   } catch (err) { next(err); }
 });
 
