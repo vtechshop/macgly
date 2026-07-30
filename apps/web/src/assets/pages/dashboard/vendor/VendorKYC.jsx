@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import {
   ShieldCheck, Building2, Phone, FileText, CreditCard, User, CheckCircle2,
   XCircle, Clock, AlertCircle, Upload, Trash2, Eye, RefreshCw, ChevronDown, ChevronUp,
-  Check, X,
+  Check, X, ChevronRight,
 } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
@@ -37,67 +37,49 @@ const FAQS = [
   { q: 'What if my application is rejected?', a: 'The admin will provide a reason. Fix the specific issue shown and resubmit.' },
 ];
 
+const STEP_META = [
+  { number: 1, title: 'Business Info' },
+  { number: 2, title: 'GST Verify' },
+  { number: 3, title: 'Documents' },
+  { number: 4, title: 'Submit' },
+];
+
 // ─── Step Indicator ───────────────────────────────────────────────────────────
 
-function StepIndicator({ steps }) {
+function StepIndicator({ activeStep, completedSteps }) {
   return (
     <div className="flex items-center justify-center mb-8">
-      {steps.map((step, i) => (
-        <div key={step.number} className="flex items-center">
-          <div className="flex flex-col items-center">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
-              step.status === 'completed' ? 'bg-green-500 border-green-500 text-white' :
-              step.status === 'current'   ? 'bg-primary-600 border-primary-600 text-white' :
-              'bg-white border-secondary-200 text-secondary-400'
-            }`}>
-              {step.status === 'completed' ? <Check size={15} /> : step.number}
-            </div>
-            <div className="mt-1.5 text-center">
-              <p className={`text-xs font-semibold ${step.status === 'pending' ? 'text-secondary-400' : 'text-secondary-700'}`}>
-                {step.title}
-              </p>
-              <p className={`text-[10px] ${
-                step.status === 'completed' ? 'text-green-600' :
-                step.status === 'current'   ? 'text-primary-600' : 'text-secondary-300'
+      {STEP_META.map((step, i) => {
+        const done = completedSteps.includes(step.number);
+        const current = activeStep === step.number;
+        return (
+          <div key={step.number} className="flex items-center">
+            <div className="flex flex-col items-center">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
+                done    ? 'bg-green-500 border-green-500 text-white' :
+                current ? 'bg-primary-600 border-primary-600 text-white' :
+                          'bg-white border-secondary-200 text-secondary-400'
               }`}>
-                {step.status === 'completed' ? 'Done' : step.status === 'current' ? 'In progress' : 'Required'}
-              </p>
+                {done ? <Check size={15} /> : step.number}
+              </div>
+              <div className="mt-1.5 text-center">
+                <p className={`text-xs font-semibold ${(!done && !current) ? 'text-secondary-400' : 'text-secondary-700'}`}>
+                  {step.title}
+                </p>
+                <p className={`text-[10px] ${
+                  done    ? 'text-green-600' :
+                  current ? 'text-primary-600' : 'text-secondary-300'
+                }`}>
+                  {done ? 'Done' : current ? 'In progress' : 'Required'}
+                </p>
+              </div>
             </div>
+            {i < STEP_META.length - 1 && (
+              <div className={`w-16 sm:w-20 h-0.5 mx-2 mb-6 ${done ? 'bg-green-400' : 'bg-secondary-200'}`} />
+            )}
           </div>
-          {i < steps.length - 1 && (
-            <div className={`w-16 sm:w-24 h-0.5 mx-2 mb-6 ${step.status === 'completed' ? 'bg-green-400' : 'bg-secondary-200'}`} />
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Progress Bar ─────────────────────────────────────────────────────────────
-
-function ProgressBar({ pct }) {
-  return (
-    <div className="mb-6">
-      <div className="flex justify-between text-xs text-secondary-500 mb-1.5">
-        <span>Overall completion</span><span>{pct}%</span>
-      </div>
-      <div className="h-2 bg-secondary-100 rounded-full overflow-hidden">
-        <div className="h-full bg-primary-600 rounded-full transition-all" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
-// ─── Section Header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ icon: Icon, title, complete }) {
-  return (
-    <div className={`flex items-center gap-3 mb-4 pb-3 border-b ${complete ? 'border-green-200' : 'border-secondary-100'}`}>
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${complete ? 'bg-green-50' : 'bg-primary-50'}`}>
-        <Icon size={17} className={complete ? 'text-green-600' : 'text-primary-600'} />
-      </div>
-      <h2 className="font-bold text-secondary-900">{title}</h2>
-      {complete && <CheckCircle2 size={17} className="text-green-500 ml-auto" />}
+        );
+      })}
     </div>
   );
 }
@@ -177,6 +159,7 @@ function FAQ({ q, a }) {
 export default function VendorKYC() {
   const dispatch = useDispatch();
   const [rev, setRev] = useState(0);
+  const [activeStep, setActiveStep] = useState(1);
 
   const [formData, setFormData] = useState({
     businessName: '', businessType: '', businessAddress: '', taxId: '', phoneNumber: '',
@@ -207,9 +190,19 @@ export default function VendorKYC() {
         taxId:           kycData.taxId || '',
         phoneNumber:     kycData.phoneNumber || '',
       });
-      setGstVerified(kycData.gstVerified || false);
+      const verified = kycData.gstVerified || false;
+      setGstVerified(verified);
       setGstDetails(kycData.gstDetails || null);
       setFormLoaded(true);
+
+      // Jump to first incomplete step
+      const hasBusinessInfo = !!(kycData.businessName && kycData.businessType && kycData.businessAddress && kycData.phoneNumber);
+      const hasDocs = (kycData.documents || []).some((d) => d.type === 'id_proof') &&
+                      (kycData.documents || []).some((d) => d.type === 'address_proof');
+      if (!hasBusinessInfo) setActiveStep(1);
+      else if (!verified) setActiveStep(2);
+      else if (!hasDocs) setActiveStep(3);
+      else setActiveStep(4);
     }
   }, [kycData, formLoaded]);
 
@@ -221,26 +214,32 @@ export default function VendorKYC() {
   const kyc = kycData || {};
   const docs = kyc.documents || [];
   const status = kyc.status || 'not_submitted';
-  const steps = kycStats?.steps || [
-    { number: 1, title: 'Business Info', status: 'current' },
-    { number: 2, title: 'GST Verify',    status: 'pending' },
-    { number: 3, title: 'Documents',     status: 'pending' },
-    { number: 4, title: 'Approved',      status: 'pending' },
-  ];
   const overallPct = kycStats?.completion?.overall || 0;
   const businessInfoComplete = kycStats?.completion?.businessInfo?.percentage === 100;
+  const docsComplete = docs.some((d) => d.type === 'id_proof') && docs.some((d) => d.type === 'address_proof');
   const isSubmitted = status === 'pending';
   const isApproved  = status === 'approved';
   const isRejected  = status === 'rejected';
 
+  const completedSteps = [];
+  if (businessInfoComplete) completedSteps.push(1);
+  if (gstVerified) completedSteps.push(2);
+  if (docsComplete) completedSteps.push(3);
+  if (isApproved) completedSteps.push(4);
+
   function setField(k) { return (e) => setFormData((p) => ({ ...p, [k]: e.target.value })); }
 
-  async function saveBusinessInfo() {
+  async function saveBusinessInfo(andProceed = false) {
+    if (!formData.businessName.trim() || !formData.businessType || !formData.businessAddress.trim() || !formData.phoneNumber.trim()) {
+      toast.error('Please fill all required fields');
+      return;
+    }
     setSaving(true);
     try {
       await api.put('/vendors/kyc', formData);
       toast.success('Business info saved');
       setRev((r) => r + 1);
+      if (andProceed) setActiveStep(2);
     } catch (e) {
       toast.error(e.response?.data?.error?.message || 'Save failed');
     } finally { setSaving(false); }
@@ -257,19 +256,12 @@ export default function VendorKYC() {
       setGstDetails(data.data);
       if (!data.active) toast.info('GST verified but currently inactive');
       else toast.success('GST verified successfully');
-      // Auto-fill business name and address from GST
       setFormData((p) => ({
         ...p,
         businessName: p.businessName || data.data.tradeName || data.data.legalName || p.businessName,
         businessAddress: p.businessAddress || data.data.address || p.businessAddress,
       }));
-      // Save GST data
-      await api.put('/vendors/kyc', {
-        ...formData,
-        taxId: gstin,
-        gstVerified: true,
-        gstDetails: data.data,
-      });
+      await api.put('/vendors/kyc', { ...formData, taxId: gstin, gstVerified: true, gstDetails: data.data });
       setRev((r) => r + 1);
     } catch (e) {
       setGstError(e.response?.data?.error?.message || 'GST verification failed');
@@ -290,11 +282,7 @@ export default function VendorKYC() {
       fd.append('file', file);
       fd.append('folder', 'kyc-documents');
       const uploadRes = await api.post('/upload', fd);
-      await api.post('/vendors/kyc/documents', {
-        type,
-        url: uploadRes.data.url,
-        filename: file.name,
-      });
+      await api.post('/vendors/kyc/documents', { type, url: uploadRes.data.url, filename: file.name });
       toast.success('Document uploaded');
       setRev((r) => r + 1);
     } catch {
@@ -362,7 +350,7 @@ export default function VendorKYC() {
         </button>
       </div>
 
-      {/* Approved Banner */}
+      {/* Status Banners */}
       {isApproved && (
         <div className="rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6">
           <div className="flex items-center gap-3 mb-3">
@@ -373,33 +361,27 @@ export default function VendorKYC() {
             </div>
           </div>
           <div className="flex gap-3 mt-4">
-            <Link to="/dashboard/vendor/products"
-              className="px-4 py-2 bg-white text-green-700 rounded-lg text-sm font-semibold hover:bg-green-50">
+            <Link to="/dashboard/vendor/products" className="px-4 py-2 bg-white text-green-700 rounded-lg text-sm font-semibold hover:bg-green-50">
               Add Products →
             </Link>
-            <Link to="/dashboard/vendor/settings"
-              className="px-4 py-2 bg-white/20 text-white rounded-lg text-sm font-semibold hover:bg-white/30">
+            <Link to="/dashboard/vendor/settings" className="px-4 py-2 bg-white/20 text-white rounded-lg text-sm font-semibold hover:bg-white/30">
               Store Settings →
             </Link>
           </div>
         </div>
       )}
 
-      {/* Rejected Banner */}
       {isRejected && (
         <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
           <XCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-sm text-red-700">⚠️ Application Rejected</p>
-            {kyc.rejectionReason && (
-              <p className="text-sm text-red-600 mt-1">Reason: {kyc.rejectionReason}</p>
-            )}
+            {kyc.rejectionReason && <p className="text-sm text-red-600 mt-1">Reason: {kyc.rejectionReason}</p>}
             <p className="text-xs text-red-500 mt-1">Please update your information and resubmit.</p>
           </div>
         </div>
       )}
 
-      {/* Under Review Banner */}
       {isSubmitted && (
         <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
           <Clock size={20} className="text-blue-500 shrink-0 mt-0.5" />
@@ -410,139 +392,186 @@ export default function VendorKYC() {
         </div>
       )}
 
-      {/* Stepper */}
-      <StepIndicator steps={steps} />
-      <ProgressBar pct={overallPct} />
+      {/* Step Indicator */}
+      <StepIndicator activeStep={activeStep} completedSteps={completedSteps} />
 
-      {/* Section 1: Business Information */}
-      <div className="card p-5">
-        <SectionHeader icon={Building2} title="Business Information" complete={businessInfoComplete} />
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-1.5">
-              Business Name <span className="text-red-500">*</span>
-            </label>
-            <input className="input w-full" placeholder="Enter business name"
-              value={formData.businessName} onChange={setField('businessName')} />
+      {/* Progress Bar */}
+      <div className="mb-2">
+        <div className="flex justify-between text-xs text-secondary-500 mb-1.5">
+          <span>Overall completion</span><span>{overallPct}%</span>
+        </div>
+        <div className="h-2 bg-secondary-100 rounded-full overflow-hidden">
+          <div className="h-full bg-primary-600 rounded-full transition-all" style={{ width: `${overallPct}%` }} />
+        </div>
+      </div>
+
+      {/* ── Step 1: Business Information ─────────────────────────────────────── */}
+      {activeStep === 1 && (
+        <div className="card p-6 space-y-5">
+          <div className="flex items-center gap-3 pb-3 border-b border-secondary-100">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50">
+              <Building2 size={17} className="text-primary-600" />
+            </div>
+            <h2 className="font-bold text-secondary-900">Business Information</h2>
+            {businessInfoComplete && <CheckCircle2 size={17} className="text-green-500 ml-auto" />}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-1.5">
-              Business Type <span className="text-red-500">*</span>
-            </label>
-            <select className="input w-full" value={formData.businessType} onChange={setField('businessType')}>
-              <option value="">Select business type</option>
-              {BUSINESS_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-1.5">
-              Business Address <span className="text-red-500">*</span>
-            </label>
-            <textarea className="input w-full resize-none" rows={3}
-              placeholder="Full registered business address"
-              value={formData.businessAddress} onChange={setField('businessAddress')} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-1.5">
-              Phone Number <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
-              <input className="input w-full pl-8" type="tel" placeholder="10-digit mobile number"
-                value={formData.phoneNumber} onChange={setField('phoneNumber')} />
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-1.5">Business Name <span className="text-red-500">*</span></label>
+              <input className="input w-full" placeholder="Enter business name" value={formData.businessName} onChange={setField('businessName')} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-1.5">Business Type <span className="text-red-500">*</span></label>
+              <select className="input w-full" value={formData.businessType} onChange={setField('businessType')}>
+                <option value="">Select business type</option>
+                {BUSINESS_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-1.5">Business Address <span className="text-red-500">*</span></label>
+              <textarea className="input w-full resize-none" rows={3} placeholder="Full registered business address"
+                value={formData.businessAddress} onChange={setField('businessAddress')} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary-700 mb-1.5">Phone Number <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
+                <input className="input w-full pl-8" type="tel" placeholder="10-digit mobile number"
+                  value={formData.phoneNumber} onChange={setField('phoneNumber')} />
+              </div>
             </div>
           </div>
-          <button onClick={saveBusinessInfo} disabled={saving}
-            className="px-4 py-2 bg-primary-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50">
-            {saving ? 'Saving…' : 'Save Business Info'}
-          </button>
-        </div>
-      </div>
 
-      {/* Section 2: GST Verification */}
-      <div className="card p-5">
-        <SectionHeader icon={FileText} title="GST Verification" complete={gstVerified} />
-        <div>
-          <label className="block text-sm font-medium text-secondary-700 mb-1.5">
-            GSTIN <span className="text-red-500">*</span>
-            <span className="text-secondary-400 font-normal ml-1">(mandatory)</span>
-          </label>
-          <div className="flex gap-2">
-            <input
-              className={`input flex-1 uppercase font-mono ${gstVerified ? 'border-green-400 bg-green-50' : ''}`}
-              placeholder="22AAAAA0000A1Z5"
-              value={formData.taxId}
-              onChange={handleTaxIdChange}
-              maxLength={15}
-              disabled={gstVerified}
-            />
-            <button
-              onClick={verifyGST}
-              disabled={gstVerifying || gstVerified}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold shrink-0 transition-colors ${
-                gstVerified
-                  ? 'bg-green-500 text-white cursor-default'
-                  : 'bg-primary-600 hover:bg-blue-700 text-white disabled:opacity-50'
-              }`}
-            >
-              {gstVerifying ? <Spinner size="sm" /> : gstVerified ? '✓ Verified' : 'Verify GST'}
+          <div className="flex gap-3 pt-1">
+            <button onClick={() => saveBusinessInfo(false)} disabled={saving}
+              className="px-4 py-2 border border-secondary-300 text-secondary-700 rounded-lg text-sm font-medium hover:bg-secondary-50 disabled:opacity-50">
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button onClick={() => saveBusinessInfo(true)} disabled={saving}
+              className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 ml-auto">
+              Save & Continue <ChevronRight size={15} />
             </button>
           </div>
-          {gstError && <p className="text-xs text-red-500 mt-1">{gstError}</p>}
+        </div>
+      )}
 
-          {gstVerified && gstDetails && (
-            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl text-sm space-y-1">
-              <p><span className="text-secondary-500">Trade Name:</span> <span className="font-medium">{gstDetails.tradeName}</span></p>
-              <p><span className="text-secondary-500">Legal Name:</span> <span className="font-medium">{gstDetails.legalName}</span></p>
-              <p><span className="text-secondary-500">GST Number:</span> <span className="font-mono font-medium">{gstDetails.gstNumber}</span></p>
-              <p>
-                <span className="text-secondary-500">Status:</span>{' '}
-                <span className={`font-semibold ${gstDetails.status === 'Active' ? 'text-green-600' : 'text-red-500'}`}>
-                  {gstDetails.status}
-                </span>
-              </p>
+      {/* ── Step 2: GST Verification ─────────────────────────────────────────── */}
+      {activeStep === 2 && (
+        <div className="card p-6 space-y-5">
+          <div className="flex items-center gap-3 pb-3 border-b border-secondary-100">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50">
+              <FileText size={17} className="text-primary-600" />
             </div>
-          )}
+            <h2 className="font-bold text-secondary-900">GST Verification</h2>
+            {gstVerified && <CheckCircle2 size={17} className="text-green-500 ml-auto" />}
+          </div>
 
-          {gstVerified && (
-            <button onClick={() => { setGstVerified(false); setGstDetails(null); setFormData((p) => ({ ...p, taxId: '' })); }}
-              className="mt-2 text-xs text-secondary-400 hover:text-secondary-600 underline">
-              Change GSTIN
+          <div>
+            <label className="block text-sm font-medium text-secondary-700 mb-1.5">
+              GSTIN <span className="text-red-500">*</span>
+              <span className="text-secondary-400 font-normal ml-1">(mandatory)</span>
+            </label>
+            <div className="flex gap-2">
+              <input
+                className={`input flex-1 uppercase font-mono ${gstVerified ? 'border-green-400 bg-green-50' : ''}`}
+                placeholder="22AAAAA0000A1Z5"
+                value={formData.taxId}
+                onChange={handleTaxIdChange}
+                maxLength={15}
+                disabled={gstVerified}
+              />
+              <button onClick={verifyGST} disabled={gstVerifying || gstVerified}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold shrink-0 transition-colors ${
+                  gstVerified ? 'bg-green-500 text-white cursor-default' : 'bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50'
+                }`}>
+                {gstVerifying ? <Spinner size="sm" /> : gstVerified ? '✓ Verified' : 'Verify GST'}
+              </button>
+            </div>
+            {gstError && <p className="text-xs text-red-500 mt-1">{gstError}</p>}
+
+            {gstVerified && gstDetails && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl text-sm space-y-1">
+                <p><span className="text-secondary-500">Trade Name:</span> <span className="font-medium">{gstDetails.tradeName}</span></p>
+                <p><span className="text-secondary-500">Legal Name:</span> <span className="font-medium">{gstDetails.legalName}</span></p>
+                <p><span className="text-secondary-500">GST Number:</span> <span className="font-mono font-medium">{gstDetails.gstNumber}</span></p>
+                <p><span className="text-secondary-500">Status:</span>{' '}
+                  <span className={`font-semibold ${gstDetails.status === 'Active' ? 'text-green-600' : 'text-red-500'}`}>{gstDetails.status}</span>
+                </p>
+              </div>
+            )}
+
+            {gstVerified && (
+              <button onClick={() => { setGstVerified(false); setGstDetails(null); setFormData((p) => ({ ...p, taxId: '' })); }}
+                className="mt-2 text-xs text-secondary-400 hover:text-secondary-600 underline">
+                Change GSTIN
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button onClick={() => setActiveStep(1)}
+              className="px-4 py-2 border border-secondary-300 text-secondary-700 rounded-lg text-sm font-medium hover:bg-secondary-50">
+              ← Back
             </button>
-          )}
+            <button onClick={() => setActiveStep(3)} disabled={!gstVerified}
+              className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 disabled:opacity-40 ml-auto">
+              Continue to Documents <ChevronRight size={15} />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Section 3: Documents */}
-      <div className="card p-5">
-        <SectionHeader
-          icon={FileText}
-          title="Required Documents"
-          complete={docs.some((d) => d.type === 'id_proof') && docs.some((d) => d.type === 'address_proof')}
-        />
-        <p className="text-xs text-secondary-400 mb-4">JPG/PNG/PDF only · Max 5MB per file</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {DOC_TYPES.map((dt) => (
-            <DocCard
-              key={dt.key}
-              docType={dt}
-              uploadedDoc={docs.find((d) => d.type === dt.key)}
-              onUpload={uploadDocument}
-              onDelete={deleteDocument}
-              uploading={uploadingDoc === dt.key}
-            />
-          ))}
+      {/* ── Step 3: Documents ─────────────────────────────────────────────────── */}
+      {activeStep === 3 && (
+        <div className="card p-6 space-y-5">
+          <div className="flex items-center gap-3 pb-3 border-b border-secondary-100">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50">
+              <FileText size={17} className="text-primary-600" />
+            </div>
+            <h2 className="font-bold text-secondary-900">Required Documents</h2>
+            {docsComplete && <CheckCircle2 size={17} className="text-green-500 ml-auto" />}
+          </div>
+
+          <p className="text-xs text-secondary-400">JPG/PNG/PDF only · Max 5MB per file</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {DOC_TYPES.map((dt) => (
+              <DocCard
+                key={dt.key}
+                docType={dt}
+                uploadedDoc={docs.find((d) => d.type === dt.key)}
+                onUpload={uploadDocument}
+                onDelete={deleteDocument}
+                uploading={uploadingDoc === dt.key}
+              />
+            ))}
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button onClick={() => setActiveStep(2)}
+              className="px-4 py-2 border border-secondary-300 text-secondary-700 rounded-lg text-sm font-medium hover:bg-secondary-50">
+              ← Back
+            </button>
+            <button onClick={() => setActiveStep(4)} disabled={!docsComplete}
+              className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 disabled:opacity-40 ml-auto">
+              Continue to Submit <ChevronRight size={15} />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Section 4: Submit for Review */}
-      {!isApproved && (
-        <div className="card p-5">
-          <SectionHeader icon={ShieldCheck} title="Submit for Review" complete={isSubmitted} />
+      {/* ── Step 4: Submit for Review ─────────────────────────────────────────── */}
+      {activeStep === 4 && !isApproved && (
+        <div className="card p-6 space-y-5">
+          <div className="flex items-center gap-3 pb-3 border-b border-secondary-100">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50">
+              <ShieldCheck size={17} className="text-primary-600" />
+            </div>
+            <h2 className="font-bold text-secondary-900">Submit for Review</h2>
+            {isSubmitted && <CheckCircle2 size={17} className="text-green-500 ml-auto" />}
+          </div>
 
-          <div className="space-y-2 mb-5">
+          <div className="space-y-2">
             {checklist.map((item) => (
               <div key={item.label} className="flex items-center gap-2 text-sm">
                 {item.done
@@ -559,14 +588,16 @@ export default function VendorKYC() {
               Your application is under review. We'll notify you via email.
             </div>
           ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={submitting || isSubmitted}
-              className="w-full py-3 bg-primary-600 hover:bg-blue-700 text-white rounded-xl font-semibold disabled:opacity-50 transition-colors"
-            >
+            <button onClick={handleSubmit} disabled={submitting || !checklist.every((c) => c.done)}
+              className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold disabled:opacity-50 transition-colors">
               {submitting ? 'Submitting…' : 'Submit for Review'}
             </button>
           )}
+
+          <button onClick={() => setActiveStep(3)}
+            className="w-full text-sm text-secondary-400 hover:text-secondary-600 underline text-center">
+            ← Back to Documents
+          </button>
         </div>
       )}
 
