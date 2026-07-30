@@ -31,11 +31,20 @@ router.get('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+function normalizePriceToInclusive(data) {
+  if (!data.taxIncluded && data.taxRate > 0 && data.price > 0) {
+    data.price = parseFloat((data.price * (1 + data.taxRate / 100)).toFixed(2));
+    if (data.compareAt > 0) data.compareAt = parseFloat((data.compareAt * (1 + data.taxRate / 100)).toFixed(2));
+  }
+  data.taxIncluded = true;
+}
+
 router.post('/', async (req, res, next) => {
   try {
     const data = req.body;
     if (!data.slug) data.slug = slugify(data.title || '');
     if (!data.sku) data.sku = generateSKU('PRD');
+    normalizePriceToInclusive(data);
     const product = await Product.create(data);
     await invalidateCache('cache:/api/catalog*');
     res.status(201).json({ product });
@@ -74,7 +83,8 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const prev = await Product.findById(req.params.id).select('published vendorId stock').lean();
+    const prev = await Product.findById(req.params.id).select('published vendorId stock taxIncluded taxRate').lean();
+    normalizePriceToInclusive(req.body);
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!product) throw new AppError('Product not found', 404, 'NOT_FOUND');
     await invalidateCache('cache:/api/catalog*');

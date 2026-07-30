@@ -9,6 +9,7 @@ import {
   RotateCcw, Megaphone, BarChart2, PenTool, TrendingUp, Lock,
 } from 'lucide-react';
 import VendorOnboarding from '../../pages/dashboard/vendor/VendorOnboarding';
+import ErrorBoundary from '../common/ErrorBoundary';
 import NotificationBell from '../common/NotificationBell';
 import api from '../../../utils/api';
 import { clearUser } from '../../../store/slices/authSlice';
@@ -348,7 +349,7 @@ export default function DashboardLayout({ requiredRole }) {
                   </div>
                 </div>
               )}
-              <Outlet />
+              <ErrorBoundary><Outlet /></ErrorBoundary>
             </div>
           )}
         </div>

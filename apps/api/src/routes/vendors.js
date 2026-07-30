@@ -330,6 +330,14 @@ const VENDOR_PRODUCT_FIELDS = [
   'hasWarranty','warranty','categoryIds','category','displayOrder',
 ];
 
+function normalizePriceToInclusive(data) {
+  if (!data.taxIncluded && data.taxRate > 0 && data.price > 0) {
+    data.price = parseFloat((data.price * (1 + data.taxRate / 100)).toFixed(2));
+    if (data.compareAt > 0) data.compareAt = parseFloat((data.compareAt * (1 + data.taxRate / 100)).toFixed(2));
+  }
+  data.taxIncluded = true;
+}
+
 router.post('/products', requireApproved, requireApprovedKYC, async (req, res, next) => {
   try {
     const allowed = {};
@@ -337,6 +345,7 @@ router.post('/products', requireApproved, requireApprovedKYC, async (req, res, n
     const data = { ...allowed, vendorId: req.user._id };
     if (!data.slug) data.slug = slugify(data.title || '');
     if (!data.sku) data.sku = generateSKU('VND');
+    normalizePriceToInclusive(data);
     const product = await Product.create(data);
     await invalidateCache('cache:/api/catalog*');
 
@@ -354,6 +363,7 @@ router.put('/products/:id', requireApproved, async (req, res, next) => {
   try {
     const allowed = {};
     VENDOR_PRODUCT_FIELDS.forEach((k) => { if (req.body[k] !== undefined) allowed[k] = req.body[k]; });
+    normalizePriceToInclusive(allowed);
     const product = await Product.findOneAndUpdate(
       { _id: req.params.id, vendorId: req.user._id },
       allowed,

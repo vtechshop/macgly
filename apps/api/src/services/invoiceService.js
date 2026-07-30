@@ -48,7 +48,7 @@ function generateInvoiceHTML(order, user) {
       <p style="margin:4px 0;color:#6b7280;font-size:13px">macgly.com</p>
     </div>
     <div class="invoice-meta">
-      <h2>TAX INVOICE</h2>
+      <h2>${order.paymentStatus === 'paid' ? 'TAX INVOICE' : 'ORDER SUMMARY'}</h2>
       <p><strong>${order.orderId}</strong></p>
       <p>Date: ${invoiceDate}</p>
       <p>Payment: <span class="badge ${order.paymentStatus === 'paid' ? 'badge-paid' : 'badge-pending'}">${order.paymentStatus.toUpperCase()}</span></p>
@@ -119,7 +119,7 @@ function generateInvoicePDF(order, user) {
     doc.fillColor('#FFFFFF').fontSize(22).font('Helvetica-Bold').text('MACGLY', 50, 24);
     doc.fillColor(orange).fontSize(9).font('Helvetica').text('TOOLS & MACHINERY', 50, 50);
     doc.fillColor('#CCCCCC').fontSize(8).text('macgly.com  |  support@macgly.com', 50, 63);
-    doc.fillColor(orange).fontSize(16).font('Helvetica-Bold').text('TAX INVOICE', 0, 26, { align: 'right', width: doc.page.width - 50 });
+    doc.fillColor(orange).fontSize(16).font('Helvetica-Bold').text(order.paymentStatus === 'paid' ? 'TAX INVOICE' : 'ORDER SUMMARY', 0, 26, { align: 'right', width: doc.page.width - 50 });
     doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica').text(`Invoice: ${order.orderId}`, 0, 48, { align: 'right', width: doc.page.width - 50 });
     const dateStr = new Date(order.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     doc.text(`Date: ${dateStr}`, 0, 60, { align: 'right', width: doc.page.width - 50 });

@@ -311,7 +311,7 @@ async function getOrders(req, res, next) {
     const { page = 1, limit = 10, status } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const filter = { user: req.user._id };
+    const filter = { user: req.user._id, paymentStatus: { $ne: 'pending' } };
 
     if (status === 'placed') {
       filter.status = { $in: ['placed', 'paid', 'confirmed', 'processing', 'packed'] };

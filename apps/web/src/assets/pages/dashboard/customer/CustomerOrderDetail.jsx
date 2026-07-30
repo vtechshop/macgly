@@ -342,12 +342,29 @@ export default function CustomerOrderDetail() {
         <div className="px-5 py-4 bg-secondary-50 border-t border-secondary-100 space-y-1.5 text-sm">
           <div className="flex justify-between text-secondary-500">
             <span>Subtotal</span>
-            <span>{formatCurrency((order.totalAmount || 0) + (order.discount || 0))}</span>
+            <span>{formatCurrency(order.subtotal || 0)}</span>
           </div>
+          {order.gstAmount > 0 && (
+            <div className="flex justify-between text-secondary-500">
+              <span>GST (incl.)</span>
+              <span>{formatCurrency(order.gstAmount)}</span>
+            </div>
+          )}
+          {order.shippingCharge > 0 ? (
+            <div className="flex justify-between text-secondary-500">
+              <span>Shipping</span>
+              <span>{formatCurrency(order.shippingCharge)}</span>
+            </div>
+          ) : (
+            <div className="flex justify-between text-secondary-500">
+              <span>Shipping</span>
+              <span className="text-green-600 font-medium">FREE</span>
+            </div>
+          )}
           {order.discount > 0 && (
             <div className="flex justify-between text-green-600">
               <span>Discount</span>
-              <span>âˆ’{formatCurrency(order.discount)}</span>
+              <span>-{formatCurrency(order.discount)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-secondary-900 pt-1 border-t border-secondary-200">
