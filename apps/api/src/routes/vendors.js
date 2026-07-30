@@ -700,8 +700,8 @@ router.patch('/orders/:id/ship', requireApproved, async (req, res, next) => {
     const order = await Order.findOne({ _id: req.params.id, 'items.vendorId': req.user._id })
       .populate('user', 'name email phone');
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
-    if (!['confirmed', 'processing'].includes(order.status)) {
-      throw new AppError('Can only ship confirmed or processing orders', 400, 'INVALID_STATUS');
+    if (!['paid', 'confirmed', 'processing', 'packed'].includes(order.status)) {
+      throw new AppError('Can only ship paid, confirmed, processing or packed orders', 400, 'INVALID_STATUS');
     }
 
     // Auto-create Delhivery/Shiprocket shipment unless vendor manually provided tracking

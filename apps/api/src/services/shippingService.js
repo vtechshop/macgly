@@ -4,9 +4,10 @@ const MockCarrierAdapter = require('../adapters/shipping/MockCarrierAdapter');
 const { DELHIVERY_API_KEY, SHIPROCKET_EMAIL, isProd } = require('../config/env');
 
 function getAdapter(carrier = 'auto') {
-  if (carrier === 'shiprocket' && SHIPROCKET_EMAIL) return new ShiprocketAdapter();
-  if (carrier === 'delhivery' && DELHIVERY_API_KEY) return new DelhiveryAdapter();
-  if (carrier === 'auto') {
+  const c = (carrier || '').toLowerCase();
+  if (c === 'shiprocket' && SHIPROCKET_EMAIL) return new ShiprocketAdapter();
+  if (c === 'delhivery' && DELHIVERY_API_KEY) return new DelhiveryAdapter();
+  if (c === 'auto') {
     if (SHIPROCKET_EMAIL) return new ShiprocketAdapter();
     if (DELHIVERY_API_KEY) return new DelhiveryAdapter();
   }
