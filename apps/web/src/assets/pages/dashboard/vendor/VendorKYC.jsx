@@ -594,10 +594,6 @@ export default function VendorKYC() {
             </button>
           )}
 
-          <button onClick={() => setActiveStep(3)}
-            className="w-full text-sm text-secondary-400 hover:text-secondary-600 underline text-center">
-            ← Back to Documents
-          </button>
         </div>
       )}
 
