@@ -85,7 +85,12 @@ async function createOrder(req, res, next) {
       Setting.get('shipping.free_threshold', 5000),
       Setting.get('shipping.default_rate', 70),
     ]);
-    const shippingCharge = subtotal >= parseFloat(freeThreshold) ? 0 : parseFloat(defaultRate);
+    const serverShipping = subtotal >= parseFloat(freeThreshold) ? 0 : parseFloat(defaultRate);
+    // Use client-calculated shipping if provided and subtotal is below free threshold; else use server default
+    const clientShipping = parseFloat(req.body.shippingCharge);
+    const shippingCharge = subtotal >= parseFloat(freeThreshold)
+      ? 0
+      : (Number.isFinite(clientShipping) && clientShipping >= 0 ? clientShipping : serverShipping);
     const totalAmount = Math.max(0, subtotal - discount + shippingCharge);
 
     const orderId = generateOrderId();
