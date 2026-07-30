@@ -226,7 +226,11 @@ export default function DashboardLayout({ requiredRole }) {
       .catch(() => {});
   }, [user?._id, user?.role]);
 
-  if (!isInitialized) return null;
+  if (!isInitialized) return (
+    <div className="h-screen flex items-center justify-center bg-secondary-50">
+      <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+    </div>
+  );
   if (!user) return <Navigate to="/login" replace />;
   if (requiredRole && user.role !== requiredRole && user.role !== 'admin') {
     return <Navigate to={`/dashboard/${user.role}`} replace />;
