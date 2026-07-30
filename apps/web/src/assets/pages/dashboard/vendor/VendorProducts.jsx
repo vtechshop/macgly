@@ -229,43 +229,46 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
 
         {/* Scrollable body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
 
             {/* ── BASIC INFO ─────────────────────────────────────────────── */}
-            <div className="space-y-4">
-              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Basic Info</p>
-              <Field label="Title *">
-                <input value={form.title} onChange={e('title')} required
-                  placeholder="Product name" className={INPUT_CLS} />
-              </Field>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Brand">
-                  <input value={form.brand} onChange={e('brand')} placeholder="Brand name" className={INPUT_CLS} />
+            <div className="border border-secondary-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-sm font-semibold text-secondary-700">Basic Info</p>
+              </div>
+              <div className="p-4 space-y-3">
+                <Field label="Title *">
+                  <input value={form.title} onChange={e('title')} required placeholder="Product name" className={INPUT_CLS} />
                 </Field>
-                <Field label="SKU" hint="(auto-generated if blank)">
-                  <input value={form.sku} onChange={e('sku')} placeholder="Enter SKU" className={INPUT_CLS} />
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Brand">
+                    <input value={form.brand} onChange={e('brand')} placeholder="Brand name" className={INPUT_CLS} />
+                  </Field>
+                  <Field label="SKU" hint="(auto-generated if blank)">
+                    <input value={form.sku} onChange={e('sku')} placeholder="Enter SKU" className={INPUT_CLS} />
+                  </Field>
+                </div>
+                <Field label="Category">
+                  <select value={form.categoryId} onChange={(ev) => {
+                    const cat = cats?.find((c) => c._id === ev.target.value);
+                    setForm((f) => ({ ...f, categoryId: ev.target.value, category: cat?.slug || '' }));
+                  }} className={INPUT_CLS + ' bg-white'}>
+                    <option value="">Select a category</option>
+                    {cats?.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+                  </select>
+                </Field>
+                <Field label="Tags" hint="(comma-separated)">
+                  <input value={form.tags} onChange={e('tags')} placeholder="tool, brand, type" className={INPUT_CLS} />
                 </Field>
               </div>
-              <Field label="Category">
-                <select value={form.categoryId} onChange={(ev) => {
-                  const cat = cats?.find((c) => c._id === ev.target.value);
-                  setForm((f) => ({ ...f, categoryId: ev.target.value, category: cat?.slug || '' }));
-                }} className={INPUT_CLS + ' bg-white'}>
-                  <option value="">Select a category</option>
-                  {cats?.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-                </select>
-              </Field>
-              <Field label="Tags" hint="(comma-separated)">
-                <input value={form.tags} onChange={e('tags')} placeholder="tool, brand, type" className={INPUT_CLS} />
-              </Field>
             </div>
 
-            <hr className="border-secondary-100" />
-
             {/* ── PRICING ────────────────────────────────────────────────── */}
-            <div className="space-y-4">
-              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Pricing</p>
-              <div className="space-y-4">
+            <div className="border border-secondary-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-sm font-semibold text-secondary-700">Pricing</p>
+              </div>
+              <div className="p-4 space-y-3">
                 <div className="grid grid-cols-3 gap-4">
                   <Field label="Price (₹) *">
                     <input type="number" min="0" step="0.01" value={form.price} onChange={e('price')} required className={INPUT_CLS} />
@@ -277,60 +280,52 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                     <input type="number" min="0" value={form.stock} onChange={e('stock')} required className={INPUT_CLS} />
                   </Field>
                 </div>
-                <div className="bg-secondary-50 rounded-xl p-4 space-y-3">
-                  <p className="text-sm font-semibold text-secondary-700">GST / Tax Settings</p>
-                  <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2 pt-1">
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form.taxable}
+                      <input type="checkbox" checked={form.taxable}
                         onChange={() => { set('taxable', !form.taxable); set('taxIncluded', false); }}
-                        className="w-4 h-4 accent-primary-600"
-                      />
+                        className="w-4 h-4 accent-primary-600" />
                       <span className="text-secondary-700">Taxable</span>
                     </label>
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form.taxIncluded}
+                      <input type="checkbox" checked={form.taxIncluded}
                         onChange={() => { set('taxIncluded', !form.taxIncluded); set('taxable', false); }}
-                        className="w-4 h-4 accent-primary-600"
-                      />
+                        className="w-4 h-4 accent-primary-600" />
                       <span className="text-secondary-700">Tax included in price</span>
                     </label>
                   </div>
                   {form.taxable && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-secondary-600 mb-1">GST Rate</label>
-                        <select value={form.taxRate} onChange={e('taxRate')} className="w-full border border-secondary-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-300">
+                    <div className="space-y-2">
+                      <Field label="GST Rate">
+                        <select value={form.taxRate} onChange={e('taxRate')} className={INPUT_CLS + ' bg-white'}>
                           {[0, 5, 12, 18, 28].map((r) => <option key={r} value={r}>{r}%</option>)}
                         </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-secondary-600 mb-1">HSN Code</label>
-                        <input value={form.hsnCode} onChange={e('hsnCode')} placeholder="Enter HSN code"
-                          className="w-full border border-secondary-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
-                      </div>
+                      </Field>
+                      <Field label="HSN Code">
+                        <input value={form.hsnCode} onChange={e('hsnCode')} placeholder="Enter HSN code" className={INPUT_CLS} />
+                      </Field>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            <hr className="border-secondary-100" />
-
             {/* ── MEDIA ──────────────────────────────────────────────────── */}
-            <div className="space-y-5">
-              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Media</p>
-                <Field label="Product Images">
-                  <ImageUpload urls={form.images} onChange={(imgs) => setForm((f) => ({ ...f, images: imgs }))} uploadUrl="/vendors/upload/image" />
-                </Field>
+            <div className="border border-secondary-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-sm font-semibold text-secondary-700">Product Images & Video</p>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-secondary-600">YouTube Video URL (optional)</label>
+                  <input value={form.videoUrl} onChange={e('videoUrl')} type="url"
+                    placeholder="https://www.youtube.com/watch?v=..." className={INPUT_CLS} />
+                </div>
+                <ImageUpload urls={form.images} onChange={(imgs) => setForm((f) => ({ ...f, images: imgs }))} uploadUrl="/vendors/upload/image" />
                 {form.images.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-secondary-700">
-                      Image Alt Tags <span className="text-secondary-400 font-normal">(for SEO)</span>
-                    </p>
+                    <p className="text-xs font-medium text-secondary-600">Image Alt Tags (for SEO)</p>
                     {form.images.map((img, i) => (
                       <div key={i} className="flex items-center gap-3">
                         <img src={normalizeImageUrl(img)} alt="" className="w-10 h-10 rounded object-cover bg-secondary-100 shrink-0" />
@@ -342,23 +337,21 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                             setForm((f) => ({ ...f, imageAlts: alts }));
                           }}
                           placeholder={`Alt text for image ${i + 1}`}
-                          className="flex-1 border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+                          className={INPUT_CLS}
                         />
                       </div>
                     ))}
                   </div>
                 )}
-                <Field label="YouTube Video URL">
-                  <input value={form.videoUrl} onChange={e('videoUrl')} type="url"
-                    placeholder="https://www.youtube.com/watch?v=..." className={INPUT_CLS} />
-                </Field>
               </div>
-
-            <hr className="border-secondary-100" />
+            </div>
 
             {/* ── SHIPPING ───────────────────────────────────────────────── */}
-            <div className="space-y-4">
-              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Shipping</p>
+            <div className="border border-secondary-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-sm font-semibold text-secondary-700">Shipping</p>
+              </div>
+              <div className="p-4 space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Weight (kg)">
                     <input type="number" min="0" step="0.01" value={form.weight} onChange={e('weight')} placeholder="Enter weight" className={INPUT_CLS} />
@@ -372,8 +365,8 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                   <Truck size={14} className="text-secondary-400" />
                   <span className="font-medium text-secondary-700">Enable Delhivery shipping</span>
                 </label>
-                <div className="bg-secondary-50 rounded-xl p-4">
-                  <p className="text-sm font-semibold text-secondary-700 mb-3">Zone-Based Shipping Charges (₹)</p>
+                <div>
+                  <p className="text-xs font-medium text-secondary-600 mb-2">Zone-Based Shipping Charges (₹)</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {SHIPPING_ZONES.map((zone) => (
                       <div key={zone.id}>
@@ -390,146 +383,142 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                   <p className="text-xs text-secondary-400 mt-2">Highest zone charge applies at checkout</p>
                 </div>
               </div>
+            </div>
 
-            <hr className="border-secondary-100" />
-
-            {/* ── DETAILS ────────────────────────────────────────────────── */}
-            <div className="space-y-5">
-              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Details</p>
-                <Field label="Description *">
-                  <textarea value={form.description} onChange={e('description')} required rows={6}
-                    placeholder="Describe your product…"
-                    className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 resize-y" />
-                </Field>
-
-                {/* Specifications */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-secondary-700">Specifications</p>
-                    <button type="button" onClick={addSpec} className="text-xs text-primary-600 hover:text-primary-700 font-semibold">+ Add Row</button>
-                  </div>
-                  {form.specifications.length === 0
-                    ? <p className="text-xs text-secondary-400">No specifications. Click "+ Add Row" to add.</p>
-                    : (
-                      <div className="space-y-2">
-                        {form.specifications.map((spec, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <input value={spec.label} onChange={(ev) => upSpec(i, 'label', ev.target.value)}
-                              placeholder="Label"
-                              className="flex-1 border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
-                            <input value={spec.value} onChange={(ev) => upSpec(i, 'value', ev.target.value)}
-                              placeholder="Value"
-                              className="flex-1 border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
-                            <button type="button" onClick={() => delSpec(i)} className="p-1 text-secondary-300 hover:text-red-500 shrink-0"><X size={14} /></button>
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  }
-                </div>
-
-                {/* FAQs */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-secondary-700">FAQs</p>
-                    <button type="button" onClick={addFaq} className="text-xs text-primary-600 hover:text-primary-700 font-semibold">+ Add FAQ</button>
-                  </div>
-                  {form.faqs.length === 0
-                    ? <p className="text-xs text-secondary-400">No FAQs. Click "+ Add FAQ" to add.</p>
-                    : (
-                      <div className="space-y-3">
-                        {form.faqs.map((faq, i) => (
-                          <div key={i} className="bg-secondary-50 rounded-xl p-3">
-                            <div className="flex items-start gap-2">
-                              <div className="flex-1 space-y-2">
-                                <input value={faq.question} onChange={(ev) => upFaq(i, 'question', ev.target.value)}
-                                  placeholder="Question"
-                                  className="w-full border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
-                                <textarea value={faq.answer} onChange={(ev) => upFaq(i, 'answer', ev.target.value)}
-                                  placeholder="Answer" rows={2}
-                                  className="w-full border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none" />
-                              </div>
-                              <button type="button" onClick={() => delFaq(i)} className="p-1 text-secondary-300 hover:text-red-500 shrink-0 mt-1"><X size={14} /></button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  }
-                </div>
+            {/* ── DESCRIPTION ────────────────────────────────────────────── */}
+            <div className="border border-secondary-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-sm font-semibold text-secondary-700">Description</p>
               </div>
+              <div className="p-4">
+                <textarea value={form.description} onChange={e('description')} required rows={5}
+                  placeholder="Describe your product…"
+                  className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 resize-y" />
+              </div>
+            </div>
 
-            <hr className="border-secondary-100" />
+            {/* ── SPECIFICATIONS ─────────────────────────────────────────── */}
+            <div className="border border-secondary-200 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-sm font-semibold text-secondary-700">Specifications</p>
+                <button type="button" onClick={addSpec}
+                  className="flex items-center gap-1 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition-colors">
+                  + Add Spec
+                </button>
+              </div>
+              <div className="p-4 space-y-2">
+                {form.specifications.length === 0
+                  ? <p className="text-xs text-secondary-400 text-center py-2">No specifications. Click "+ Add Spec" to add product details.</p>
+                  : form.specifications.map((spec, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input value={spec.label} onChange={(ev) => upSpec(i, 'label', ev.target.value)}
+                        placeholder="Label" className="flex-1 border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+                      <input value={spec.value} onChange={(ev) => upSpec(i, 'value', ev.target.value)}
+                        placeholder="Value" className="flex-1 border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+                      <button type="button" onClick={() => delSpec(i)} className="p-1 text-secondary-300 hover:text-red-500 shrink-0"><X size={14} /></button>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+
+            {/* ── FAQs ───────────────────────────────────────────────────── */}
+            <div className="border border-secondary-200 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-sm font-semibold text-secondary-700">FAQs</p>
+                <button type="button" onClick={addFaq}
+                  className="flex items-center gap-1 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition-colors">
+                  + Add FAQ
+                </button>
+              </div>
+              <div className="p-4 space-y-3">
+                {form.faqs.length === 0
+                  ? <p className="text-xs text-secondary-400 text-center py-2">No FAQs. Click "+ Add FAQ" to add.</p>
+                  : form.faqs.map((faq, i) => (
+                    <div key={i} className="bg-secondary-50 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1 space-y-2">
+                          <input value={faq.question} onChange={(ev) => upFaq(i, 'question', ev.target.value)}
+                            placeholder="Question"
+                            className="w-full border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
+                          <textarea value={faq.answer} onChange={(ev) => upFaq(i, 'answer', ev.target.value)}
+                            placeholder="Answer" rows={2}
+                            className="w-full border border-secondary-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none" />
+                        </div>
+                        <button type="button" onClick={() => delFaq(i)} className="p-1 text-secondary-300 hover:text-red-500 shrink-0 mt-1"><X size={14} /></button>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
 
             {/* ── WARRANTY ───────────────────────────────────────────────── */}
-            <div className="space-y-4">
-              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Warranty</p>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={form.hasWarranty} onChange={e('hasWarranty')} className="w-4 h-4 accent-primary-600" />
-                  <Shield size={14} className="text-secondary-400" />
-                  <span className="font-medium text-secondary-700">Product has a warranty</span>
+            <div className="border border-secondary-200 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+                <div className="flex items-center gap-2">
+                  <Shield size={15} className="text-secondary-500" />
+                  <p className="text-sm font-semibold text-secondary-700">Warranty Information</p>
+                </div>
+                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                  <input type="checkbox" checked={form.hasWarranty} onChange={e('hasWarranty')} className="accent-primary-600" />
+                  Has Warranty
                 </label>
-                {form.hasWarranty && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Field label="Duration">
-                        <input type="number" min="1" value={form.warranty.duration}
-                          onChange={(ev) => set('warranty.duration', ev.target.value)} className={INPUT_CLS} />
-                      </Field>
-                      <Field label="Duration Type">
-                        <select value={form.warranty.durationType} onChange={(ev) => set('warranty.durationType', ev.target.value)}
-                          className={INPUT_CLS + ' bg-white'}>
-                          <option value="months">Months</option>
-                          <option value="years">Years</option>
-                          <option value="lifetime">Lifetime</option>
-                        </select>
-                      </Field>
-                    </div>
-                    <Field label="Provider">
-                      <input value={form.warranty.provider} onChange={(ev) => set('warranty.provider', ev.target.value)}
-                        placeholder="Enter warranty provider" className={INPUT_CLS} />
-                    </Field>
-                    <Field label="Warranty Description">
-                      <textarea value={form.warranty.description} onChange={(ev) => set('warranty.description', ev.target.value)}
-                        rows={3} placeholder="What does the warranty cover?"
-                        className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none" />
-                    </Field>
-                    <Field label="Terms & Conditions">
-                      <textarea value={form.warranty.terms} onChange={(ev) => set('warranty.terms', ev.target.value)}
-                        rows={3} placeholder="Warranty terms and conditions…"
-                        className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none" />
-                    </Field>
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input type="checkbox" checked={form.warranty.activationRequired}
-                        onChange={(ev) => set('warranty.activationRequired', ev.target.checked)} className="w-4 h-4 accent-primary-600" />
-                      <span className="text-secondary-700">Activation required</span>
-                    </label>
-                  </div>
-                )}
               </div>
-
-            <hr className="border-secondary-100" />
+              {form.hasWarranty ? (
+                <div className="p-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Duration">
+                      <input type="number" min="1" value={form.warranty.duration}
+                        onChange={(ev) => set('warranty.duration', ev.target.value)} className={INPUT_CLS} />
+                    </Field>
+                    <Field label="Duration Type">
+                      <select value={form.warranty.durationType} onChange={(ev) => set('warranty.durationType', ev.target.value)}
+                        className={INPUT_CLS + ' bg-white'}>
+                        <option value="months">Months</option>
+                        <option value="years">Years</option>
+                        <option value="lifetime">Lifetime</option>
+                      </select>
+                    </Field>
+                  </div>
+                  <Field label="Provider">
+                    <input value={form.warranty.provider} onChange={(ev) => set('warranty.provider', ev.target.value)}
+                      placeholder="Enter warranty provider" className={INPUT_CLS} />
+                  </Field>
+                  <Field label="Warranty Description">
+                    <textarea value={form.warranty.description} onChange={(ev) => set('warranty.description', ev.target.value)}
+                      rows={3} placeholder="What does the warranty cover?"
+                      className="w-full border border-secondary-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none" />
+                  </Field>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={form.warranty.activationRequired}
+                      onChange={(ev) => set('warranty.activationRequired', ev.target.checked)} className="accent-primary-600" />
+                    <span className="text-secondary-700">Activation required</span>
+                  </label>
+                </div>
+              ) : (
+                <p className="px-4 py-3 text-xs text-secondary-400">Check "Has Warranty" to add warranty details.</p>
+              )}
+            </div>
 
             {/* ── SEO ────────────────────────────────────────────────────── */}
-            <div className="space-y-4">
-              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">SEO</p>
+            <div className="border border-secondary-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-sm font-semibold text-secondary-700">SEO</p>
+              </div>
+              <div className="p-4 space-y-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-sm font-medium text-secondary-700">Meta Title</label>
-                    <span className={`text-xs ${form.seo.title.length > 60 ? 'text-red-500' : 'text-secondary-400'}`}>
-                      {form.seo.title.length}/60
-                    </span>
+                    <span className={`text-xs ${form.seo.title.length > 60 ? 'text-red-500' : 'text-secondary-400'}`}>{form.seo.title.length}/60</span>
                   </div>
                   <input value={form.seo.title} onChange={(ev) => set('seo.title', ev.target.value)} maxLength={70}
-                    placeholder={form.title || 'SEO title (defaults to product title)'}
-                    className={INPUT_CLS} />
+                    placeholder={form.title || 'SEO title (defaults to product title)'} className={INPUT_CLS} />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-sm font-medium text-secondary-700">Meta Description</label>
-                    <span className={`text-xs ${form.seo.description.length > 160 ? 'text-red-500' : 'text-secondary-400'}`}>
-                      {form.seo.description.length}/160
-                    </span>
+                    <span className={`text-xs ${form.seo.description.length > 160 ? 'text-red-500' : 'text-secondary-400'}`}>{form.seo.description.length}/160</span>
                   </div>
                   <textarea value={form.seo.description} onChange={(ev) => set('seo.description', ev.target.value)}
                     maxLength={180} rows={3} placeholder="Brief description for search engines…"
@@ -539,7 +528,6 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                   <input value={form.seo.keywords} onChange={(ev) => set('seo.keywords', ev.target.value)}
                     placeholder="Enter tags" className={INPUT_CLS} />
                 </Field>
-                {/* Google preview */}
                 <div className="bg-white border border-secondary-200 rounded-xl p-4">
                   <p className="text-xs font-semibold text-secondary-400 uppercase tracking-wide mb-3">Google Preview</p>
                   <div className="space-y-0.5">
@@ -554,16 +542,8 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                     </p>
                   </div>
                 </div>
-                <Field label="Schema Type">
-                  <select value={form.structuredData.schemaType}
-                    onChange={(ev) => setForm((f) => ({ ...f, structuredData: { ...f.structuredData, schemaType: ev.target.value } }))}
-                    className={INPUT_CLS + ' bg-white'}>
-                    {['Product', 'Book', 'Movie', 'MusicAlbum', 'Recipe', 'SoftwareApplication', 'VideoGame', 'Event', 'Course'].map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </Field>
               </div>
+            </div>
 
           </div>
 
