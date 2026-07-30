@@ -327,4 +327,51 @@ async function sendAdminOrderCancelledEmail({ order, customer }) {
   });
 }
 
-module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendAdminOrderCancelledEmail };
+async function sendVendorKYCSubmittedEmail({ vendor, adminEmail }) {
+  const name = vendor.vendorProfile?.businessName || vendor.name || 'A vendor';
+  const email = vendor.email;
+
+  // Email to admin
+  await sendEmail({
+    to: adminEmail || process.env.ADMIN_EMAIL || 'macglyshop@gmail.com',
+    subject: `⚠️ Vendor KYC Approval Required — ${name}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <h2 style="color:#ea580c">Vendor KYC Approval Required</h2>
+        <p>A vendor has submitted their KYC and is awaiting your approval.</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:8px;color:#6b7280;font-size:14px">Business Name</td><td style="padding:8px;font-weight:600">${name}</td></tr>
+          <tr style="background:#f9fafb"><td style="padding:8px;color:#6b7280;font-size:14px">Email</td><td style="padding:8px">${email}</td></tr>
+          <tr><td style="padding:8px;color:#6b7280;font-size:14px">Phone</td><td style="padding:8px">${vendor.vendorProfile?.businessPhone || '—'}</td></tr>
+          <tr style="background:#f9fafb"><td style="padding:8px;color:#6b7280;font-size:14px">GSTIN</td><td style="padding:8px">${vendor.vendorProfile?.gstin || '—'}</td></tr>
+          <tr><td style="padding:8px;color:#6b7280;font-size:14px">Business Type</td><td style="padding:8px">${vendor.vendorProfile?.businessType || '—'}</td></tr>
+        </table>
+        <a href="${process.env.FRONTEND_URL || 'https://macgly.com'}/dashboard/admin/vendors"
+          style="display:inline-block;padding:12px 24px;background:#ea580c;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">
+          Review in Admin Panel →
+        </a>
+        <p style="color:#9ca3af;font-size:12px;margin-top:24px">Macgly Admin · macgly.com</p>
+      </div>
+    `,
+  });
+
+  // Confirmation email to vendor
+  await sendEmail({
+    to: email,
+    subject: 'Your Macgly vendor application is under review',
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <h2 style="color:#ea580c">Application Submitted!</h2>
+        <p>Hi ${vendor.name || name},</p>
+        <p>Your vendor application for <strong>${name}</strong> has been submitted successfully and is now under review.</p>
+        <p style="color:#6b7280">Our team will review your documents and get back to you within <strong>2–3 business days</strong>. You'll receive an email once a decision is made.</p>
+        <div style="background:#f9fafb;border-radius:8px;padding:16px;margin:16px 0">
+          <p style="margin:0;font-size:14px;color:#374151">If you have any questions, contact us at <a href="mailto:support@macgly.com">support@macgly.com</a></p>
+        </div>
+        <p style="color:#9ca3af;font-size:12px">Macgly · macgly.com</p>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendAdminOrderCancelledEmail, sendVendorKYCSubmittedEmail };

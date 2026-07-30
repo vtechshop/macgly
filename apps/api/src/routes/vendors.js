@@ -10,7 +10,7 @@ const { invalidateCache } = require('../middleware/cache');
 const { uploadFile } = require('../services/storageService');
 const notif = require('../utils/notificationHelper');
 const { applyEarnings } = require('../utils/earningsHelper');
-const { sendShippingUpdate } = require('../services/emailService');
+const { sendShippingUpdate, sendVendorKYCSubmittedEmail } = require('../services/emailService');
 const { createShipment } = require('../services/shippingService');
 const whatsapp = require('../services/whatsappService');
 
@@ -1324,6 +1324,14 @@ router.put('/kyc', async (req, res, next) => {
     const updated = await require('../models/User').findByIdAndUpdate(
       req.user._id, { $set: update }, { new: true },
     );
+
+    if (submit) {
+      sendVendorKYCSubmittedEmail({
+        vendor: updated,
+        adminEmail: process.env.ADMIN_EMAIL || 'macglyshop@gmail.com',
+      }).catch(() => {});
+    }
+
     res.json({ success: true, data: updated.vendorProfile });
   } catch (err) { next(err); }
 });
