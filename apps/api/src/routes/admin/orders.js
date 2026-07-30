@@ -360,6 +360,7 @@ router.post('/:id/ship', async (req, res, next) => {
     if (order.user) {
       notif.notifyCustomerOrderStatus({ userId: order.user, order: updated, status: 'shipped' }).catch(() => {});
       whatsapp.notifyOrderShipped(updated, order.user).catch(() => {});
+      sendShippingUpdate({ order: updated, user: order.user }).catch(() => {});
     }
 
     res.json({ order: updated, shipment: result });

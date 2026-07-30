@@ -631,13 +631,17 @@ router.put('/orders/:id/status', requireApproved, async (req, res, next) => {
 
     await order.save();
 
-    // Notify customer by email on key status changes
+    // Notify customer on key status changes
     const notifyStatuses = ['shipped', 'out_for_delivery', 'delivered', 'cancelled'];
     if (notifyStatuses.includes(status)) {
-      Order.findById(order._id).populate('user', 'name email').then((populated) => {
-        if (populated?.user?.email) {
-          sendShippingUpdate({ order: populated, user: populated.user }).catch(() => {});
-        }
+      Order.findById(order._id).populate('user', 'name email phone').then((populated) => {
+        if (!populated?.user) return;
+        const u = populated.user;
+        sendShippingUpdate({ order: populated, user: u }).catch(() => {});
+        notif.notifyCustomerOrderStatus({ userId: u._id, order: populated, status }).catch(() => {});
+        if (status === 'shipped') whatsapp.notifyOrderShipped(populated, u).catch(() => {});
+        if (status === 'delivered') whatsapp.notifyOrderDelivered(populated, u).catch(() => {});
+        if (status === 'cancelled') whatsapp.notifyOrderCancelled(populated, u).catch(() => {});
       }).catch(() => {});
     }
 
