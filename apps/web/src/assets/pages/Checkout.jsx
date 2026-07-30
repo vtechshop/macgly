@@ -201,6 +201,7 @@ export default function Checkout() {
       // OSM pincode data in India is often inaccurate — look up by area name instead
       let pincode = nominatimPin;
       const stateNorm = state.toLowerCase().replace(/\s+/g, '');
+      const cityNorm  = city.toLowerCase().replace(/\s+/g, '');
       const candidates = [a.suburb, a.quarter, a.city_district, a.neighbourhood]
         .filter((n) => n && !/^ward\s*\d/i.test(n)); // skip generic "Ward 48" entries
       for (const name of candidates) {
@@ -208,7 +209,13 @@ export default function Checkout() {
           const pr = await fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(name)}`);
           const pj = await pr.json();
           const offices = pj?.[0]?.PostOffice || [];
-          const match = offices.find((o) => o.State?.toLowerCase().replace(/\s+/g, '') === stateNorm);
+          // Prefer match by state + district (city); fall back to state-only if no district match
+          const match =
+            offices.find((o) =>
+              o.State?.toLowerCase().replace(/\s+/g, '') === stateNorm &&
+              o.District?.toLowerCase().replace(/\s+/g, '').includes(cityNorm.slice(0, 5))
+            ) ||
+            (cityNorm ? null : offices.find((o) => o.State?.toLowerCase().replace(/\s+/g, '') === stateNorm));
           if (match) { pincode = match.Pincode; break; }
         } catch { /* try next */ }
       }
