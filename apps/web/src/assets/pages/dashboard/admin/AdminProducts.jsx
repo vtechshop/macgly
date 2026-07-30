@@ -1060,10 +1060,20 @@ export default function AdminProducts() {
               <Input label="Cost Price (₹) — internal only" type="number" step="0.01" value={form.cost} onChange={set('cost')} placeholder="Enter cost price" />
               <div className="flex flex-col gap-2 justify-end pb-1">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={form.taxable} onChange={set('taxable')} className="accent-primary-600" /> Taxable
+                  <input
+                    type="checkbox"
+                    checked={form.taxable}
+                    onChange={() => setForm((f) => ({ ...f, taxable: !f.taxable, taxIncluded: false }))}
+                    className="accent-primary-600"
+                  /> Taxable
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={form.taxIncluded} onChange={set('taxIncluded')} className="accent-primary-600" /> Tax included in price
+                  <input
+                    type="checkbox"
+                    checked={form.taxIncluded}
+                    onChange={() => setForm((f) => ({ ...f, taxIncluded: !f.taxIncluded, taxable: false }))}
+                    className="accent-primary-600"
+                  /> Tax included in price
                 </label>
               </div>
             </div>

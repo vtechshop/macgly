@@ -311,12 +311,28 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                 </div>
                 <div className="bg-secondary-50 rounded-xl p-4 space-y-3">
                   <p className="text-sm font-semibold text-secondary-700">GST / Tax Settings</p>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={form.taxable} onChange={e('taxable')} className="w-4 h-4 accent-primary-600" />
-                    Taxable product
-                  </label>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.taxable}
+                        onChange={() => { set('taxable', !form.taxable); set('taxIncluded', false); }}
+                        className="w-4 h-4 accent-primary-600"
+                      />
+                      <span className="text-secondary-700">Taxable</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.taxIncluded}
+                        onChange={() => { set('taxIncluded', !form.taxIncluded); set('taxable', false); }}
+                        className="w-4 h-4 accent-primary-600"
+                      />
+                      <span className="text-secondary-700">Tax included in price</span>
+                    </label>
+                  </div>
                   {form.taxable && (
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-secondary-600 mb-1">GST Rate</label>
                         <select value={form.taxRate} onChange={e('taxRate')} className="w-full border border-secondary-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-300">
@@ -327,12 +343,6 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                         <label className="block text-xs font-medium text-secondary-600 mb-1">HSN Code</label>
                         <input value={form.hsnCode} onChange={e('hsnCode')} placeholder="Enter HSN code"
                           className="w-full border border-secondary-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
-                      </div>
-                      <div className="flex items-end pb-1">
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="checkbox" checked={form.taxIncluded} onChange={e('taxIncluded')} className="w-4 h-4 accent-primary-600" />
-                          <span className="text-secondary-600">Tax included in price</span>
-                        </label>
                       </div>
                     </div>
                   )}
