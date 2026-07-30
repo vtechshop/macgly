@@ -76,9 +76,12 @@ export default function VendorOrders() {
     prevPaidRef.current = counts.paid;
   }, [counts.paid]);
 
-  // Auto-refresh counts
+  // Auto-refresh counts and orders list
   useEffect(() => {
-    const interval = setInterval(() => { refetchCounts(); }, 30000);
+    const interval = setInterval(() => {
+      refetchCounts();
+      setRev((r) => r + 1);
+    }, 30000);
     return () => clearInterval(interval);
   }, [refetchCounts]);
 

@@ -191,11 +191,13 @@ async function adminUpdateStatus(req, res, next) {
     if (!['open', 'in_progress', 'resolved', 'closed'].includes(dbStatus)) {
       throw new AppError('Invalid status', 400, 'INVALID_STATUS');
     }
-    const ticket = await Ticket.findByIdAndUpdate(req.params.id, { status: dbStatus }, { new: true })
+    // resolved and closed are the same — skip the intermediate state
+    const finalStatus = dbStatus === 'resolved' ? 'closed' : dbStatus;
+    const ticket = await Ticket.findByIdAndUpdate(req.params.id, { status: finalStatus }, { new: true })
       .populate('user', '_id name email');
     if (!ticket) throw new AppError('Ticket not found', 404, 'NOT_FOUND');
     if (ticket.user?._id) {
-      notif.notifyUserTicketStatusChange({ userId: ticket.user._id, ticket, status: dbStatus }).catch(() => {});
+      notif.notifyUserTicketStatusChange({ userId: ticket.user._id, ticket, status: finalStatus }).catch(() => {});
     }
     res.json({ success: true });
   } catch (err) { next(err); }

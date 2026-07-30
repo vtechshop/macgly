@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
@@ -53,6 +53,11 @@ export default function VendorDashboard() {
   const { user } = useSelector((s) => s.auth);
   const [period, setPeriod] = useState('30days');
   const [rev, setRev] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setRev((r) => r + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   const { data: raw, isLoading } = useFetch(
     ['vendor-stats', user?._id, period, rev],

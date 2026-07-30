@@ -226,9 +226,12 @@ export default function AdminOrders() {
 
   const prevPaidRef = useRef(null);
 
-  // Auto-refresh counts every 30 s
+  // Auto-refresh counts and orders list every 30 s
   useEffect(() => {
-    const id = setInterval(() => setCountsRev((r) => r + 1), 30_000);
+    const id = setInterval(() => {
+      setCountsRev((r) => r + 1);
+      setRev((r) => r + 1);
+    }, 30_000);
     return () => clearInterval(id);
   }, []);
 

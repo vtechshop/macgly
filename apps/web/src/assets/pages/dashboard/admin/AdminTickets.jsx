@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   MessageSquare, AlertCircle, Search, Download, Send, X,
 } from 'lucide-react';
@@ -237,13 +237,12 @@ function TicketModal({ ticketId, onClose, onUpdate }) {
                   <p className="text-xs font-semibold text-secondary-400 uppercase tracking-wide mb-3">Status</p>
                   <select
                     className="input w-full text-sm mb-2"
-                    value={effectiveStatus || ''}
+                    value={effectiveStatus === 'resolved' ? 'closed' : (effectiveStatus || '')}
                     onChange={(e) => setLocalStatus(e.target.value)}
                   >
                     <option value="open">Open</option>
                     <option value="in-progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
+                    <option value="closed">Resolved / Close</option>
                   </select>
                   {statusChanged && (
                     <button onClick={updateStatus} disabled={updating} className="btn-primary w-full text-sm">
@@ -335,6 +334,11 @@ export default function AdminTickets() {
   const [page, setPage] = useState(1);
   const [viewingTicket, setViewingTicket] = useState(null);
   const [listRev, setListRev] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setListRev((r) => r + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   const { data: statsData } = useFetch(
     ['admin-ticket-stats', listRev],
