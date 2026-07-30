@@ -118,7 +118,7 @@ export default function CartDrawer() {
             items.map((item) => (
               <div key={item._id} className="flex items-center gap-3 border border-secondary-200 rounded-xl p-3 bg-white">
                 <button
-                  onClick={() => { close(); navigate(`/products/${item.product?.slug || item.slug}`); }}
+                  onClick={() => { close(); navigate(`/product/${item.product?.slug || item.slug}`); }}
                   className="w-16 h-16 shrink-0 bg-secondary-50 rounded-lg overflow-hidden border border-secondary-100 hover:opacity-80 transition-opacity"
                 >
                   {item.product?.images?.[0] ? (
@@ -137,7 +137,7 @@ export default function CartDrawer() {
 
                 <div className="flex-1 min-w-0">
                   <button
-                    onClick={() => { close(); navigate(`/products/${item.product?.slug || item.slug}`); }}
+                    onClick={() => { close(); navigate(`/product/${item.product?.slug || item.slug}`); }}
                     className="text-sm font-semibold text-secondary-800 line-clamp-1 hover:text-primary-600 transition-colors text-left w-full"
                   >
                     {item.product?.title || item.title}
