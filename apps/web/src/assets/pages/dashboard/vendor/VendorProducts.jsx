@@ -25,16 +25,6 @@ const SHIPPING_ZONES = [
   { id: 'west',      label: 'West India' },
 ];
 
-const MODAL_TABS = [
-  { id: 'basic',    label: 'Basic Info' },
-  { id: 'pricing',  label: 'Pricing' },
-  { id: 'media',    label: 'Media' },
-  { id: 'shipping', label: 'Shipping' },
-  { id: 'details',  label: 'Details' },
-  { id: 'warranty', label: 'Warranty' },
-  { id: 'seo',      label: 'SEO' },
-];
-
 const EMPTY_FORM = {
   title: '', description: '', brand: '', sku: '', tags: '',
   categoryId: '', category: '',
@@ -76,12 +66,10 @@ const INPUT_CLS = 'w-full border border-secondary-200 rounded-lg px-3 py-2 text-
 
 function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
   const [form,   setForm]   = useState(EMPTY_FORM);
-  const [tab,    setTab]    = useState('basic');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setTab('basic');
     if (!editing) { setForm(EMPTY_FORM); return; }
     const p = editing;
     setForm({
@@ -239,64 +227,44 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-secondary-100 overflow-x-auto shrink-0 px-2">
-          {MODAL_TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
-                tab === t.id
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-secondary-500 hover:text-secondary-700'
-              }`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-
         {/* Scrollable body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-8">
 
             {/* ── BASIC INFO ─────────────────────────────────────────────── */}
-            {tab === 'basic' && (
-              <div className="space-y-4">
-                <Field label="Title *">
-                  <input value={form.title} onChange={e('title')} required
-                    placeholder="Product name" className={INPUT_CLS} />
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Basic Info</p>
+              <Field label="Title *">
+                <input value={form.title} onChange={e('title')} required
+                  placeholder="Product name" className={INPUT_CLS} />
+              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Brand">
+                  <input value={form.brand} onChange={e('brand')} placeholder="Brand name" className={INPUT_CLS} />
                 </Field>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Brand">
-                    <input value={form.brand} onChange={e('brand')} placeholder="Brand name" className={INPUT_CLS} />
-                  </Field>
-                  <Field label="SKU" hint="(auto-generated if blank)">
-                    <input value={form.sku} onChange={e('sku')} placeholder="Enter SKU" className={INPUT_CLS} />
-                  </Field>
-                </div>
-                <Field label="Category">
-                  <select value={form.categoryId} onChange={(ev) => {
-                    const cat = cats?.find((c) => c._id === ev.target.value);
-                    setForm((f) => ({ ...f, categoryId: ev.target.value, category: cat?.slug || '' }));
-                  }} className={INPUT_CLS + ' bg-white'}>
-                    <option value="">Select a category</option>
-                    {cats?.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-                  </select>
+                <Field label="SKU" hint="(auto-generated if blank)">
+                  <input value={form.sku} onChange={e('sku')} placeholder="Enter SKU" className={INPUT_CLS} />
                 </Field>
-                <Field label="Tags" hint="(comma-separated)">
-                  <input value={form.tags} onChange={e('tags')} placeholder="tool, brand, type" className={INPUT_CLS} />
-                </Field>
-                <div className="flex gap-6 pt-1">
-                  {[['published', 'Published'], ['featured', 'Featured']].map(([field, label]) => (
-                    <label key={field} className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input type="checkbox" checked={form[field]} onChange={e(field)} className="w-4 h-4 accent-primary-600" />
-                      <span className="font-medium text-secondary-700">{label}</span>
-                    </label>
-                  ))}
-                </div>
               </div>
-            )}
+              <Field label="Category">
+                <select value={form.categoryId} onChange={(ev) => {
+                  const cat = cats?.find((c) => c._id === ev.target.value);
+                  setForm((f) => ({ ...f, categoryId: ev.target.value, category: cat?.slug || '' }));
+                }} className={INPUT_CLS + ' bg-white'}>
+                  <option value="">Select a category</option>
+                  {cats?.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Tags" hint="(comma-separated)">
+                <input value={form.tags} onChange={e('tags')} placeholder="tool, brand, type" className={INPUT_CLS} />
+              </Field>
+            </div>
+
+            <hr className="border-secondary-100" />
 
             {/* ── PRICING ────────────────────────────────────────────────── */}
-            {tab === 'pricing' && (
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Pricing</p>
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <Field label="Price (₹) *">
@@ -348,11 +316,13 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                   )}
                 </div>
               </div>
-            )}
+            </div>
+
+            <hr className="border-secondary-100" />
 
             {/* ── MEDIA ──────────────────────────────────────────────────── */}
-            {tab === 'media' && (
-              <div className="space-y-5">
+            <div className="space-y-5">
+              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Media</p>
                 <Field label="Product Images">
                   <ImageUpload urls={form.images} onChange={(imgs) => setForm((f) => ({ ...f, images: imgs }))} uploadUrl="/vendors/upload/image" />
                 </Field>
@@ -383,11 +353,12 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                     placeholder="https://www.youtube.com/watch?v=..." className={INPUT_CLS} />
                 </Field>
               </div>
-            )}
+
+            <hr className="border-secondary-100" />
 
             {/* ── SHIPPING ───────────────────────────────────────────────── */}
-            {tab === 'shipping' && (
-              <div className="space-y-4">
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Shipping</p>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Weight (kg)">
                     <input type="number" min="0" step="0.01" value={form.weight} onChange={e('weight')} placeholder="Enter weight" className={INPUT_CLS} />
@@ -419,11 +390,12 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                   <p className="text-xs text-secondary-400 mt-2">Highest zone charge applies at checkout</p>
                 </div>
               </div>
-            )}
+
+            <hr className="border-secondary-100" />
 
             {/* ── DETAILS ────────────────────────────────────────────────── */}
-            {tab === 'details' && (
-              <div className="space-y-5">
+            <div className="space-y-5">
+              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Details</p>
                 <Field label="Description *">
                   <textarea value={form.description} onChange={e('description')} required rows={6}
                     placeholder="Describe your product…"
@@ -486,11 +458,12 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                   }
                 </div>
               </div>
-            )}
+
+            <hr className="border-secondary-100" />
 
             {/* ── WARRANTY ───────────────────────────────────────────────── */}
-            {tab === 'warranty' && (
-              <div className="space-y-4">
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Warranty</p>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={form.hasWarranty} onChange={e('hasWarranty')} className="w-4 h-4 accent-primary-600" />
                   <Shield size={14} className="text-secondary-400" />
@@ -534,11 +507,12 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                   </div>
                 )}
               </div>
-            )}
+
+            <hr className="border-secondary-100" />
 
             {/* ── SEO ────────────────────────────────────────────────────── */}
-            {tab === 'seo' && (
-              <div className="space-y-4">
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">SEO</p>
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-sm font-medium text-secondary-700">Meta Title</label>
@@ -590,7 +564,6 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                   </select>
                 </Field>
               </div>
-            )}
 
           </div>
 
