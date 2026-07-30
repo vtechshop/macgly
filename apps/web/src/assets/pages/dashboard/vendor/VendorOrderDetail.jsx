@@ -60,6 +60,7 @@ export default function VendorOrderDetail() {
   const [carrier,      setCarrier]      = useState('');
   const [trackingId,   setTrackingId]   = useState('');
   const [trackingUrl,  setTrackingUrl]  = useState('');
+  const [autoShipping, setAutoShipping] = useState(false);
   const [assigning,    setAssigning]    = useState(false);
 
   const { data, isLoading } = useFetch(
@@ -80,6 +81,17 @@ export default function VendorOrderDetail() {
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to update status');
     } finally { setUpdatingStatus(false); }
+  }
+
+  async function handleAutoShip() {
+    setAutoShipping(true);
+    try {
+      const res = await api.patch(`/vendors/orders/${id}/ship`, { carrier: 'Delhivery' });
+      toast.success(`Delhivery shipment created — AWB: ${res.data.tracking?.trackingId || 'assigned'}`);
+      setRev((r) => r + 1);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Auto-shipment failed. Enter tracking manually.');
+    } finally { setAutoShipping(false); }
   }
 
   async function handleAssignCarrier(e) {
@@ -197,6 +209,23 @@ export default function VendorOrderDetail() {
                 <Truck size={15} className="text-secondary-400" />
                 <p className="font-semibold text-secondary-900 text-sm">Assign Courier</p>
               </div>
+
+              {/* Auto Delhivery */}
+              <button
+                type="button"
+                onClick={handleAutoShip}
+                disabled={autoShipping}
+                className="w-full mb-4 py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                <Truck size={16} />
+                {autoShipping ? 'Creating Delhivery Shipment…' : '🚚 Auto-create Delhivery Shipment'}
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 border-t border-secondary-200" />
+                <span className="text-xs text-secondary-400 font-medium">or enter manually</span>
+                <div className="flex-1 border-t border-secondary-200" />
+              </div>
+
               <form onSubmit={handleAssignCarrier} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
