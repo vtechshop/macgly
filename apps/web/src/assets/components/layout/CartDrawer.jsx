@@ -117,7 +117,10 @@ export default function CartDrawer() {
           ) : (
             items.map((item) => (
               <div key={item._id} className="flex items-center gap-3 border border-secondary-200 rounded-xl p-3 bg-white">
-                <div className="w-16 h-16 shrink-0 bg-secondary-50 rounded-lg overflow-hidden border border-secondary-100">
+                <button
+                  onClick={() => { close(); navigate(`/products/${item.product?.slug || item.slug}`); }}
+                  className="w-16 h-16 shrink-0 bg-secondary-50 rounded-lg overflow-hidden border border-secondary-100 hover:opacity-80 transition-opacity"
+                >
                   {item.product?.images?.[0] ? (
                     <img
                       src={normalizeImageUrl(item.product.images[0])}
@@ -130,12 +133,15 @@ export default function CartDrawer() {
                       <ShoppingCart size={18} className="text-secondary-300" />
                     </div>
                   )}
-                </div>
+                </button>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-secondary-800 line-clamp-1">
+                  <button
+                    onClick={() => { close(); navigate(`/products/${item.product?.slug || item.slug}`); }}
+                    className="text-sm font-semibold text-secondary-800 line-clamp-1 hover:text-primary-600 transition-colors text-left w-full"
+                  >
                     {item.product?.title || item.title}
-                  </p>
+                  </button>
                   <p className="text-sm font-bold text-secondary-900 mt-0.5">
                     {formatCurrency(itemPrice(item) * item.quantity)}
                   </p>
