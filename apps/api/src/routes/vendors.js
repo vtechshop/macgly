@@ -328,6 +328,7 @@ const VENDOR_PRODUCT_FIELDS = [
   'delhiveryEnabled','shippingZones','dimensions','hasVariants','variantOptions',
   'variants','attributes','specifications','faqs','seo','structuredData',
   'hasWarranty','warranty','categoryIds','category','displayOrder',
+  'published','featured',
 ];
 
 function normalizePriceToInclusive(data) {
