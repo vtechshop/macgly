@@ -12,10 +12,10 @@ function formatTicket(t) {
     priority: t.priority,
     status: t.status === 'in_progress' ? 'in-progress' : t.status,
     category: t.category,
-    customerId: t.user ? { _id: t.user._id, name: t.user.name, email: t.user.email } : null,
+    customerId: t.user ? { _id: t.user._id, name: t.user.name, email: t.user.email, role: t.user.role } : null,
     replies: t.messages
       .filter((m) => m.senderRole === 'support')
-      .map((m) => ({ message: m.content, createdAt: m.createdAt })),
+      .map((m) => ({ message: m.content, attachments: m.attachments || [], createdAt: m.createdAt })),
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
   };
@@ -165,7 +165,7 @@ async function adminGetTickets(req, res, next) {
     ];
 
     const [tickets, total] = await Promise.all([
-      Ticket.find(query).populate('user', 'name email').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      Ticket.find(query).populate('user', 'name email role').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
       Ticket.countDocuments(query),
     ]);
 
@@ -217,13 +217,13 @@ async function adminUpdatePriority(req, res, next) {
 
 async function adminReply(req, res, next) {
   try {
-    const { message } = req.body;
+    const { message, attachments = [] } = req.body;
     if (!message?.trim()) throw new AppError('Message is required', 400, 'MISSING_FIELDS');
     const ticket = await Ticket.findById(req.params.id).populate('user', '_id email name');
     if (!ticket) throw new AppError('Ticket not found', 404, 'NOT_FOUND');
     if (ticket.status === 'closed') throw new AppError('Cannot reply to a closed ticket', 400, 'TICKET_CLOSED');
 
-    ticket.messages.push({ senderRole: 'support', content: message.trim() });
+    ticket.messages.push({ senderRole: 'support', content: message.trim(), attachments });
     if (ticket.status === 'open') ticket.status = 'in_progress';
     await ticket.save();
 

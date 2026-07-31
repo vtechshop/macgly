@@ -126,7 +126,7 @@ function TicketCard({ ticket, onClick }) {
                 <Bell size={10} /> New Response
               </span>
             )}
-            {isAwaiting && !isUnread && (
+            {isAwaiting && !isUnread && ticket.status !== 'closed' && (
               <span className="flex items-center gap-1 text-xs font-semibold text-amber-600">
                 <Clock size={10} /> Awaiting
               </span>

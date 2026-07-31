@@ -385,6 +385,16 @@ async function updateKYC(req, res, next) {
     }
 
     await User.findByIdAndUpdate(req.user._id, { $set: update });
+
+    if (submit) {
+      notif.notifyAdmins({
+        type:    'affiliate_kyc',
+        title:   'New Affiliate KYC Submission',
+        message: `${req.user.name} (${req.user.email}) submitted KYC for review`,
+        link:    '/dashboard/admin/kyc',
+      }).catch(() => {});
+    }
+
     res.json({ success: true });
   } catch (err) { next(err); }
 }

@@ -605,10 +605,7 @@ export default function AffiliateKYC() {
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2 border-t border-secondary-100">
-          <button type="button" onClick={() => setStep(2)} className="btn-secondary flex items-center gap-1.5 text-sm">
-            <ChevronLeft size={15} /> Back
-          </button>
+        <div className="flex justify-end pt-2 border-t border-secondary-100">
           <span className="text-xs text-secondary-400">Step 4 of 4</span>
         </div>
       </div>
@@ -618,7 +615,7 @@ export default function AffiliateKYC() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="space-y-5">
 
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*,application/pdf" onChange={handleDocFileChange} className="hidden" />

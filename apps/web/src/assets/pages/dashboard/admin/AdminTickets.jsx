@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   MessageSquare, AlertCircle, Search, Download, Send, X,
+  Paperclip, Loader2, FileText,
 } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
@@ -81,6 +82,9 @@ function TicketModal({ ticketId, onClose, onUpdate }) {
   const [localPriority, setLocalPriority] = useState(null);
   const [sending, setSending] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [uploadingAttach, setUploadingAttach] = useState(false);
+  const attachRef = useRef(null);
 
   const { data, isLoading } = useFetch(
     ['admin-ticket-detail', ticketId, rev],
@@ -93,12 +97,34 @@ function TicketModal({ ticketId, onClose, onUpdate }) {
   const statusChanged = localStatus && localStatus !== ticket?.status;
   const priorityChanged = localPriority && localPriority !== ticket?.priority;
 
+  async function handleAttachFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('File must be under 5MB'); return; }
+    setUploadingAttach(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', 'ticket-attachments');
+      const { data } = await api.post('/upload', fd);
+      setAttachments((a) => [...a, { url: data.url || data.secure_url, name: file.name }]);
+    } catch { toast.error('Upload failed'); }
+    finally {
+      setUploadingAttach(false);
+      if (attachRef.current) attachRef.current.value = '';
+    }
+  }
+
   async function sendReply() {
     if (!replyText.trim()) return toast.error('Enter a reply message');
     setSending(true);
     try {
-      await api.post(`/admin/tickets/${ticketId}/reply`, { message: replyText.trim() });
+      await api.post(`/admin/tickets/${ticketId}/reply`, {
+        message: replyText.trim(),
+        attachments: attachments.map((a) => a.url),
+      });
       setReplyText('');
+      setAttachments([]);
       setRev((r) => r + 1);
       onUpdate();
       toast.success('Reply sent');
@@ -203,6 +229,7 @@ function TicketModal({ ticketId, onClose, onUpdate }) {
                 {/* Reply box */}
                 {ticket.status !== 'closed' && (
                   <div className="p-4 border-t border-secondary-100 shrink-0">
+                    <input ref={attachRef} type="file" accept="image/*,application/pdf,.doc,.docx" className="hidden" onChange={handleAttachFile} />
                     <textarea
                       className="input w-full resize-none text-sm"
                       rows={3}
@@ -210,12 +237,29 @@ function TicketModal({ ticketId, onClose, onUpdate }) {
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                     />
+                    {/* Attachment previews */}
+                    {attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {attachments.map((a, i) => (
+                          <div key={i} className="flex items-center gap-1.5 text-xs bg-secondary-100 rounded-lg px-2 py-1 max-w-[180px]">
+                            <FileText size={12} className="text-primary-500 shrink-0" />
+                            <span className="truncate">{a.name}</span>
+                            <button type="button" onClick={() => setAttachments((arr) => arr.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 shrink-0">
+                              <X size={11} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-2">
                       <button
-                        className="text-xs text-secondary-400 hover:text-secondary-600"
-                        onClick={() => toast('File attachment coming soon')}
+                        type="button"
+                        onClick={() => attachRef.current?.click()}
+                        disabled={uploadingAttach}
+                        className="flex items-center gap-1.5 text-xs text-secondary-500 hover:text-secondary-700 transition-colors"
                       >
-                        Attach File
+                        {uploadingAttach ? <Loader2 size={13} className="animate-spin" /> : <Paperclip size={13} />}
+                        {uploadingAttach ? 'Uploading…' : 'Attach File'}
                       </button>
                       <button
                         onClick={sendReply}
@@ -551,6 +595,13 @@ export default function AdminTickets() {
                     <td className="px-4 py-3">
                       <p className="font-medium">{t.customerId?.name || '—'}</p>
                       <p className="text-xs text-secondary-400 truncate max-w-[140px]">{t.customerId?.email || ''}</p>
+                      {t.customerId?.role && t.customerId.role !== 'customer' && (
+                        <span className={`inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize
+                          ${t.customerId.role === 'vendor'    ? 'bg-blue-100 text-blue-700'   : ''}
+                          ${t.customerId.role === 'affiliate' ? 'bg-purple-100 text-purple-700' : ''}
+                          ${t.customerId.role === 'admin'     ? 'bg-red-100 text-red-700'     : ''}
+                        `}>{t.customerId.role}</span>
+                      )}
                     </td>
                     <td className="px-4 py-3"><PriorityBadge priority={t.priority} /></td>
                     <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
