@@ -108,6 +108,14 @@ function ScrollToTop() {
   return null;
 }
 
+function AutoRefresh() {
+  useEffect(() => {
+    const id = setInterval(() => window.location.reload(), 10 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+  return null;
+}
+
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -157,6 +165,7 @@ export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ScrollToTop />
+      <AutoRefresh />
       <AuthInit>
         <Suspense fallback={<PageLoader />}>
           <Routes>
