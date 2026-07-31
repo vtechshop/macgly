@@ -137,42 +137,13 @@ export default function AffiliateProductLinks() {
     { enabled: affError?.response?.status !== 403 }
   );
 
-  // ── Error handling ────────────────────────────────────────────────────────
+  // ── Derived state (must be before any early returns — Rules of Hooks) ────────
 
-  const affStatus = affError?.response?.status;
-
-  if (affLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
-
-  if (affStatus === 403) {
-    const kycStatus = affError?.response?.data?.error?.kycStatus || 'not_submitted';
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold">All Product Links</h1>
-        <KYCGate kycStatus={kycStatus} />
-      </div>
-    );
-  }
-
-  // ── Derived state ─────────────────────────────────────────────────────────
-
+  const affStatus        = affError?.response?.status;
   const code             = affiliateData?.code || '';
   const defaultCommission = affiliateData?.commissionPercentage ?? 5;
   const allProducts      = productsData?.products || [];
   const origin           = window.location.origin;
-
-  function affiliateLink(slug) {
-    return `${origin}/product/${slug}?affId=${code}`;
-  }
-
-  function getCommission(p) {
-    return p.affiliateCommissionPercentage ?? defaultCommission;
-  }
-
-  function getEarning(p) {
-    return (p.price * getCommission(p)) / 100;
-  }
-
-  // ── Dynamic filter options ────────────────────────────────────────────────
 
   const vendorOptions = useMemo(() => {
     const seen = new Map();
@@ -193,8 +164,6 @@ export default function AffiliateProductLinks() {
     });
     return [...seen.entries()].map(([id, name]) => ({ id, name }));
   }, [allProducts]);
-
-  // ── Filter + sort ─────────────────────────────────────────────────────────
 
   const filteredProducts = useMemo(() => {
     let list = [...allProducts];
@@ -218,21 +187,19 @@ export default function AffiliateProductLinks() {
       case 'name':            list.sort((a, b) => a.title?.localeCompare(b.title)); break;
       case 'price-low':       list.sort((a, b) => a.price - b.price); break;
       case 'price-high':      list.sort((a, b) => b.price - a.price); break;
-      case 'commission-high': list.sort((a, b) => getCommission(b) - getCommission(a)); break;
-      case 'earning-high':    list.sort((a, b) => getEarning(b) - getEarning(a)); break;
+      case 'commission-high': list.sort((a, b) => (b.affiliateCommissionPercentage ?? defaultCommission) - (a.affiliateCommissionPercentage ?? defaultCommission)); break;
+      case 'earning-high':    list.sort((a, b) => (b.price * (b.affiliateCommissionPercentage ?? defaultCommission)) - (a.price * (a.affiliateCommissionPercentage ?? defaultCommission))); break;
       default: break;
     }
 
     return list;
-  }, [allProducts, searchQuery, vendorFilter, categoryFilter, priceRange, sortBy]);
-
-  // ── Client-side stats ─────────────────────────────────────────────────────
+  }, [allProducts, searchQuery, vendorFilter, categoryFilter, priceRange, sortBy, defaultCommission]);
 
   const pageStats = useMemo(() => {
     if (!filteredProducts.length) return { totalProducts: 0, avgCommission: 0, totalPotentialEarning: 0, vendors: 0 };
-    const commissions = filteredProducts.map((p) => getCommission(p));
+    const commissions = filteredProducts.map((p) => p.affiliateCommissionPercentage ?? defaultCommission);
     const avgCommission = commissions.reduce((s, c) => s + c, 0) / commissions.length;
-    const totalPotentialEarning = filteredProducts.reduce((s, p) => s + getEarning(p), 0);
+    const totalPotentialEarning = filteredProducts.reduce((s, p) => s + (p.price * (p.affiliateCommissionPercentage ?? defaultCommission)) / 100, 0);
     const vendors = new Set(filteredProducts.map((p) => getVendorId(p.vendorId)).filter(Boolean)).size;
     return {
       totalProducts: filteredProducts.length,
@@ -240,7 +207,35 @@ export default function AffiliateProductLinks() {
       totalPotentialEarning: parseFloat(totalPotentialEarning.toFixed(2)),
       vendors,
     };
-  }, [filteredProducts]);
+  }, [filteredProducts, defaultCommission]);
+
+  // ── Early returns (after all hooks) ───────────────────────────────────────
+
+  if (affLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+
+  if (affStatus === 403) {
+    const kycStatus = affError?.response?.data?.error?.kycStatus || 'not_submitted';
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">All Product Links</h1>
+        <KYCGate kycStatus={kycStatus} />
+      </div>
+    );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  function affiliateLink(slug) {
+    return `${origin}/product/${slug}?affId=${code}`;
+  }
+
+  function getCommission(p) {
+    return p.affiliateCommissionPercentage ?? defaultCommission;
+  }
+
+  function getEarning(p) {
+    return (p.price * getCommission(p)) / 100;
+  }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
