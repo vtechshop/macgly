@@ -1320,7 +1320,10 @@ router.put('/kyc', async (req, res, next) => {
     if (businessAddress !== undefined) update['vendorProfile.businessAddress'] = businessAddress;
     if (taxId           !== undefined) update['vendorProfile.gstin']           = taxId;
     if (phoneNumber     !== undefined) update['vendorProfile.businessPhone']   = phoneNumber;
-    if (submit)                        update['vendorProfile.kycStatus']       = 'pending';
+    if (submit) {
+      update['vendorProfile.kycStatus']      = 'pending';
+      update['vendorProfile.kycSubmittedAt'] = new Date();
+    }
 
     const updated = await require('../models/User').findByIdAndUpdate(
       req.user._id, { $set: update }, { new: true },

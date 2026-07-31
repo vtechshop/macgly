@@ -405,4 +405,48 @@ async function sendVendorKYCSubmittedEmail({ vendor, adminEmail }) {
   });
 }
 
-module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendAdminOrderCancelledEmail, sendVendorKYCSubmittedEmail, sendVendorKYCDecisionEmail };
+async function sendAffiliateKYCSubmittedEmail({ affiliate }) {
+  const name  = affiliate.name || 'An affiliate';
+  const email = affiliate.email;
+  const now   = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
+
+  await sendEmail({
+    to: process.env.ADMIN_EMAIL || 'macglyshop@gmail.com',
+    subject: `⚠️ Affiliate KYC Approval Required — ${name}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <h2 style="color:#7c3aed">Affiliate KYC Approval Required</h2>
+        <p>An affiliate has submitted their KYC and is awaiting your approval.</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:8px;color:#6b7280;font-size:14px">Name</td><td style="padding:8px;font-weight:600">${name}</td></tr>
+          <tr style="background:#f9fafb"><td style="padding:8px;color:#6b7280;font-size:14px">Email</td><td style="padding:8px">${email}</td></tr>
+          <tr><td style="padding:8px;color:#6b7280;font-size:14px">Submitted At</td><td style="padding:8px">${now} IST</td></tr>
+        </table>
+        <a href="${process.env.FRONTEND_URL || 'https://macgly.com'}/dashboard/admin/kyc"
+          style="display:inline-block;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">
+          Review KYC in Admin Panel →
+        </a>
+        <p style="color:#9ca3af;font-size:12px;margin-top:24px">Macgly Admin · macgly.com</p>
+      </div>
+    `,
+  });
+
+  await sendEmail({
+    to: email,
+    subject: 'Your Macgly affiliate KYC is under review',
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <h2 style="color:#7c3aed">KYC Submitted!</h2>
+        <p>Hi ${name},</p>
+        <p>Your KYC has been submitted successfully and is now under review.</p>
+        <p style="color:#6b7280">Our team will review your documents and get back to you within <strong>1–2 business days</strong>. You'll receive an email once a decision is made.</p>
+        <div style="background:#f9fafb;border-radius:8px;padding:16px;margin:16px 0">
+          <p style="margin:0;font-size:14px;color:#374151">Questions? Contact us at <a href="mailto:support@macgly.com">support@macgly.com</a></p>
+        </div>
+        <p style="color:#9ca3af;font-size:12px">Macgly · macgly.com</p>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendAdminOrderCancelledEmail, sendVendorKYCSubmittedEmail, sendVendorKYCDecisionEmail, sendAffiliateKYCSubmittedEmail };

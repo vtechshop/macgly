@@ -239,24 +239,32 @@ function AffiliateDetailsModal({ affiliate: initAffiliate, onClose, onAction }) 
           </div>
 
           {/* Bank Details */}
-          {ap.kycData?.bankAccount && (
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-2">Bank / Payment Details</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { label: 'Account Holder', value: ap.kycData.accountHolderName || 'N/A' },
-                  { label: 'Bank Name',      value: ap.kycData.bankName || 'N/A' },
-                  { label: 'Account No.',    value: ap.kycData.bankAccount },
-                  { label: 'IFSC',           value: ap.kycData.ifsc || 'N/A' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="bg-secondary-50 rounded-lg px-3 py-2">
-                    <p className="text-[10px] text-secondary-400">{label}</p>
-                    <p className="text-sm font-semibold text-secondary-800 mt-0.5 font-mono truncate">{value}</p>
-                  </div>
-                ))}
+          {(() => {
+            const bd  = ap.bankDetails  || {};
+            const kd  = ap.kycData      || {};
+            const acct = bd.accountNumber || kd.bankAccount;
+            if (!acct) return null;
+            return (
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-2">Bank / Payment Details</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: 'Account Holder', value: bd.accountHolderName || kd.accountHolderName || '—' },
+                    { label: 'Bank Name',      value: bd.bankName          || kd.bankName          || '—' },
+                    { label: 'Account No.',    value: acct },
+                    { label: 'IFSC',           value: bd.ifscCode          || kd.ifsc              || '—' },
+                    { label: 'UPI ID',         value: bd.upiId             || '—' },
+                    { label: 'PAN Number',     value: ap.panNumber         || kd.panCard           || '—' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-secondary-50 rounded-lg px-3 py-2">
+                      <p className="text-[10px] text-secondary-400">{label}</p>
+                      <p className="text-sm font-semibold text-secondary-800 mt-0.5 font-mono truncate">{value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Rejection reason */}
           {status === 'rejected' && ap.rejectionReason && (
@@ -269,13 +277,41 @@ function AffiliateDetailsModal({ affiliate: initAffiliate, onClose, onAction }) 
           {/* KYC Info */}
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-2">KYC Status</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <KYCBadge status={ap.kycStatus} />
-              {ap.kycData?.panCard && (
-                <span className="text-xs text-secondary-500">PAN: <span className="font-mono font-semibold">{ap.kycData.panCard}</span></span>
+              {(ap.panNumber || ap.kycData?.panCard) && (
+                <span className="text-xs text-secondary-500">PAN: <span className="font-mono font-semibold">{ap.panNumber || ap.kycData.panCard}</span></span>
+              )}
+              {ap.kycSubmittedAt && (
+                <span className="text-xs text-secondary-400">Submitted: <span className="font-medium">{new Date(ap.kycSubmittedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span></span>
               )}
             </div>
           </div>
+
+          {/* KYC Documents */}
+          {(ap.kycDocuments?.length > 0) && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-2">KYC Documents</p>
+              <div className="space-y-2">
+                {ap.kycDocuments.map((doc, i) => {
+                  const url = typeof doc.url === 'object' ? doc.url?.url : doc.url;
+                  return (
+                    <a key={i} href={url} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-secondary-100 bg-secondary-50 hover:bg-primary-50 hover:border-primary-200 transition-colors">
+                      <span className="text-lg shrink-0">
+                        {doc.type === 'id_proof' ? '🪪' : doc.type === 'address_proof' ? '🏠' : '📄'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{doc.filename || 'Document'}</p>
+                        <p className="text-xs text-secondary-400 capitalize">{(doc.type || '').replace(/_/g, ' ')}</p>
+                      </div>
+                      <span className="text-xs text-primary-600 font-medium shrink-0">View →</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Category commission rules */}
           <CategoryCommissionRules

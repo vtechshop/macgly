@@ -213,7 +213,17 @@ function ReviewModal({ item, onClose, onApprove, onReject }) {
                   </span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pri.cls}`}>{pri.label}</span>
                 </div>
-                <p className="text-xs text-secondary-400 mt-0.5">{item.email} · Submitted {formatDate(item.createdAt)}</p>
+                <p className="text-xs text-secondary-400 mt-0.5">
+                  {item.email} · Applied {formatDate(item.createdAt)}
+                  {(() => {
+                    const submittedAt = isVendor
+                      ? item.vendorProfile?.kycSubmittedAt
+                      : item.affiliateProfile?.kycSubmittedAt;
+                    return submittedAt
+                      ? <> · KYC submitted <strong className="text-secondary-600">{new Date(submittedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</strong></>
+                      : null;
+                  })()}
+                </p>
               </div>
             </div>
             <button onClick={onClose} className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-400"><X size={18} /></button>
@@ -559,6 +569,16 @@ export default function AdminKYC() {
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full ${pri.cls}`}>{pri.label}</span>
                       <p className="text-[10px] text-secondary-400 mt-0.5">{days}d ago</p>
+                      {(() => {
+                        const submittedAt = isVendor
+                          ? s.vendorProfile?.kycSubmittedAt
+                          : s.affiliateProfile?.kycSubmittedAt;
+                        return submittedAt ? (
+                          <p className="text-[10px] text-secondary-400 mt-0.5">
+                            {new Date(submittedAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                          </p>
+                        ) : null;
+                      })()}
                     </td>
                     {/* Docs */}
                     <td className="px-4 py-3">

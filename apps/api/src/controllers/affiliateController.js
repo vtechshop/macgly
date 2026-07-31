@@ -5,6 +5,7 @@ const AffiliateClick = require('../models/AffiliateClick');
 const AppError = require('../utils/AppError');
 const { FRONTEND_URL } = require('../config/env');
 const notif = require('../utils/notificationHelper');
+const { sendAffiliateKYCSubmittedEmail } = require('../services/emailService');
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -374,7 +375,8 @@ async function updateKYC(req, res, next) {
     if (gstVerified   !== undefined) update['affiliateProfile.kycGstVerified'] = gstVerified;
     if (gstDetails    !== undefined) update['affiliateProfile.kycGstDetails']  = gstDetails;
     if (submit) {
-      update['affiliateProfile.kycStatus'] = 'pending';
+      update['affiliateProfile.kycStatus']      = 'pending';
+      update['affiliateProfile.kycSubmittedAt'] = new Date();
     } else {
       // Reset rejected status on any save
       const cur = await User.findById(req.user._id).select('affiliateProfile.kycStatus').lean();
@@ -393,6 +395,7 @@ async function updateKYC(req, res, next) {
         message: `${req.user.name} (${req.user.email}) submitted KYC for review`,
         link:    '/dashboard/admin/kyc',
       }).catch(() => {});
+      sendAffiliateKYCSubmittedEmail({ affiliate: req.user }).catch(() => {});
     }
 
     res.json({ success: true });
