@@ -153,13 +153,13 @@ export default function Header() {
             <div className="flex items-center gap-1 ml-auto md:ml-0 shrink-0">
 
               {/* Account */}
-              <div className="relative hidden md:block" ref={accountRef}>
+              <div className="relative" ref={accountRef}>
                 <button
                   onClick={() => setAccountOpen((v) => !v)}
                   className="flex items-center gap-2 text-secondary-700 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-secondary-100"
                 >
                   <User size={20} />
-                  <div className="flex flex-col items-start leading-none">
+                  <div className="hidden md:flex flex-col items-start leading-none">
                     {user
                       ? <><span className="text-[10px] text-secondary-500">Hello, {user.name.split(' ')[0]}</span><span className="text-xs font-semibold flex items-center gap-0.5">My Account <ChevronDown size={11} /></span></>
                       : <><span className="text-[10px] text-secondary-500">Welcome</span><span className="text-xs font-semibold flex items-center gap-0.5">LOGIN <ChevronDown size={11} /></span></>
@@ -167,11 +167,16 @@ export default function Header() {
                   </div>
                 </button>
                 {accountOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl border border-secondary-200 shadow-xl z-50 py-1 overflow-hidden">
+                  <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl border border-secondary-200 shadow-xl z-50 py-1 overflow-hidden">
                     {user ? (
                       <>
+                        <div className="px-4 py-2 border-b border-secondary-100">
+                          <p className="text-xs text-secondary-500">Signed in as</p>
+                          <p className="text-sm font-semibold text-secondary-800 truncate">{user.name}</p>
+                        </div>
                         <Link to={`/dashboard/${user.role}`} onClick={() => setAccountOpen(false)} className="block px-4 py-2.5 text-sm text-secondary-700 hover:bg-secondary-50">Dashboard</Link>
                         <Link to="/dashboard/customer/orders" onClick={() => setAccountOpen(false)} className="block px-4 py-2.5 text-sm text-secondary-700 hover:bg-secondary-50">My Orders</Link>
+                        <Link to="/dashboard/customer/wishlist" onClick={() => setAccountOpen(false)} className="block px-4 py-2.5 text-sm text-secondary-700 hover:bg-secondary-50">Wishlist</Link>
                         <button onClick={() => { setAccountOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-secondary-100">Logout</button>
                       </>
                     ) : (
