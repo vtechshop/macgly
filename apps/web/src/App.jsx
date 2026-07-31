@@ -160,7 +160,7 @@ function AuthInit({ children }) {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const ref = params.get('aff') || params.get('aff_ref');
+    const ref = params.get('aff') || params.get('aff_ref') || params.get('affId');
     if (ref && /^[A-Z0-9]{6,12}$/.test(ref)) {
       localStorage.setItem('aff_ref', JSON.stringify({ ref, expires: Date.now() + 24 * 60 * 60 * 1000 }));
       api.get(`/affiliates/record-click?ref=${ref}`).catch(() => {});
