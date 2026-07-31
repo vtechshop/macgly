@@ -171,8 +171,8 @@ async function createOrder(req, res, next) {
 
     // COD: create commission records + send confirmation
     if (paymentMethod === 'cod') {
-      createVendorCommissions(order).catch(() => {});
-      if (affiliateId) createAffiliateCommission(order, affiliateId).catch(() => {});
+      createVendorCommissions(order).catch((err) => console.error('[Commission] vendor failed (COD):', err.message));
+      if (affiliateId) createAffiliateCommission(order, affiliateId).catch((err) => console.error('[Commission] affiliate failed (COD):', err.message));
       const User = require('../models/User');
       User.findById(req.user._id).then((u) => {
         if (u) {
@@ -259,8 +259,8 @@ async function verifyPayment(req, res, next) {
 
     if (!alreadyProcessed) {
       // Create commission records for vendor and affiliate
-      createVendorCommissions(order).catch(() => {});
-      if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch(() => {});
+      createVendorCommissions(order).catch((err) => console.error('[Commission] vendor failed (Razorpay):', err.message));
+      if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch((err) => console.error('[Commission] affiliate failed (Razorpay):', err.message));
 
       // Send confirmation email + fire notifications async — don't block response
       const User = require('../models/User');

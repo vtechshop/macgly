@@ -220,6 +220,8 @@ export default function VendorKYC() {
   const isSubmitted = status === 'pending';
   const isApproved  = status === 'approved';
   const isRejected  = status === 'rejected';
+  const locked      = isSubmitted || isApproved;
+  const effectiveStep = locked ? 4 : activeStep;
 
   const completedSteps = [];
   if (businessInfoComplete) completedSteps.push(1);
@@ -393,7 +395,7 @@ export default function VendorKYC() {
       )}
 
       {/* Step Indicator */}
-      <StepIndicator activeStep={activeStep} completedSteps={completedSteps} />
+      <StepIndicator activeStep={effectiveStep} completedSteps={completedSteps} />
 
       {/* Progress Bar */}
       <div className="mb-2">
@@ -406,7 +408,7 @@ export default function VendorKYC() {
       </div>
 
       {/* ── Step 1: Business Information ─────────────────────────────────────── */}
-      {activeStep === 1 && (
+      {effectiveStep === 1 && (
         <div className="card p-6 space-y-5">
           <div className="flex items-center gap-3 pb-3 border-b border-secondary-100">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50">
@@ -457,7 +459,7 @@ export default function VendorKYC() {
       )}
 
       {/* ── Step 2: GST Verification ─────────────────────────────────────────── */}
-      {activeStep === 2 && (
+      {effectiveStep === 2 && (
         <div className="card p-6 space-y-5">
           <div className="flex items-center gap-3 pb-3 border-b border-secondary-100">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50">
@@ -523,7 +525,7 @@ export default function VendorKYC() {
       )}
 
       {/* ── Step 3: Documents ─────────────────────────────────────────────────── */}
-      {activeStep === 3 && (
+      {effectiveStep === 3 && (
         <div className="card p-6 space-y-5">
           <div className="flex items-center gap-3 pb-3 border-b border-secondary-100">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50">
@@ -561,7 +563,7 @@ export default function VendorKYC() {
       )}
 
       {/* ── Step 4: Submit for Review ─────────────────────────────────────────── */}
-      {activeStep === 4 && !isApproved && (
+      {effectiveStep === 4 && !isApproved && (
         <div className="card p-6 space-y-5">
           <div className="flex items-center gap-3 pb-3 border-b border-secondary-100">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50">

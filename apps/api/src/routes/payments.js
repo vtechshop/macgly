@@ -38,8 +38,8 @@ router.post('/webhook', async (req, res) => {
           { new: true }
         );
         if (order) {
-          createVendorCommissions(order).catch(() => {});
-          if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch(() => {});
+          createVendorCommissions(order).catch((err) => console.error('[Commission] vendor failed (webhook):', err.message));
+          if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch((err) => console.error('[Commission] affiliate failed (webhook):', err.message));
 
           User.findById(order.user).then((user) => {
             if (user) {

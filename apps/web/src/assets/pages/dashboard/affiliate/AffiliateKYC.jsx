@@ -55,7 +55,7 @@ function CheckItem({ done, label }) {
   );
 }
 
-function StepBar({ current, onGo }) {
+function StepBar({ current, onGo, locked }) {
   return (
     <div className="flex items-center gap-0 w-full mb-6">
       {STEPS.map((s, i) => {
@@ -66,8 +66,8 @@ function StepBar({ current, onGo }) {
           <div key={i} className="flex items-center flex-1 last:flex-none">
             <button
               type="button"
-              onClick={() => onGo(i)}
-              className="flex flex-col items-center gap-1 shrink-0"
+              onClick={() => { if (!locked) onGo(i); }}
+              className={`flex flex-col items-center gap-1 shrink-0 ${locked ? 'cursor-default' : ''}`}
             >
               <span className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors
                 ${done   ? 'bg-primary-600 text-white' : ''}
@@ -323,8 +323,9 @@ export default function AffiliateKYC() {
   // ── Step content ──────────────────────────────────────────────────────────────
 
   function renderStep() {
+    const s = locked ? 3 : step;
     // Step 0 — Personal Information
-    if (step === 0) return (
+    if (s === 0) return (
       <div className="space-y-4">
         <div>
           <h2 className="text-base font-semibold">Personal Information</h2>
@@ -416,7 +417,7 @@ export default function AffiliateKYC() {
     );
 
     // Step 1 — Documents
-    if (step === 1) return (
+    if (s === 1) return (
       <div className="space-y-5">
         <div>
           <h2 className="text-base font-semibold">Required Documents</h2>
@@ -477,7 +478,7 @@ export default function AffiliateKYC() {
     );
 
     // Step 2 — Bank & PAN
-    if (step === 2) return (
+    if (s === 2) return (
       <div className="space-y-4">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2">
@@ -653,7 +654,7 @@ export default function AffiliateKYC() {
 
       {/* Step wizard card */}
       <div className="card p-5 sm:p-6">
-        <StepBar current={step} onGo={setStep} />
+        <StepBar current={locked ? 3 : step} onGo={setStep} locked={locked} />
         {renderStep()}
       </div>
 

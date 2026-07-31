@@ -381,6 +381,18 @@ export default function AdminCommissions({ defaultType = 'vendor' }) {
 
   function refresh() { loadStats(); loadCommissions(); loadPendingPayouts(); }
 
+  const [backfilling, setBackfilling] = useState(false);
+  async function runBackfill() {
+    if (!confirm('Backfill vendor commissions from all existing paid orders? This may take a moment.')) return;
+    setBackfilling(true);
+    try {
+      const { data } = await api.post('/admin/commissions/backfill');
+      toast.success(`Backfill done — ${data.commissionsCreated} commissions created from ${data.ordersProcessed} orders`);
+      refresh();
+    } catch (err) { toast.error(err?.response?.data?.error?.message || 'Backfill failed'); }
+    finally { setBackfilling(false); }
+  }
+
   // ── actions ────────────────────────────────────────────────────────────────
 
   async function approve(id) {
@@ -491,6 +503,13 @@ export default function AdminCommissions({ defaultType = 'vendor' }) {
             className="flex items-center gap-2 px-3 py-2 border border-secondary-200 rounded-lg text-sm text-secondary-700 hover:bg-secondary-50 transition-colors">
             <RefreshCw size={14} /> Refresh
           </button>
+          {type === 'vendor' && (
+            <button onClick={runBackfill} disabled={backfilling}
+              className="flex items-center gap-2 px-3 py-2 border border-amber-300 bg-amber-50 rounded-lg text-sm text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50">
+              {backfilling ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              {backfilling ? 'Backfilling…' : 'Backfill from Orders'}
+            </button>
+          )}
           <a href={`/api/admin/commissions/export?type=${type}&days=${dateRange}`} download
             className="flex items-center gap-2 px-3 py-2 border border-secondary-200 rounded-lg text-sm text-secondary-700 hover:bg-secondary-50 transition-colors">
             <Download size={14} /> Download Report

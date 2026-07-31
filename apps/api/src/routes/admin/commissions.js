@@ -2,6 +2,7 @@ const router     = require('express').Router();
 const Commission = require('../../models/Commission');
 const User       = require('../../models/User');
 const AppError   = require('../../utils/AppError');
+const { backfillVendorCommissions } = require('../../services/commissionService');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -11,6 +12,14 @@ function dateFilter(days) {
   if (isNaN(d)) return {};
   return { createdAt: { $gte: new Date(Date.now() - d * 24 * 60 * 60 * 1000) } };
 }
+
+// ── POST /admin/commissions/backfill ─────────────────────────────────────────
+router.post('/backfill', async (req, res, next) => {
+  try {
+    const result = await backfillVendorCommissions();
+    res.json({ success: true, ...result });
+  } catch (err) { next(err); }
+});
 
 // ── GET /admin/commissions/stats — MUST be before / and /:id ─────────────────
 router.get('/stats', async (req, res, next) => {
