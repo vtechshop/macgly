@@ -6,6 +6,7 @@ const abandonedCartService = require('../services/abandonedCartService');
 const inventoryAlertService = require('../services/inventoryAlertService');
 const cleanupStaleOrders = require('./cleanupStaleOrders');
 const autoCloseTickets = require('./autoCloseTickets');
+const autoReleaseCommissions = require('./autoReleaseCommissions');
 
 function schedule(name, fn, intervalMs) {
   fn().catch((e) => console.error(`[Job:${name}] startup error:`, e.message));
@@ -32,6 +33,7 @@ function startJobs() {
   schedule('AbandonedCartEmail', () => abandonedCartService.sendRecoveryEmails(), 6 * HOUR);
   schedule('InventoryAlert', () => inventoryAlertService.checkAndAlert(), 12 * HOUR);
   schedule('AutoCloseTickets', () => autoCloseTickets.run(), HOUR);
+  schedule('AutoReleaseCommissions', () => autoReleaseCommissions.run(), 6 * HOUR);
 
   console.log('[Jobs] Background jobs started');
 }

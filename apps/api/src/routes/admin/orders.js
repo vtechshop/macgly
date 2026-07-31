@@ -8,6 +8,7 @@ const { applyEarnings } = require('../../utils/earningsHelper');
 const { createShipment } = require('../../services/shippingService');
 const notif      = require('../../utils/notificationHelper');
 const whatsapp   = require('../../services/whatsappService');
+const Commission = require('../../models/Commission');
 const { sendShippingUpdate } = require('../../services/emailService');
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../../config/env');
 
@@ -311,6 +312,13 @@ router.put('/:id', async (req, res, next) => {
       await applyEarnings(prev, update.status).catch((e) =>
         console.error('[Orders] earnings error:', e.message),
       );
+      // Immediately cancel pending commissions when order is returned/cancelled
+      if (update.status === 'returned' || update.status === 'cancelled') {
+        Commission.updateMany(
+          { order: prev._id, status: { $in: ['pending', 'approved'] } },
+          { $set: { status: 'cancelled' } }
+        ).catch((e) => console.error('[Commission] cancel on return failed:', e.message));
+      }
     }
 
     res.json({ order });
