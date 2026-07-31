@@ -194,6 +194,7 @@ export default function AffiliateKYC() {
   const docs       = kyc.documents || [];
   const isApproved = kycStatus === 'approved' || kycStatus === 'verified';
   const isPending  = kycStatus === 'pending';
+  const locked     = isPending || isApproved;
 
   const personalComplete = !!(formData.fullName && formData.phoneNumber && formData.idType && formData.idNumber && formData.address && formData.city && formData.state && formData.country);
   const bankComplete     = !!(kycData?.paymentDetails?.accountNumber && kycData?.paymentDetails?.ifscCode);
