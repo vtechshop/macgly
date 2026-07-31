@@ -25,6 +25,7 @@ const TYPE_META = {
   product:            { Icon: Package,      color: 'bg-orange-100 text-orange-600'},
   payment:            { Icon: CreditCard,   color: 'bg-green-100 text-green-600'  },
   kyc:                { Icon: ShieldCheck,  color: 'bg-purple-100 text-purple-600'},
+  affiliate_kyc:      { Icon: ShieldCheck,  color: 'bg-purple-100 text-purple-600'},
   vendor_approval:    { Icon: Store,        color: 'bg-teal-100 text-teal-600'    },
   affiliate_approval: { Icon: UserCheck,    color: 'bg-indigo-100 text-indigo-600'},
   commission:         { Icon: IndianRupee,  color: 'bg-emerald-100 text-emerald-600'},

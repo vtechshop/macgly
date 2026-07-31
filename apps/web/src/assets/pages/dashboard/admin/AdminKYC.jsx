@@ -39,8 +39,9 @@ function docCount(item) {
     const vp = item.vendorProfile || {};
     return [vp.panCard, vp.gstin, vp.bankAccount, vp.accountHolderName, vp.ifsc].filter(Boolean).length;
   }
-  const kd = item.affiliateProfile?.kycData || {};
-  return [kd.panCard, kd.bankAccount, kd.ifsc, kd.aadhaar].filter(Boolean).length;
+  const ap = item.affiliateProfile || {};
+  const bd = ap.bankDetails || ap.kycData || {};
+  return [ap.panNumber || ap.kycData?.panCard, bd.accountNumber || bd.bankAccount, bd.ifscCode || bd.ifsc, ap.kycFullName].filter(Boolean).length;
 }
 
 function buildChecklist(item) {
@@ -56,12 +57,14 @@ function buildChecklist(item) {
     ];
   }
   const ap = item.affiliateProfile || {};
+  const bd = ap.bankDetails || {};
   const kd = ap.kycData || {};
+  const docs = ap.kycDocuments || [];
   return [
-    { label: 'PAN Number',    ok: !!kd.panCard,                   critical: true  },
-    { label: 'Bank Account',  ok: !!kd.bankAccount,               critical: false },
-    { label: 'IFSC Code',     ok: !!kd.ifsc,                      critical: false },
-    { label: 'KYC Data',      ok: !!(kd.panCard || kd.aadhaar),  critical: true  },
+    { label: 'Personal Info',   ok: !!(ap.kycFullName && ap.kycPhoneNumber),                             critical: true  },
+    { label: 'ID Proof Doc',    ok: docs.some((d) => d.type === 'id_proof'),                            critical: true  },
+    { label: 'PAN Number',      ok: !!(ap.panNumber || kd.panCard),                                     critical: true  },
+    { label: 'Bank Account',    ok: !!(bd.accountNumber || bd.ifscCode || kd.bankAccount || kd.ifsc),   critical: false },
   ];
 }
 
@@ -148,9 +151,10 @@ function ReviewModal({ item, onClose, onApprove, onReject }) {
   const [showReject, setShowReject] = useState(false);
 
   const isVendor   = item.type === 'vendor';
-  const vp         = item.vendorProfile   || {};
-  const ap         = item.affiliateProfile|| {};
-  const kd         = ap.kycData           || {};
+  const vp         = item.vendorProfile    || {};
+  const ap         = item.affiliateProfile || {};
+  const kd         = ap.kycData            || {};
+  const bd         = ap.bankDetails        || {};
   const days       = daysSince(item.createdAt);
   const pri        = priority(days);
   const checklist  = buildChecklist(item);
@@ -179,11 +183,15 @@ function ReviewModal({ item, onClose, onApprove, onReject }) {
     { label: 'IFSC',           value: vp.ifsc          || '—' },
     { label: 'Account Holder', value: vp.accountHolderName || '—' },
   ] : [
-    { label: 'PAN Card',      value: kd.panCard           || '—' },
-    { label: 'Aadhaar',       value: kd.aadhaar           || '—' },
-    { label: 'Bank Account',  value: kd.bankAccount       || '—' },
-    { label: 'IFSC',          value: kd.ifsc              || '—' },
-    { label: 'Account Holder',value: kd.accountHolderName || '—' },
+    { label: 'Full Name',     value: ap.kycFullName       || kd.accountHolderName || '—' },
+    { label: 'Phone',         value: ap.kycPhoneNumber    || '—' },
+    { label: 'ID Type',       value: ap.kycIdType         || '—' },
+    { label: 'ID Number',     value: ap.kycIdNumber       || kd.aadhaar || '—' },
+    { label: 'PAN Number',    value: ap.panNumber         || kd.panCard || '—' },
+    { label: 'Bank Name',     value: bd.bankName          || '—' },
+    { label: 'Account No.',   value: bd.accountNumber     || kd.bankAccount || '—' },
+    { label: 'IFSC',          value: bd.ifscCode          || kd.ifsc || '—' },
+    { label: 'Account Holder',value: bd.accountHolderName || kd.accountHolderName || '—' },
   ];
 
   return (
@@ -266,20 +274,51 @@ function ReviewModal({ item, onClose, onApprove, onReject }) {
               </div>
             </div>
 
-            {/* KYC Documents (proxy: fields as documents) */}
+            {/* KYC Documents */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-2">Submitted KYC Data</p>
-              {docCount(item) > 0 ? (
-                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                  <FileText size={16} className="text-green-600" />
-                  <p className="text-sm text-green-700 font-medium">{docCount(item)} field{docCount(item) !== 1 ? 's' : ''} submitted</p>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                  <AlertCircle size={16} className="text-red-600" />
-                  <p className="text-sm text-red-700 font-medium">No KYC data submitted yet</p>
-                </div>
-              )}
+              <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-2">Uploaded Documents</p>
+              {(() => {
+                const docList = isVendor ? [] : (ap.kycDocuments || []);
+                if (!isVendor && docList.length === 0) {
+                  return (
+                    <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                      <AlertCircle size={16} className="text-red-600" />
+                      <p className="text-sm text-red-700 font-medium">No documents uploaded yet</p>
+                    </div>
+                  );
+                }
+                if (isVendor) {
+                  return docCount(item) > 0 ? (
+                    <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                      <FileText size={16} className="text-green-600" />
+                      <p className="text-sm text-green-700 font-medium">{docCount(item)} KYC fields submitted</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                      <AlertCircle size={16} className="text-red-600" />
+                      <p className="text-sm text-red-700 font-medium">No KYC data submitted yet</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-2">
+                    {docList.map((doc, i) => {
+                      const url = typeof doc.url === 'object' ? doc.url?.url : doc.url;
+                      return (
+                        <a key={i} href={url} target="_blank" rel="noreferrer"
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-secondary-100 bg-secondary-50 hover:bg-primary-50 hover:border-primary-200 transition-colors">
+                          <FileText size={16} className="text-primary-500 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{doc.filename || 'Document'}</p>
+                            <p className="text-xs text-secondary-400 capitalize">{(doc.type || '').replace('_', ' ')}</p>
+                          </div>
+                          <ExternalLink size={13} className="text-primary-400 shrink-0" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
           </div>
