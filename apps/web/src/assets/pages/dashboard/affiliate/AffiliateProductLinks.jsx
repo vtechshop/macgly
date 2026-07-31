@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Copy, Check, Search, Package, Shield, RefreshCw, Filter, X,
   LayoutList, LayoutGrid, Percent, DollarSign, ShoppingBag, Download,
-  Lightbulb, ArrowLeft, ChevronDown,
+  ArrowLeft, ChevronDown,
 } from 'lucide-react';
 import api from '../../../../utils/api';
 import { useFetch, invalidateCache } from '../../../../hooks';
@@ -619,20 +619,6 @@ export default function AffiliateProductLinks() {
           )}
         </>
       )}
-
-      {/* Pro tips */}
-      <div className="rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-4 space-y-3">
-        <div className="flex items-center gap-2 text-amber-700">
-          <Lightbulb size={15} />
-          <p className="text-sm font-semibold">Pro Tips</p>
-        </div>
-        <ul className="space-y-1.5 text-xs text-amber-700">
-          <li className="flex gap-2"><span className="font-bold shrink-0">→</span> Sort by "Earning: High–Low" to promote the most profitable products first</li>
-          <li className="flex gap-2"><span className="font-bold shrink-0">→</span> Higher priced products mean bigger commissions — even at the same commission %</li>
-          <li className="flex gap-2"><span className="font-bold shrink-0">→</span> Export CSV and upload to your website or email marketing tool for bulk promotion</li>
-          <li className="flex gap-2"><span className="font-bold shrink-0">→</span> 30-day cookie window — buyers clicking your link are tracked for a full month</li>
-        </ul>
-      </div>
 
     </div>
   );
