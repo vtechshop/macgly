@@ -3,6 +3,7 @@ const User       = require('../../models/User');
 const Commission = require('../../models/Commission');
 const AppError   = require('../../utils/AppError');
 const notif      = require('../../utils/notificationHelper');
+const { sendAffiliateKYCDecisionEmail } = require('../../services/emailService');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -147,6 +148,7 @@ router.put('/:id/approve', async (req, res, next) => {
     if (!affiliate) throw new AppError('Affiliate not found', 404, 'NOT_FOUND');
 
     notif.notifyAffiliateApprovalStatus({ affiliateUserId: affiliate._id, status: 'approved' }).catch(() => {});
+    sendAffiliateKYCDecisionEmail({ affiliate, status: 'approved' }).catch(() => {});
     res.json({ ok: true, affiliate });
   } catch (err) { next(err); }
 });
@@ -166,6 +168,7 @@ router.put('/:id/reject', async (req, res, next) => {
     if (!affiliate) throw new AppError('Affiliate not found', 404, 'NOT_FOUND');
 
     notif.notifyAffiliateApprovalStatus({ affiliateUserId: affiliate._id, status: 'rejected', rejectionReason: reason }).catch(() => {});
+    sendAffiliateKYCDecisionEmail({ affiliate, status: 'rejected', rejectionReason: reason }).catch(() => {});
     res.json({ ok: true, affiliate });
   } catch (err) { next(err); }
 });

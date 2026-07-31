@@ -449,4 +449,34 @@ async function sendAffiliateKYCSubmittedEmail({ affiliate }) {
   });
 }
 
-module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendAdminOrderCancelledEmail, sendVendorKYCSubmittedEmail, sendVendorKYCDecisionEmail, sendAffiliateKYCSubmittedEmail };
+async function sendAffiliateKYCDecisionEmail({ affiliate, status, rejectionReason }) {
+  const name     = affiliate.name || 'Affiliate';
+  const approved = status === 'approved';
+  await sendEmail({
+    to: affiliate.email,
+    subject: approved ? '🎉 Your Macgly affiliate KYC is approved!' : '❌ Your Macgly affiliate KYC was not approved',
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <h2 style="color:${approved ? '#16a34a' : '#dc2626'}">${approved ? '🎉 KYC Approved!' : '❌ KYC Not Approved'}</h2>
+        <p>Hi ${name},</p>
+        ${approved
+          ? `<p>Your affiliate KYC has been <strong style="color:#16a34a">approved</strong>! You now have full access to your affiliate dashboard and can start earning commissions.</p>
+             <a href="${process.env.FRONTEND_URL || 'https://macgly.com'}/dashboard/affiliate"
+               style="display:inline-block;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;margin-top:8px">
+               Go to Affiliate Dashboard →
+             </a>`
+          : `<p>Unfortunately, your affiliate KYC was <strong style="color:#dc2626">not approved</strong> at this time.</p>
+             ${rejectionReason ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin:12px 0"><strong>Reason:</strong> ${rejectionReason}</div>` : ''}
+             <p>Please fix the issue mentioned and resubmit your KYC documents.</p>
+             <a href="${process.env.FRONTEND_URL || 'https://macgly.com'}/dashboard/affiliate/kyc"
+               style="display:inline-block;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;margin-top:8px">
+               Update & Resubmit →
+             </a>`
+        }
+        <p style="color:#9ca3af;font-size:12px;margin-top:24px">Macgly · macgly.com · support@macgly.com</p>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendEmail, sendOrderConfirmation, sendShippingUpdate, sendPasswordReset, sendContactMessage, sendBackInStockEmail, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendAdminOrderCancelledEmail, sendVendorKYCSubmittedEmail, sendVendorKYCDecisionEmail, sendAffiliateKYCSubmittedEmail, sendAffiliateKYCDecisionEmail };

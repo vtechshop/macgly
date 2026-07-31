@@ -110,8 +110,27 @@ function ScrollToTop() {
 
 function AutoRefresh() {
   useEffect(() => {
-    const id = setInterval(() => window.location.reload(), 10 * 60 * 1000);
-    return () => clearInterval(id);
+    // Capture the current build's script hash (frozen for this browser session)
+    const currentScript = [...document.querySelectorAll('script[src]')]
+      .find((s) => s.src.includes('/assets/index-'));
+    const currentSrc = currentScript?.src || null;
+
+    // Check for new Vercel deployment every 60s by comparing script hash in index.html
+    const deployCheckId = setInterval(async () => {
+      try {
+        const res  = await fetch('/?_=' + Date.now(), { cache: 'no-store' });
+        const text = await res.text();
+        const match = text.match(/\/assets\/index-[^.]+\.js/);
+        if (match && currentSrc && !currentSrc.endsWith(match[0])) {
+          window.location.reload();
+        }
+      } catch {}
+    }, 60_000);
+
+    // Hard reload every 10 minutes regardless (keep data fresh)
+    const hardRefreshId = setInterval(() => window.location.reload(), 10 * 60 * 1000);
+
+    return () => { clearInterval(deployCheckId); clearInterval(hardRefreshId); };
   }, []);
   return null;
 }
