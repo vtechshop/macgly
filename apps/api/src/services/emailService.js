@@ -450,8 +450,10 @@ async function sendAffiliateKYCSubmittedEmail({ affiliate }) {
 }
 
 async function sendAffiliateKYCDecisionEmail({ affiliate, status, rejectionReason }) {
-  const name     = affiliate.name || 'Affiliate';
-  const approved = status === 'approved';
+  const name           = affiliate.name || 'Affiliate';
+  const approved       = status === 'approved';
+  const commissionRate = affiliate.affiliateProfile?.commissionRate ?? 5;
+  const referralCode   = affiliate.affiliateProfile?.referralCode || null;
   const accentColor = approved ? '#16a34a' : '#dc2626';
   const BASE = process.env.FRONTEND_URL || 'https://macgly.com';
   await sendEmail({
@@ -479,20 +481,63 @@ async function sendAffiliateKYCDecisionEmail({ affiliate, status, rejectionReaso
           <p style="margin:0 0 20px;color:#6b7280;font-size:15px;line-height:1.6">Hi <strong>${name}</strong>,</p>
 
           ${approved ? `
-          <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.7">
+          <p style="margin:0 0 20px;color:#374151;font-size:15px;line-height:1.7">
             Your affiliate KYC documents have been reviewed and <strong style="color:#16a34a">successfully verified</strong>.
             You now have full access to your affiliate dashboard and can start generating referral links and earning commissions.
           </p>
-          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:20px 0">
-            <p style="margin:0;color:#166534;font-size:14px;font-weight:600">What's next?</p>
-            <ul style="margin:8px 0 0;padding-left:18px;color:#166534;font-size:14px;line-height:1.8">
-              <li>Generate your affiliate referral links</li>
-              <li>Share products and earn commissions on every sale</li>
-              <li>Track your earnings in real time from the dashboard</li>
+
+          <!-- Commission summary card -->
+          <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:20px 24px;margin:0 0 20px">
+            <p style="margin:0 0 14px;color:#9a3412;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Your Commission Details</p>
+            <table style="width:100%;border-collapse:collapse">
+              <tr>
+                <td style="padding:8px 0;border-bottom:1px solid #fed7aa;color:#6b7280;font-size:14px;width:50%">Commission Rate</td>
+                <td style="padding:8px 0;border-bottom:1px solid #fed7aa;color:#111827;font-size:20px;font-weight:800;text-align:right">${commissionRate}% <span style="font-size:13px;font-weight:400;color:#6b7280">per sale</span></td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;border-bottom:1px solid #fed7aa;color:#6b7280;font-size:14px">TDS Deduction</td>
+                <td style="padding:8px 0;border-bottom:1px solid #fed7aa;color:#111827;font-size:14px;font-weight:600;text-align:right">2% (as per IT rules)</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;border-bottom:1px solid #fed7aa;color:#6b7280;font-size:14px">Net Payout</td>
+                <td style="padding:8px 0;border-bottom:1px solid #fed7aa;color:#16a34a;font-size:14px;font-weight:700;text-align:right">${(commissionRate * 0.98).toFixed(2)}% effective per sale</td>
+              </tr>
+              ${referralCode ? `<tr>
+                <td style="padding:8px 0;color:#6b7280;font-size:14px">Your Referral Code</td>
+                <td style="padding:8px 0;text-align:right"><span style="background:#111827;color:#ea580c;font-family:monospace;font-size:15px;font-weight:700;padding:4px 10px;border-radius:6px">${referralCode}</span></td>
+              </tr>` : ''}
+            </table>
+            <p style="margin:14px 0 0;color:#9a3412;font-size:12px;line-height:1.5">
+              Commission is credited to your account for every delivered order placed through your referral link.
+              Payouts are processed after admin approval — check your dashboard for payout status.
+            </p>
+          </div>
+
+          <!-- What's next -->
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:0 0 24px">
+            <p style="margin:0 0 6px;color:#166534;font-size:14px;font-weight:600">What's next?</p>
+            <ul style="margin:0;padding-left:18px;color:#166534;font-size:14px;line-height:1.9">
+              <li>Get your referral link from the dashboard</li>
+              <li>Share product links — earn ${commissionRate}% on every delivered sale</li>
+              <li>Track clicks, conversions &amp; earnings in real time</li>
+              <li>Request payout once commissions are approved</li>
             </ul>
           </div>
+
+          <!-- Payout rules -->
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin:0 0 24px">
+            <p style="margin:0 0 10px;color:#374151;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Payout Rules</p>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <tr><td style="padding:5px 0;color:#6b7280;width:55%">Minimum payout amount</td><td style="padding:5px 0;color:#111827;font-weight:600">₹500</td></tr>
+              <tr><td style="padding:5px 0;color:#6b7280">Commission credited after</td><td style="padding:5px 0;color:#111827;font-weight:600">Order delivered</td></tr>
+              <tr><td style="padding:5px 0;color:#6b7280">Payout processing time</td><td style="padding:5px 0;color:#111827;font-weight:600">3–5 business days</td></tr>
+              <tr><td style="padding:5px 0;color:#6b7280">TDS deducted at</td><td style="padding:5px 0;color:#111827;font-weight:600">2% per payout (Form 16A issued)</td></tr>
+              <tr><td style="padding:5px 0;color:#6b7280">Payout method</td><td style="padding:5px 0;color:#111827;font-weight:600">Bank transfer to registered account</td></tr>
+            </table>
+          </div>
+
           <a href="${BASE}/dashboard/affiliate"
-            style="display:inline-block;margin-top:8px;padding:14px 28px;background:#ea580c;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">
+            style="display:inline-block;padding:14px 28px;background:#ea580c;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">
             Go to Affiliate Dashboard →
           </a>
           ` : `
