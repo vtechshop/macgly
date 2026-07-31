@@ -452,28 +452,75 @@ async function sendAffiliateKYCSubmittedEmail({ affiliate }) {
 async function sendAffiliateKYCDecisionEmail({ affiliate, status, rejectionReason }) {
   const name     = affiliate.name || 'Affiliate';
   const approved = status === 'approved';
+  const accentColor = approved ? '#16a34a' : '#dc2626';
+  const BASE = process.env.FRONTEND_URL || 'https://macgly.com';
   await sendEmail({
     to: affiliate.email,
-    subject: approved ? '🎉 Your Macgly affiliate KYC is approved!' : '❌ Your Macgly affiliate KYC was not approved',
+    subject: approved ? 'Your Macgly Affiliate KYC has been Approved' : 'Update Required: Macgly Affiliate KYC',
     html: `
-      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-        <h2 style="color:${approved ? '#16a34a' : '#dc2626'}">${approved ? '🎉 KYC Approved!' : '❌ KYC Not Approved'}</h2>
-        <p>Hi ${name},</p>
-        ${approved
-          ? `<p>Your affiliate KYC has been <strong style="color:#16a34a">approved</strong>! You now have full access to your affiliate dashboard and can start earning commissions.</p>
-             <a href="${process.env.FRONTEND_URL || 'https://macgly.com'}/dashboard/affiliate"
-               style="display:inline-block;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;margin-top:8px">
-               Go to Affiliate Dashboard →
-             </a>`
-          : `<p>Unfortunately, your affiliate KYC was <strong style="color:#dc2626">not approved</strong> at this time.</p>
-             ${rejectionReason ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin:12px 0"><strong>Reason:</strong> ${rejectionReason}</div>` : ''}
-             <p>Please fix the issue mentioned and resubmit your KYC documents.</p>
-             <a href="${process.env.FRONTEND_URL || 'https://macgly.com'}/dashboard/affiliate/kyc"
-               style="display:inline-block;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;margin-top:8px">
-               Update & Resubmit →
-             </a>`
-        }
-        <p style="color:#9ca3af;font-size:12px;margin-top:24px">Macgly · macgly.com · support@macgly.com</p>
+      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9fafb;padding:24px">
+        <!-- Header -->
+        <div style="background:#111827;border-radius:12px 12px 0 0;padding:24px 32px;display:flex;align-items:center">
+          <span style="color:#ea580c;font-size:24px;font-weight:900;letter-spacing:-0.5px">MACGLY</span>
+          <span style="color:#6b7280;font-size:11px;margin-left:10px;letter-spacing:1px;text-transform:uppercase">Affiliate Program</span>
+        </div>
+
+        <!-- Body -->
+        <div style="background:#ffffff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;padding:36px 32px">
+
+          <!-- Status badge -->
+          <div style="display:inline-block;background:${approved ? '#dcfce7' : '#fee2e2'};color:${accentColor};font-size:13px;font-weight:700;padding:6px 14px;border-radius:999px;letter-spacing:0.3px;margin-bottom:24px">
+            ${approved ? '✓ KYC Approved' : '✗ KYC Not Approved'}
+          </div>
+
+          <h2 style="margin:0 0 8px;color:#111827;font-size:22px;font-weight:700">
+            ${approved ? 'Congratulations, your KYC is verified!' : 'Action required on your KYC'}
+          </h2>
+          <p style="margin:0 0 20px;color:#6b7280;font-size:15px;line-height:1.6">Hi <strong>${name}</strong>,</p>
+
+          ${approved ? `
+          <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.7">
+            Your affiliate KYC documents have been reviewed and <strong style="color:#16a34a">successfully verified</strong>.
+            You now have full access to your affiliate dashboard and can start generating referral links and earning commissions.
+          </p>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:20px 0">
+            <p style="margin:0;color:#166534;font-size:14px;font-weight:600">What's next?</p>
+            <ul style="margin:8px 0 0;padding-left:18px;color:#166534;font-size:14px;line-height:1.8">
+              <li>Generate your affiliate referral links</li>
+              <li>Share products and earn commissions on every sale</li>
+              <li>Track your earnings in real time from the dashboard</li>
+            </ul>
+          </div>
+          <a href="${BASE}/dashboard/affiliate"
+            style="display:inline-block;margin-top:8px;padding:14px 28px;background:#ea580c;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">
+            Go to Affiliate Dashboard →
+          </a>
+          ` : `
+          <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.7">
+            After reviewing your submitted documents, we were <strong style="color:#dc2626">unable to approve</strong> your KYC at this time.
+            Please review the reason below and resubmit with the corrected information.
+          </p>
+          ${rejectionReason ? `
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;margin:20px 0">
+            <p style="margin:0 0 4px;color:#991b1b;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Reason for rejection</p>
+            <p style="margin:0;color:#7f1d1d;font-size:14px;line-height:1.6">${rejectionReason}</p>
+          </div>` : ''}
+          <p style="margin:0 0 16px;color:#374151;font-size:14px">
+            Once you have made the required corrections, you can resubmit from your KYC page.
+          </p>
+          <a href="${BASE}/dashboard/affiliate/kyc"
+            style="display:inline-block;margin-top:8px;padding:14px 28px;background:#ea580c;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">
+            Update & Resubmit KYC →
+          </a>
+          `}
+
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0 20px" />
+          <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.6">
+            Need help? Reply to this email or contact us at
+            <a href="mailto:support@macgly.com" style="color:#ea580c;text-decoration:none">support@macgly.com</a><br/>
+            Macgly Tools &amp; Machinery · <a href="${BASE}" style="color:#9ca3af">macgly.com</a>
+          </p>
+        </div>
       </div>
     `,
   });
