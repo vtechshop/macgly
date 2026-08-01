@@ -365,6 +365,7 @@ export default function Checkout() {
             ondismiss: () => {
               setPlacing(false);
               toast.error('Payment cancelled. Your order has not been placed.');
+              api.post(`/orders/${data.order._id}/cancel`, { reason: 'Payment dismissed by user' }).catch(() => {});
             },
           },
         };
@@ -372,6 +373,7 @@ export default function Checkout() {
         rzp.on('payment.failed', (response) => {
           setPlacing(false);
           toast.error(response.error?.description || 'Payment failed. Please try again.');
+          api.post(`/orders/${data.order._id}/cancel`, { reason: 'Payment failed' }).catch(() => {});
         });
         rzp.open();
       } else {
