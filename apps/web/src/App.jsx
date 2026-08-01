@@ -127,10 +127,7 @@ function AutoRefresh() {
       } catch {}
     }, 60_000);
 
-    // Hard reload every 10 minutes regardless (keep data fresh)
-    const hardRefreshId = setInterval(() => window.location.reload(), 10 * 60 * 1000);
-
-    return () => { clearInterval(deployCheckId); clearInterval(hardRefreshId); };
+    return () => { clearInterval(deployCheckId); };
   }, []);
   return null;
 }
