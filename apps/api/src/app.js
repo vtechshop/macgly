@@ -116,6 +116,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check — used by Render's health check ping and frontend warm-up
+app.get('/api/health', (req, res) => res.json({ ok: true }));
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/catalog', require('./routes/catalog'));

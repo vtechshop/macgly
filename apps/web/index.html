@@ -110,6 +110,8 @@
     </script>
 
     <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://macgly.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="//macgly.onrender.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
@@ -118,6 +120,8 @@
     <link rel="dns-prefetch" href="//res.cloudinary.com" />
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" /></noscript>
+    <!-- Warm up the Render API server before React boots -->
+    <script>fetch('/api/health',{credentials:'include'}).catch(function(){});</script>
   </head>
   <body>
     <div id="root">
