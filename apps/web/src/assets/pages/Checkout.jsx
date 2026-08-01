@@ -205,13 +205,17 @@ export default function Checkout() {
     setLocating(true);
     try {
       const pos = await new Promise((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, maximumAge: 60000 })
       );
       const { latitude: lat, longitude: lon } = pos.coords;
+
+      const nominatimCtrl = new AbortController();
+      const nominatimTimer = setTimeout(() => nominatimCtrl.abort(), 5000);
       const resp = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
-        { headers: { 'Accept-Language': 'en' } }
+        { headers: { 'Accept-Language': 'en' }, signal: nominatimCtrl.signal }
       );
+      clearTimeout(nominatimTimer);
       const geo = await resp.json();
       const a = geo.address || {};
       const line1 = [a.house_number, a.road, a.neighbourhood, a.suburb].filter(Boolean).join(', ');
@@ -219,26 +223,32 @@ export default function Checkout() {
       const state  = a.state || '';
       const nominatimPin = (a.postcode || '').replace(/\D/g, '').slice(0, 6);
 
-      // OSM pincode data in India is often inaccurate — look up by area name instead
+      // Lookup pincode candidates in parallel instead of sequentially
       let pincode = nominatimPin;
       const stateNorm = state.toLowerCase().replace(/\s+/g, '');
       const cityNorm  = city.toLowerCase().replace(/\s+/g, '');
       const candidates = [a.suburb, a.quarter, a.city_district, a.neighbourhood]
-        .filter((n) => n && !/^ward\s*\d/i.test(n)); // skip generic "Ward 48" entries
-      for (const name of candidates) {
-        try {
-          const pr = await fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(name)}`);
-          const pj = await pr.json();
-          const offices = pj?.[0]?.PostOffice || [];
-          // Prefer match by state + district (city); fall back to state-only if no district match
+        .filter((n) => n && !/^ward\s*\d/i.test(n));
+
+      if (candidates.length) {
+        const results = await Promise.all(candidates.map(async (name) => {
+          try {
+            const ctrl = new AbortController();
+            setTimeout(() => ctrl.abort(), 4000);
+            const pr = await fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(name)}`, { signal: ctrl.signal });
+            const pj = await pr.json();
+            return pj?.[0]?.PostOffice || [];
+          } catch { return []; }
+        }));
+        for (const offices of results) {
           const match =
             offices.find((o) =>
               o.State?.toLowerCase().replace(/\s+/g, '') === stateNorm &&
               o.District?.toLowerCase().replace(/\s+/g, '').includes(cityNorm.slice(0, 5))
             ) ||
-            (cityNorm ? null : offices.find((o) => o.State?.toLowerCase().replace(/\s+/g, '') === stateNorm));
+            (!cityNorm ? offices.find((o) => o.State?.toLowerCase().replace(/\s+/g, '') === stateNorm) : null);
           if (match) { pincode = match.Pincode; break; }
-        } catch { /* try next */ }
+        }
       }
 
       setAddress((prev) => ({
@@ -248,10 +258,11 @@ export default function Checkout() {
         state:   state   || prev.state,
         pincode: pincode || prev.pincode,
       }));
-      // Confirm city/state from the resolved pincode
       if (pincode.length === 6) {
         try {
-          const r = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+          const ctrl = new AbortController();
+          setTimeout(() => ctrl.abort(), 4000);
+          const r = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, { signal: ctrl.signal });
           const j = await r.json();
           const po = j?.[0]?.PostOffice?.[0];
           if (po) setAddress((p) => ({ ...p, state: po.State || p.state, city: po.District || p.city }));
