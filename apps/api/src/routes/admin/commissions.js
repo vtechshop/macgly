@@ -21,6 +21,14 @@ router.post('/backfill', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── DELETE /admin/commissions/all — wipe all commission records ───────────────
+router.delete('/all', async (req, res, next) => {
+  try {
+    const { deletedCount } = await Commission.deleteMany({});
+    res.json({ success: true, deleted: deletedCount });
+  } catch (err) { next(err); }
+});
+
 // ── GET /admin/commissions/stats — MUST be before / and /:id ─────────────────
 router.get('/stats', async (req, res, next) => {
   try {

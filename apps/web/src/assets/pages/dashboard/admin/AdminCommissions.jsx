@@ -393,6 +393,18 @@ export default function AdminCommissions({ defaultType = 'vendor' }) {
     finally { setBackfilling(false); }
   }
 
+  const [clearing, setClearing] = useState(false);
+  async function clearAll() {
+    if (!confirm('Delete ALL commission records? This cannot be undone.')) return;
+    setClearing(true);
+    try {
+      const { data } = await api.delete('/admin/commissions/all');
+      toast.success(`Cleared ${data.deleted} commission records`);
+      refresh();
+    } catch (err) { toast.error('Clear failed'); }
+    finally { setClearing(false); }
+  }
+
   // ── actions ────────────────────────────────────────────────────────────────
 
   async function approve(id) {
@@ -510,6 +522,11 @@ export default function AdminCommissions({ defaultType = 'vendor' }) {
               {backfilling ? 'Backfilling…' : 'Backfill from Orders'}
             </button>
           )}
+          <button onClick={clearAll} disabled={clearing}
+            className="flex items-center gap-2 px-3 py-2 border border-red-300 bg-red-50 rounded-lg text-sm text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50">
+            {clearing ? <RefreshCw size={14} className="animate-spin" /> : null}
+            {clearing ? 'Clearing…' : 'Clear All'}
+          </button>
           <a href={`/api/admin/commissions/export?type=${type}&days=${dateRange}`} download
             className="flex items-center gap-2 px-3 py-2 border border-secondary-200 rounded-lg text-sm text-secondary-700 hover:bg-secondary-50 transition-colors">
             <Download size={14} /> Download Report

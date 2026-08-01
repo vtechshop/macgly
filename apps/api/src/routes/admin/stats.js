@@ -2,6 +2,7 @@ const router = require('express').Router();
 const Order = require('../../models/Order');
 const User = require('../../models/User');
 const Product = require('../../models/Product');
+const Commission = require('../../models/Commission');
 
 router.get('/', async (req, res, next) => {
   try {
@@ -56,16 +57,14 @@ router.get('/', async (req, res, next) => {
       ]),
       // Admin commission = sum of platform fees from settled orders
       Order.aggregate([{ $match: revenueFilter }, { $group: { _id: null, t: { $sum: '$totalPlatformFee' } } }]),
-      // Vendor commissions — paid (settled) and pending (active orders)
-      Order.aggregate([
-        { $match: revenueFilter },
-        { $unwind: '$items' },
-        { $group: { _id: null, t: { $sum: '$items.vendorEarning' } } },
+      // Vendor commissions — from Commission collection (accurate payout tracking)
+      Commission.aggregate([
+        { $match: { type: 'vendor', status: 'paid' } },
+        { $group: { _id: null, t: { $sum: '$commissionAmount' } } },
       ]),
-      Order.aggregate([
-        { $match: { status: { $in: activeStatuses } } },
-        { $unwind: '$items' },
-        { $group: { _id: null, t: { $sum: '$items.vendorEarning' } } },
+      Commission.aggregate([
+        { $match: { type: 'vendor', status: { $in: ['pending', 'approved'] } } },
+        { $group: { _id: null, t: { $sum: '$commissionAmount' } } },
       ]),
       // Affiliate commissions — paid and pending
       Order.aggregate([
