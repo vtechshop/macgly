@@ -33,7 +33,13 @@ async function run() {
       status: 'pending',
     });
     for (const commission of vendorCommissions) {
-      await Commission.findByIdAndUpdate(commission._id, { status: 'approved' });
+      // Re-assert 'pending' in the filter: a cancellation between the find above
+      // and this write would otherwise be silently undone.
+      const moved = await Commission.findOneAndUpdate(
+        { _id: commission._id, status: 'pending' },
+        { status: 'approved', approvedAt: new Date() },
+      );
+      if (!moved) continue;
       await notificationService.notifyCommissionApproved(commission.user, commission.commissionAmount, 'vendor');
       released++;
     }
@@ -60,7 +66,13 @@ async function run() {
       if (total < AFFILIATE_MIN_PAYOUT) continue; // below ₹500 threshold — hold until next cycle
 
       for (const commission of commissions) {
-        await Commission.findByIdAndUpdate(commission._id, { status: 'approved' });
+        // Re-assert 'pending' in the filter: a cancellation between the find above
+      // and this write would otherwise be silently undone.
+      const moved = await Commission.findOneAndUpdate(
+        { _id: commission._id, status: 'pending' },
+        { status: 'approved', approvedAt: new Date() },
+      );
+      if (!moved) continue;
         await notificationService.notifyCommissionApproved(commission.user, commission.commissionAmount, 'affiliate');
         released++;
       }

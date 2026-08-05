@@ -110,12 +110,14 @@ export default function VendorOrders() {
   async function downloadInvoice(orderId, e) {
     e.stopPropagation();
     try {
-      const res = await api.get(`/vendors/orders/${orderId}/invoice`, { responseType: 'blob' });
+      const res = await api.get(`/invoices/${orderId}?format=pdf`, { responseType: 'blob' });
       const url = URL.createObjectURL(res.data);
       const a   = document.createElement('a');
       a.href     = url;
       a.download = `invoice-${orderId}.pdf`;
+      document.body.appendChild(a);   // Firefox ignores click() on a detached node
       a.click();
+      a.remove();
       URL.revokeObjectURL(url);
     } catch {
       toast.error('Invoice not available');

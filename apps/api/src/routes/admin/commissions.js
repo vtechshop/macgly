@@ -2,6 +2,7 @@ const router     = require('express').Router();
 const Commission = require('../../models/Commission');
 const User       = require('../../models/User');
 const AppError   = require('../../utils/AppError');
+const { transitionCommission, ineligibleOrderIds } = require('../../services/commissionService');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -126,11 +127,31 @@ router.post('/bulk-approve', async (req, res, next) => {
       Object.assign(filter, dateFilter(days));
     }
 
-    const result = await Commission.updateMany(filter, {
-      status: 'approved', approvedAt: new Date(),
-    });
+    // Exclude anything whose order is no longer a sale. The status filter alone
+    // would happily approve pending rows left behind by a cancellation that
+    // predates commission voiding.
+    const candidates = await Commission.find(filter).select('_id order').lean();
+    const blocked = new Set(await ineligibleOrderIds(candidates.map((c) => c.order)));
+    const approvableIds = candidates
+      .filter((c) => !c.order || !blocked.has(c.order.toString()))
+      .map((c) => c._id);
+    const skipped = candidates.length - approvableIds.length;
 
-    res.json({ ok: true, count: result.modifiedCount, message: `${result.modifiedCount} commission(s) approved` });
+    const result = approvableIds.length
+      ? await Commission.updateMany(
+        { _id: { $in: approvableIds }, status: 'pending' },
+        { status: 'approved', approvedAt: new Date() },
+      )
+      : { modifiedCount: 0 };
+
+    if (skipped) console.warn(`[commission] bulk-approve skipped ${skipped} row(s) on cancelled/returned orders`);
+
+    res.json({
+      ok: true,
+      count: result.modifiedCount,
+      skipped,
+      message: `${result.modifiedCount} commission(s) approved${skipped ? `, ${skipped} skipped (order cancelled or returned)` : ''}`,
+    });
   } catch (err) { next(err); }
 });
 
@@ -164,12 +185,7 @@ router.get('/', async (req, res, next) => {
 // ── PUT /admin/commissions/:id/approve ────────────────────────────────────────
 router.put('/:id/approve', async (req, res, next) => {
   try {
-    const commission = await Commission.findOneAndUpdate(
-      { _id: req.params.id, status: 'pending' },
-      { status: 'approved', approvedAt: new Date() },
-      { new: true },
-    );
-    if (!commission) throw new AppError('Commission not found or already processed', 404, 'NOT_FOUND');
+    const commission = await transitionCommission(req.params.id, 'approved', { approvedAt: new Date() });
     res.json({ commission });
   } catch (err) { next(err); }
 });
@@ -177,40 +193,33 @@ router.put('/:id/approve', async (req, res, next) => {
 // ── PUT /admin/commissions/:id/reject ─────────────────────────────────────────
 router.put('/:id/reject', async (req, res, next) => {
   try {
-    const commission = await Commission.findOneAndUpdate(
-      { _id: req.params.id, status: 'pending' },
-      { status: 'cancelled', rejectedAt: new Date() },
-      { new: true },
-    );
-    if (!commission) throw new AppError('Commission not found or already processed', 404, 'NOT_FOUND');
+    const commission = await transitionCommission(req.params.id, 'cancelled', { rejectedAt: new Date() });
     res.json({ commission });
   } catch (err) { next(err); }
 });
 
 // ── PATCH /:id/approve — backward compat ──────────────────────────────────────
+// Previously an unfiltered findByIdAndUpdate, so it could flip a cancelled or
+// even paid commission back to approved and make it payable again.
 router.patch('/:id/approve', async (req, res, next) => {
   try {
-    const commission = await Commission.findByIdAndUpdate(
-      req.params.id,
-      { status: 'approved', approvedAt: new Date() },
-      { new: true },
-    );
-    if (!commission) throw new AppError('Commission not found', 404, 'NOT_FOUND');
+    const commission = await transitionCommission(req.params.id, 'approved', { approvedAt: new Date() });
     res.json({ commission });
   } catch (err) { next(err); }
 });
 
 // ── PATCH /:id/paid — backward compat ─────────────────────────────────────────
 // NOTE: do NOT increment totalEarnings here — applyEarnings already did it on delivery
+// Previously unfiltered, so a pending commission could be marked paid without
+// ever being approved, and a cancelled one could be paid outright.
 router.patch('/:id/paid', async (req, res, next) => {
   try {
     const { payoutId, paymentRef } = req.body;
-    const commission = await Commission.findByIdAndUpdate(
-      req.params.id,
-      { status: 'paid', paidAt: new Date(), ...(payoutId && { payoutId }), ...(paymentRef && { paymentRef }) },
-      { new: true },
-    );
-    if (!commission) throw new AppError('Commission not found', 404, 'NOT_FOUND');
+    const commission = await transitionCommission(req.params.id, 'paid', {
+      paidAt: new Date(),
+      ...(payoutId && { payoutId }),
+      ...(paymentRef && { paymentRef }),
+    });
     res.json({ commission });
   } catch (err) { next(err); }
 });

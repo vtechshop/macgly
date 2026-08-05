@@ -3,6 +3,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff } from 'lucide-react';
 import { register, clearError } from '../../store/slices/authSlice';
+import { setCart } from '../../store/slices/cartSlice';
+import api from '../../utils/api';
+import { setMeta } from '../../utils/seo';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import WhatsAppFAB from '../components/common/WhatsAppFAB';
@@ -84,6 +87,11 @@ export default function Register() {
 
   const refCode = searchParams.get('ref') || '';
 
+  // See Login.jsx — this page also inherited the homepage title and canonical.
+  useEffect(() => {
+    setMeta({ title: 'Create Account | Macgly', description: null, noindex: true });
+  }, []);
+
   const [form, setForm] = useState({
     name:            '',
     phone:           '',
@@ -132,6 +140,10 @@ export default function Register() {
     try {
       const u = await dispatch(register(payload)).unwrap();
       toast.success('Account created! Welcome to Macgly.');
+      // Claim any guest cart built before signing up (see Login.jsx).
+      api.get('/cart')
+        .then(({ data }) => { if (data.cart) dispatch(setCart(data.cart)); })
+        .catch(() => {});
       navigate(ROLE_DASHBOARD[u.role] || '/', { replace: true });
     } catch {
       // serverError shown via Redux state

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff, Link2, IndianRupee, BarChart2, Headphones, ArrowRight } from 'lucide-react';
 import api from '../../utils/api';
+import { setMeta, SITE_URL } from '../../utils/seo';
 import { setUser } from '../../store/slices/authSlice';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
@@ -71,6 +72,15 @@ export default function AffiliateRegister() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+
+  // Before the early returns below — hooks must not sit behind a conditional.
+  useEffect(() => {
+    setMeta({
+      title: 'Affiliate Program — Earn Commission | Macgly',
+      description: 'Join the Macgly affiliate program. Share your referral link, earn commission on every order, and track clicks and earnings in a live dashboard.',
+      canonical: `${SITE_URL}/affiliate`,
+    });
+  }, []);
 
   if (user?.role === 'affiliate') return <Navigate to="/dashboard/affiliate" replace />;
   if (user?.role === 'admin') return <Navigate to="/dashboard/admin" replace />;

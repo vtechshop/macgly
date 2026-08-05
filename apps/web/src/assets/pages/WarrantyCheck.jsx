@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Shield, Search, CheckCircle, XCircle, Clock } from 'lucide-react';
 import api from '../../utils/api';
+import { setMeta, SITE_URL } from '../../utils/seo';
 import Spinner from '../components/common/Spinner';
 
 function fmtDate(iso) {
@@ -12,6 +13,14 @@ export default function WarrantyCheck() {
   const [warranty, setWarranty] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setMeta({
+      title: 'Warranty Check — Verify Your Product Warranty | Macgly',
+      description: 'Enter the serial number of your tool or machine to check its warranty status, coverage period and expiry date on Macgly.',
+      canonical: `${SITE_URL}/warranty-check`,
+    });
+  }, []);
 
   async function handleSearch(e) {
     e.preventDefault();

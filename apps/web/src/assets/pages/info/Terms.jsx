@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { setMeta, SITE_URL } from '../../../utils/seo';
 
 const SECTIONS = [
   {
@@ -281,6 +283,14 @@ function SubSection({ sub }) {
 }
 
 export default function Terms() {
+  useEffect(() => {
+    setMeta({
+      title: 'Terms of Service | Macgly',
+      description: 'The terms governing use of the Macgly marketplace — accounts, orders, payments, shipping, returns, vendor obligations and liability.',
+      canonical: `${SITE_URL}/info/terms`,
+    });
+  }, []);
+
   const tocItems = SECTIONS.map((s) => ({ id: s.id, num: s.num, title: s.title }));
 
   return (

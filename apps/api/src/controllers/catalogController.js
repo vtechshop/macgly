@@ -7,7 +7,7 @@ async function getProducts(req, res, next) {
   try {
     const {
       page = 1, limit = 24, sort = 'displayOrder',
-      category, search, featured, brand, minPrice, maxPrice, minRating,
+      category, search, featured, brand, minPrice, maxPrice, minRating, vendor,
     } = req.query;
 
     // status=active is treated as published=true (affiliate page uses this param)
@@ -31,6 +31,15 @@ async function getProducts(req, res, next) {
           filter.category = category.toLowerCase();
         }
       }
+    }
+    // /store/:id lists one vendor's catalogue. Without this the parameter was
+    // silently ignored and the store page rendered every product on the site.
+    if (vendor) {
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(vendor)) {
+        return res.json({ products: [], pagination: { page: 1, limit: parseInt(limit), total: 0, pages: 0 } });
+      }
+      filter.vendorId = vendor;
     }
     if (featured === 'true') filter.featured = true;
     if (brand) filter.brand = new RegExp(brand, 'i');

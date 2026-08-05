@@ -6,10 +6,17 @@ const Order    = require('../models/Order');
 const Category = require('../models/Category');
 const AppError = require('../utils/AppError');
 const { slugify, generateSKU } = require('../utils/helpers');
+const { isValidPaymentSignature } = require('../utils/razorpaySignature');
 const { invalidateCache } = require('../middleware/cache');
 const { uploadFile } = require('../services/storageService');
 const notif = require('../utils/notificationHelper');
 const { applyEarnings } = require('../utils/earningsHelper');
+const { resolveTaxRate, computeCommission } = require('../utils/tax');
+const { createVendorCommissions, DEFAULT_VENDOR_RATE } = require('../services/commissionService');
+const {
+  resolveManualPrice, assertFeeCoveredBySale, clampDiscount, assertAmountPaidMatches, round2,
+} = require('../utils/manualOrderPricing');
+const { reserveStock, releaseStock } = require('../services/inventoryService');
 const { sendShippingUpdate, sendVendorKYCSubmittedEmail } = require('../services/emailService');
 const { createShipment } = require('../services/shippingService');
 const whatsapp = require('../services/whatsappService');
@@ -21,6 +28,33 @@ const upload = multer({
     if (file.mimetype.startsWith('image/')) cb(null, true);
     else cb(new AppError('Only images allowed', 400, 'INVALID_FILE'));
   },
+});
+
+// GET /vendors/:id/public — the storefront behind /store/:id.
+// This MUST stay above router.use(authenticate). It was previously declared
+// ~1500 lines below it, so the one genuinely public endpoint on this router
+// answered 401 to every logged-out visitor and every crawler.
+router.get('/:id/public', async (req, res, next) => {
+  try {
+    const User = require('../models/User');
+    const vendor = await User.findById(req.params.id).select('name role vendorProfile');
+    if (!vendor || vendor.role !== 'vendor') return next(new AppError('Vendor not found', 404, 'NOT_FOUND'));
+    // Product has no `status` field — it uses `published`. The old
+    // { status: 'approved' } filter matched nothing, so every store read "0 products".
+    const productCount = await Product.countDocuments({ vendorId: req.params.id, published: true });
+    res.json({
+      vendor: {
+        _id: vendor._id,
+        name: vendor.name,
+        storeName: vendor.vendorProfile?.storeName || vendor.name,
+        storeDescription: vendor.vendorProfile?.storeDescription,
+        logo: vendor.vendorProfile?.logo,
+        rating: vendor.vendorProfile?.rating || 0,
+        location: vendor.vendorProfile?.location,
+        productCount,
+      },
+    });
+  } catch (err) { next(err); }
 });
 
 router.use(authenticate);
@@ -1025,44 +1059,155 @@ router.get('/ads/wallet', requireApproved, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Ad wallet recharge ────────────────────────────────────────────────────────
+// Money path. The credited amount is ALWAYS derived from the Razorpay order,
+// never from the request body. See utils/razorpaySignature.js.
+
+const WALLET_PURPOSE = 'ad_wallet_recharge';
+const MIN_RECHARGE = 100;
+
+function getRazorpayClient() {
+  const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config/env');
+  if (!RAZORPAY_KEY_ID) throw new AppError('Payment gateway not configured', 503, 'SERVICE_UNAVAILABLE');
+  const Razorpay = require('razorpay');
+  return { rz: new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET }), RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET };
+}
+
 router.post('/ads/wallet/recharge/create-order', requireApproved, async (req, res, next) => {
   try {
-    const { amount } = req.body;
-    if (!amount || parseFloat(amount) < 100) throw new AppError('Minimum recharge amount is ₹100', 400, 'INVALID_AMOUNT');
-    const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config/env');
-    if (!RAZORPAY_KEY_ID) throw new AppError('Payment gateway not configured', 503, 'SERVICE_UNAVAILABLE');
-    const Razorpay = require('razorpay');
-    const rz = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
+    const amount = Math.round(parseFloat(req.body.amount) * 100) / 100;
+    if (!Number.isFinite(amount) || amount < MIN_RECHARGE) {
+      throw new AppError(`Minimum recharge amount is ₹${MIN_RECHARGE}`, 400, 'INVALID_AMOUNT');
+    }
+
+    const { rz, RAZORPAY_KEY_ID } = getRazorpayClient();
     const order = await rz.orders.create({
-      amount:   Math.round(parseFloat(amount) * 100),
+      amount:   Math.round(amount * 100),
       currency: 'INR',
-      receipt:  `adwallet_${req.user._id}_${Date.now()}`,
+      // Razorpay caps receipt at 40 chars; this is 36.
+      receipt:  `aw_${req.user._id}_${Date.now().toString(36)}`,
+      // Server-controlled and returned verbatim by orders.fetch — this is where the
+      // expected amount and the owning vendor are stored for verification.
+      notes: {
+        purpose:        WALLET_PURPOSE,
+        vendorId:       req.user._id.toString(),
+        expectedAmount: String(amount),
+      },
     });
+
     res.json({ order, key: RAZORPAY_KEY_ID });
   } catch (err) { next(err); }
 });
 
 router.post('/ads/wallet/recharge/verify', requireApproved, async (req, res, next) => {
+  const vendorId = req.user._id;
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
   try {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, amount } = req.body;
     if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
       throw new AppError('Payment verification data missing', 400, 'MISSING_FIELDS');
     }
-    const { RAZORPAY_KEY_SECRET } = require('../config/env');
-    const crypto = require('crypto');
-    const expected = crypto.createHmac('sha256', RAZORPAY_KEY_SECRET)
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest('hex');
-    if (expected !== razorpaySignature) throw new AppError('Payment verification failed', 400, 'PAYMENT_INVALID');
-    const credit = Math.round(parseFloat(amount || 0) * 100) / 100;
+
+    const { rz, RAZORPAY_KEY_SECRET } = getRazorpayClient();
+
+    // 1. Signature proves Razorpay issued this exact (order, payment) pair.
+    const signatureOk = isValidPaymentSignature({
+      orderId:   razorpayOrderId,
+      paymentId: razorpayPaymentId,
+      signature: razorpaySignature,
+      secret:    RAZORPAY_KEY_SECRET,
+    });
+    if (!signatureOk) {
+      console.warn(`[adwallet] REJECT bad-signature vendor=${vendorId} order=${razorpayOrderId} payment=${razorpayPaymentId}`);
+      throw new AppError('Payment verification failed', 400, 'PAYMENT_INVALID');
+    }
+
+    // 2. Authoritative order state, fetched from Razorpay — never from the client.
+    let order;
+    try {
+      order = await rz.orders.fetch(razorpayOrderId);
+    } catch (gatewayErr) {
+      console.error(`[adwallet] order fetch failed order=${razorpayOrderId}:`, gatewayErr?.error?.description || gatewayErr.message);
+      throw new AppError('Could not confirm payment right now. Please contact support.', 502, 'GATEWAY_ERROR');
+    }
+
+    // 3. Ownership — the order must have been created by THIS vendor for a wallet top-up.
+    const notesMatch = order?.notes?.purpose === WALLET_PURPOSE &&
+      order?.notes?.vendorId === vendorId.toString();
+    // Back-compat for orders created before notes were added; safe to delete once
+    // no pre-deploy orders can still be in flight (Razorpay orders expire after ~24h).
+    const legacyReceiptMatch = typeof order?.receipt === 'string' &&
+      order.receipt.startsWith(`adwallet_${vendorId}_`);
+    if (!notesMatch && !legacyReceiptMatch) {
+      console.warn(`[adwallet] REJECT ownership vendor=${vendorId} order=${razorpayOrderId} receipt=${order?.receipt}`);
+      throw new AppError('Payment verification failed', 400, 'PAYMENT_INVALID');
+    }
+
+    // 4. The order must actually be paid, in INR.
+    if (order.status !== 'paid') {
+      throw new AppError('Payment has not been captured yet. Please try again shortly.', 400, 'PAYMENT_NOT_CAPTURED');
+    }
+    if (order.currency !== 'INR') {
+      console.warn(`[adwallet] REJECT currency=${order.currency} vendor=${vendorId} order=${razorpayOrderId}`);
+      throw new AppError('Payment verification failed', 400, 'PAYMENT_INVALID');
+    }
+
+    // 5. Credit is the amount Razorpay actually captured.
+    const credit = Math.round(Number(order.amount_paid)) / 100;
+    if (!Number.isFinite(credit) || credit <= 0) {
+      console.error(`[adwallet] REJECT bad amount_paid=${order.amount_paid} order=${razorpayOrderId}`);
+      throw new AppError('Payment verification failed', 400, 'PAYMENT_INVALID');
+    }
+
+    // Cross-check against the amount we recorded when the order was created.
+    const expectedAmount = parseFloat(order?.notes?.expectedAmount);
+    if (Number.isFinite(expectedAmount) && Math.abs(credit - expectedAmount) > 0.01) {
+      console.error(`[adwallet] REJECT amount-mismatch vendor=${vendorId} order=${razorpayOrderId} expected=${expectedAmount} captured=${credit}`);
+      throw new AppError('Payment verification failed', 400, 'PAYMENT_INVALID');
+    }
+
+    // The client still sends `amount`; it is ignored for crediting. A mismatch means
+    // a tampered or stale client, so record it — but still credit the true amount,
+    // because the vendor's money did move.
+    const claimed = parseFloat(req.body.amount);
+    if (Number.isFinite(claimed) && Math.round(claimed * 100) !== Math.round(order.amount_paid)) {
+      console.warn(`[adwallet] SUSPICIOUS client-amount vendor=${vendorId} order=${razorpayOrderId} claimed=${claimed} captured=${credit}`);
+    }
+
+    // 6. Make sure a wallet row exists. No financial effect, safe to repeat.
+    await AdWallet.updateOne({ vendorId }, { $setOnInsert: { vendorId } }, { upsert: true });
+
+    // 7. Atomic, idempotent credit. `balance` and `transactions` live in the SAME
+    //    document, so this single update is atomic by MongoDB's document-level
+    //    guarantee — no multi-document transaction is needed. The $ne guard makes
+    //    a given paymentId creditable exactly once, even under concurrent retries:
+    //    the first writer pushes the row, every later writer fails to match.
     const wallet = await AdWallet.findOneAndUpdate(
-      { vendorId: req.user._id },
+      { vendorId, 'transactions.paymentId': { $ne: razorpayPaymentId } },
       {
-        $inc:  { balance: credit, totalRecharged: credit },
-        $push: { transactions: { amount: credit, type: 'recharge', description: `Razorpay ${razorpayPaymentId}` } },
+        $inc: { balance: credit, totalRecharged: credit },
+        $push: {
+          transactions: {
+            amount:      credit,
+            type:        'recharge',
+            paymentId:   razorpayPaymentId,
+            orderId:     razorpayOrderId,
+            description: `Razorpay ${razorpayPaymentId}`,
+          },
+        },
       },
-      { upsert: true, new: true }
+      { new: true },
     );
+
+    // No match ⇒ this payment was already credited. Return current balance so
+    // retries, refreshes and duplicate submits all succeed without double-crediting.
+    if (!wallet) {
+      const current = await AdWallet.findOne({ vendorId }).select('balance').lean();
+      console.log(`[adwallet] replay ignored vendor=${vendorId} payment=${razorpayPaymentId}`);
+      return res.json({ balance: current?.balance || 0 });
+    }
+
+    console.log(`[adwallet] credited vendor=${vendorId} amount=${credit} payment=${razorpayPaymentId} balance=${wallet.balance}`);
     res.json({ balance: wallet.balance });
   } catch (err) { next(err); }
 });
@@ -1115,32 +1260,82 @@ router.post('/manual-orders', requireApproved, requireApprovedKYC, async (req, r
     let subtotal = 0;
     const productDetails = [];
 
+    // Manual sales carry the same platform commission as marketplace orders —
+    // otherwise a vendor could re-key a marketplace sale here and pay nothing.
+    const commissionRate = req.user.vendorProfile?.commissionRate ?? DEFAULT_VENDOR_RATE;
+
     for (const item of items) {
       const product = await Product.findOne({ _id: item.productId, vendorId: req.user._id })
-        .select('title sku images price hasWarranty warranty');
+        .select('title sku images price taxRate hasWarranty warranty');
       if (!product) throw new AppError(`Product not found or not yours: ${item.productId}`, 400, 'NOT_FOUND');
-      const price = parseFloat(item.price) || product.price;
-      const qty   = Math.max(1, parseInt(item.qty) || 1);
-      subtotal += price * qty;
-      orderItems.push({ product: product._id, title: product.title, sku: product.sku, image: product.images?.[0] || '', price, quantity: qty, vendorId: req.user._id, vendorEarning: 0, platformFee: 0 });
+
+      const qty = Math.max(1, parseInt(item.qty) || 1);
+      const { sellingPrice, listPrice } = resolveManualPrice(item.price, product, product.title);
+      subtotal += sellingPrice * qty;
+
+      // gstRate is needed for a correct commission base — prices are GST-inclusive
+      // platform-wide, so the fee must be charged on the pre-tax value (PAY-08).
+      const gstRate = resolveTaxRate(product);
+      // The receipt shows what the counter charged; the fee is billed against the
+      // catalogue price, so a declared price cannot shrink the commission.
+      const { taxableValue, platformFee, vendorEarning } = computeCommission(
+        { price: sellingPrice, quantity: qty, gstRate },
+        commissionRate,
+        { baseItem: { price: listPrice, quantity: qty, gstRate } },
+      );
+      assertFeeCoveredBySale({ platformFee, vendorEarning, title: product.title, sellingPrice, listPrice });
+
+      orderItems.push({
+        product: product._id, title: product.title, sku: product.sku,
+        image: product.images?.[0] || '', price: sellingPrice, quantity: qty,
+        ...(sellingPrice !== listPrice && { listPrice }),
+        vendorId: req.user._id,
+        gstRate, taxableValue, platformFee, vendorEarning,
+      });
       productDetails.push({ product, item, idx: orderItems.length - 1 });
     }
 
-    const safeDiscount = parseFloat(discount) || 0;
-    const totalAmount  = amountPaid != null ? parseFloat(amountPaid) : Math.max(0, subtotal - safeDiscount);
-    const orderId      = 'VMAN-' + Date.now();
+    subtotal = round2(subtotal);
+    const safeDiscount = clampDiscount(discount, subtotal);
+    // Derived server-side. `amountPaid` is only checked, never used as the total.
+    const totalAmount = round2(Math.max(0, subtotal - safeDiscount));
+    assertAmountPaidMatches(amountPaid, totalAmount);
+    const orderId = 'VMAN-' + Date.now();
 
-    const order = await Order.create({
-      orderId, customerName: customerName.trim(), customerPhone: customerPhone.trim(),
-      items: orderItems,
-      shippingAddress: { name: customerName.trim(), phone: customerPhone.trim(), line1: 'In-store', city: '-', state: '-', pincode: '000000' },
-      subtotal, discount: safeDiscount, totalAmount,
-      paymentMethod, paymentStatus: 'paid',
-      source: ['in-store', 'phone'].includes(source) ? source : 'in-store',
-      status: 'delivered', deliveredAt: new Date(),
-      notes: notes?.trim() || undefined,
-      tracking: { history: [{ status: 'delivered', timestamp: new Date(), description: `Manual ${source} sale` }] },
-    });
+    // Goods leave the shelf on a counter sale exactly as they do on a marketplace
+    // order. Reserved before the order is written so a shortfall leaves nothing
+    // behind; released again if the write then fails.
+    await reserveStock(orderItems);
+
+    let order;
+    try {
+      order = await Order.create({
+        orderId, customerName: customerName.trim(), customerPhone: customerPhone.trim(),
+        items: orderItems,
+        shippingAddress: { name: customerName.trim(), phone: customerPhone.trim(), line1: 'In-store', city: '-', state: '-', pincode: '000000' },
+        subtotal, discount: safeDiscount, totalAmount,
+        paymentMethod, paymentStatus: 'paid',
+        source: ['in-store', 'phone'].includes(source) ? source : 'in-store',
+        status: 'delivered', deliveredAt: new Date(),
+        notes: notes?.trim() || undefined,
+        totalPlatformFee: parseFloat(orderItems.reduce((s, i) => s + (i.platformFee || 0), 0).toFixed(2)),
+        inventoryApplied: true,
+        tracking: { history: [{ status: 'delivered', timestamp: new Date(), description: `Manual ${source} sale` }] },
+      });
+    } catch (createErr) {
+      await releaseStock(orderItems);
+      throw createErr;
+    }
+
+    // Ledger entry so the sale reaches settlements. Idempotent inside the service.
+    await createVendorCommissions(order).catch((e) =>
+      console.error(`[manual-order] commission ledger failed for ${orderId}:`, e.message));
+
+    // A manual order is born 'delivered', so applyEarnings' transition check never
+    // fires on its own. Model the implicit → delivered step so confirmed earnings
+    // match the ledger instead of lagging behind it.
+    await applyEarnings({ ...order.toObject(), status: 'placed' }, 'delivered').catch((e) =>
+      console.error(`[manual-order] earnings credit failed for ${orderId}:`, e.message));
 
     // Create Warranty records
     const Warranty = require('../models/Warranty');
@@ -1178,6 +1373,21 @@ router.put('/manual-orders/:id/cancel', requireApproved, requireApprovedKYC, asy
     const order = await Order.findOne({ _id: req.params.id, 'items.vendorId': req.user._id, source: { $in: ['in-store', 'phone'] } });
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
     if (order.status === 'cancelled') throw new AppError('Order already cancelled', 400, 'ALREADY_CANCELLED');
+
+    // Reverses the earnings credited at creation and voids the commission ledger
+    // so a cancelled sale cannot be settled. Must run before the status is
+    // mutated — applyEarnings compares the previous status to the new one.
+    await applyEarnings(order, 'cancelled').catch((e) =>
+      console.error(`[manual-order] reversal failed for ${order.orderId}:`, e.message));
+
+    // Only put stock back if this order actually took it. Manual orders written
+    // before inventory was tracked here have no flag, and restoring for them
+    // would invent stock that was never removed.
+    if (order.inventoryApplied) {
+      await releaseStock(order.items);
+      order.inventoryApplied = false;
+    }
+
     order.status = 'cancelled';
     order.cancellation = { reason: reason.trim(), cancelledAt: new Date(), cancelledBy: req.user._id };
     order.paymentStatus = 'refunded';
@@ -1423,27 +1633,6 @@ router.post('/gst/verify', async (req, res, next) => {
 });
 
 // Public vendor store info
-router.get('/:id/public', async (req, res, next) => {
-  try {
-    const User = require('../models/User');
-    const vendor = await User.findById(req.params.id).select('name vendorProfile');
-    if (!vendor || vendor.role !== 'vendor') return next(new AppError('Vendor not found', 404));
-    const productCount = await Product.countDocuments({ vendorId: req.params.id, status: 'approved' });
-    res.json({
-      vendor: {
-        _id: vendor._id,
-        name: vendor.name,
-        storeName: vendor.vendorProfile?.storeName || vendor.name,
-        storeDescription: vendor.vendorProfile?.storeDescription,
-        logo: vendor.vendorProfile?.logo,
-        rating: vendor.vendorProfile?.rating || 0,
-        location: vendor.vendorProfile?.location,
-        productCount,
-      },
-    });
-  } catch (err) { next(err); }
-});
-
 // ── Category routes — no requireApprovedKYC (category CRUD is KYC-free) ────────
 
 // GET /vendors/categories/stats — MUST be before /categories/:id

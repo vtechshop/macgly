@@ -5,6 +5,8 @@ import { Trash2, ShoppingBag } from 'lucide-react';
 import api from '../../utils/api';
 import { setCart } from '../../store/slices/cartSlice';
 import { formatCurrency, normalizeImageUrl } from '../../utils/format';
+import { resolveTaxRate, inclusiveGstAmount } from '../../utils/tax';
+import { setMeta } from '../../utils/seo';
 import Spinner from '../components/common/Spinner';
 import toast from 'react-hot-toast';
 
@@ -12,6 +14,10 @@ export default function Cart() {
   const dispatch = useDispatch();
   const [cart, setLocalCart] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setMeta({ title: 'Your Cart | Macgly', description: null, noindex: true });
+  }, []);
 
   useEffect(() => {
     api.get('/cart').then((r) => {
@@ -58,7 +64,10 @@ export default function Cart() {
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const gstAmount = parseFloat(
-    items.reduce((sum, i) => sum + (i.price * i.quantity * (i.product?.gstRate ?? 18)) / (100 + (i.product?.gstRate ?? 18)), 0).toFixed(2)
+    items.reduce(
+      (sum, i) => sum + inclusiveGstAmount(i.price * i.quantity, resolveTaxRate(i.product)),
+      0,
+    ).toFixed(2)
   );
 
   return (

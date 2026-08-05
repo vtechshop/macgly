@@ -4,6 +4,13 @@ const Product  = require('../../models/Product');
 const User     = require('../../models/User');
 const Warranty = require('../../models/Warranty');
 const AppError = require('../../utils/AppError');
+const { resolveTaxRate, computeCommission } = require('../../utils/tax');
+const { createVendorCommissions, DEFAULT_VENDOR_RATE } = require('../../services/commissionService');
+const { applyEarnings } = require('../../utils/earningsHelper');
+const {
+  resolveManualPrice, assertFeeCoveredBySale, clampDiscount, assertAmountPaidMatches, round2,
+} = require('../../utils/manualOrderPricing');
+const { reserveStock, releaseStock } = require('../../services/inventoryService');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -147,56 +154,111 @@ router.post('/', async (req, res, next) => {
     // Build order items
     const orderItems = [];
     let subtotal = 0;
+    const rateCache = new Map(); // vendorId -> commissionRate, avoids a lookup per line
+
     for (const { productId, qty = 1, price: itemPrice, serialNumber } of items) {
       const product = await Product.findById(productId).lean();
       if (!product) throw new AppError(`Product not found: ${productId}`, 404, 'NOT_FOUND');
-      const unitPrice = parseFloat(itemPrice) || product.price || 0;
-      const quantity  = parseInt(qty) || 1;
+      const quantity = Math.max(1, parseInt(qty) || 1);
+      const { sellingPrice, listPrice } = resolveManualPrice(itemPrice, product, product.title);
+
+      // Vendor-supplied lines carry the same commission as a marketplace sale.
+      // Admin-owned stock has no vendorId, so there is nobody to charge.
+      const vendorId = product.vendorId || null;
+      let commissionRate = 0;
+      if (vendorId) {
+        const key = vendorId.toString();
+        if (!rateCache.has(key)) {
+          const vendor = await User.findById(vendorId).select('vendorProfile.commissionRate').lean();
+          rateCache.set(key, vendor?.vendorProfile?.commissionRate ?? DEFAULT_VENDOR_RATE);
+        }
+        commissionRate = rateCache.get(key);
+      }
+
+      const gstRate = resolveTaxRate(product);
+      // Receipt shows the price the counter charged; the fee is billed against
+      // the catalogue price so a declared price cannot shrink the commission.
+      const { taxableValue, platformFee, vendorEarning } = computeCommission(
+        { price: sellingPrice, quantity, gstRate },
+        commissionRate,
+        { baseItem: { price: listPrice, quantity, gstRate } },
+      );
+      if (vendorId) {
+        assertFeeCoveredBySale({ platformFee, vendorEarning, title: product.title, sellingPrice, listPrice });
+      }
+
       orderItems.push({
         product:      product._id,
         title:        product.title,
         sku:          product.sku || '',
         image:        product.images?.[0] || '',
-        price:        unitPrice,
+        price:        sellingPrice,
+        ...(sellingPrice !== listPrice && { listPrice }),
         quantity,
-        vendorId:     product.vendorId || null,
-        vendorEarning: 0,
-        platformFee:  0,
+        vendorId,
+        gstRate,
+        taxableValue,
+        platformFee:   vendorId ? platformFee : 0,
+        vendorEarning: vendorId ? vendorEarning : 0,
         serialNumber: serialNumber?.trim() || '',
       });
-      subtotal += unitPrice * quantity;
+      subtotal += sellingPrice * quantity;
     }
 
-    const discountAmt  = parseFloat(discount) || 0;
-    const totalAmount  = Math.max(0, subtotal - discountAmt);
-    const now          = new Date();
+    subtotal = round2(subtotal);
+    const discountAmt = clampDiscount(discount, subtotal);
+    // Derived server-side; amountPaid is validated, never used as the total.
+    const totalAmount = round2(Math.max(0, subtotal - discountAmt));
+    assertAmountPaidMatches(amountPaid, totalAmount);
+    const now = new Date();
 
-    const order = await Order.create({
-      orderId:        generateManualId(),
-      user:           customer?._id || null,
-      customerName:   customerName.trim(),
-      customerPhone:  customerPhone.trim(),
-      source,
-      items:          orderItems,
-      subtotal,
-      discount:       discountAmt,
-      shippingCharge: 0,
-      gstAmount:      0,
-      totalAmount,
-      paymentMethod,
-      paymentStatus:  'paid',
-      status:         'delivered',
-      deliveredAt:    now,
-      notes:          notes?.trim() || '',
-      internalNotes:  internalNotes ? `${internalNotes}\n[Manual order by admin: ${req.user._id}]` : `Manual order by admin: ${req.user._id}`,
-      tracking: {
-        history: [
-          { status: 'placed',    timestamp: now, description: 'Order placed manually by admin' },
-          { status: 'paid',      timestamp: now, description: `Payment received — ${paymentMethod}` },
-          { status: 'delivered', timestamp: now, description: 'Handed over to customer in-store' },
-        ],
-      },
-    });
+    // Counter sales move real stock. Reserved before the write so a shortfall
+    // leaves nothing behind; released again if the write then fails.
+    await reserveStock(orderItems);
+
+    let order;
+    try {
+      order = await Order.create({
+        orderId:        generateManualId(),
+        user:           customer?._id || null,
+        customerName:   customerName.trim(),
+        customerPhone:  customerPhone.trim(),
+        source,
+        items:          orderItems,
+        subtotal,
+        discount:       discountAmt,
+        shippingCharge: 0,
+        gstAmount:      0,
+        totalAmount,
+        paymentMethod,
+        paymentStatus:  'paid',
+        status:         'delivered',
+        deliveredAt:    now,
+        totalPlatformFee: parseFloat(orderItems.reduce((s, i) => s + (i.platformFee || 0), 0).toFixed(2)),
+        inventoryApplied: true,
+        notes:          notes?.trim() || '',
+        internalNotes:  internalNotes ? `${internalNotes}\n[Manual order by admin: ${req.user._id}]` : `Manual order by admin: ${req.user._id}`,
+        tracking: {
+          history: [
+            { status: 'placed',    timestamp: now, description: 'Order placed manually by admin' },
+            { status: 'paid',      timestamp: now, description: `Payment received — ${paymentMethod}` },
+            { status: 'delivered', timestamp: now, description: 'Handed over to customer in-store' },
+          ],
+        },
+      });
+    } catch (createErr) {
+      await releaseStock(orderItems);
+      throw createErr;
+    }
+
+    // Ledger entry so vendor-supplied lines reach settlements. Skips items with
+    // no vendorId, and is idempotent inside the service.
+    await createVendorCommissions(order).catch((e) =>
+      console.error(`[admin manual-order] commission ledger failed for ${order.orderId}:`, e.message));
+
+    // Born 'delivered', so applyEarnings' transition check needs the implicit step.
+    await applyEarnings({ ...order.toObject(), status: 'placed' }, 'delivered').catch((e) =>
+      console.error(`[admin manual-order] earnings credit failed for ${order.orderId}:`, e.message));
 
     // Auto-activate warranties
     await activateWarranties(order, req.user._id);
@@ -252,12 +314,25 @@ router.put('/:id/cancel', async (req, res, next) => {
       throw new AppError('Order is already cancelled', 400, 'ALREADY_CANCELLED');
     }
 
+    // Reverse the earnings credited at creation and void the ledger entries, so a
+    // cancelled sale cannot be settled. Runs before the status changes, because
+    // applyEarnings compares the previous status to the new one.
+    await applyEarnings(order, 'cancelled').catch((e) =>
+      console.error(`[admin manual-order] reversal failed for ${order.orderId}:`, e.message));
+
+    // Only put stock back if this order actually took it. Orders written before
+    // inventory was tracked here carry no flag, and restoring for them would
+    // invent stock that was never removed.
+    const restoreStock = order.inventoryApplied === true;
+    if (restoreStock) await releaseStock(order.items);
+
     const now = new Date();
     const updated = await Order.findByIdAndUpdate(
       req.params.id,
       {
         status:        'cancelled',
         paymentStatus: 'refunded',
+        ...(restoreStock && { inventoryApplied: false }),
         cancellation:  { reason: reason.trim(), cancelledAt: now, cancelledBy: req.user._id },
         $push: {
           'tracking.history': { status: 'cancelled', timestamp: now, description: `Cancelled: ${reason.trim()}` },

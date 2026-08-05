@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Package, Share2, Check } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
+import { setMeta, SITE_URL } from '../../utils/seo';
 import Spinner from '../components/common/Spinner';
 
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
@@ -16,6 +17,19 @@ export default function TrackOrder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // The bare page is a landing page worth indexing. Once an order id is in the
+  // URL the page shows someone's order, so it is marked noindex — robots.txt
+  // blocks /track-order? as well, but a shared link can still reach a crawler.
+  const hasLookup = !!(searchParams.get('id') || searchParams.get('phone'));
+  useEffect(() => {
+    setMeta({
+      title: 'Track Your Order | Macgly',
+      description: 'Track your Macgly order in real time. Enter your order ID and registered phone number to see the latest delivery status.',
+      canonical: `${SITE_URL}/track-order`,
+      noindex: hasLookup,
+    });
+  }, [hasLookup]);
 
   async function handleSearch(e) {
     e?.preventDefault();

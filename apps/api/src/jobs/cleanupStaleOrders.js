@@ -1,5 +1,5 @@
 const Order = require('../models/Order');
-const Product = require('../models/Product');
+const { releaseStock } = require('../services/inventoryService');
 
 async function run() {
   // Cancel pending_payment orders older than 30 minutes and restore their stock
@@ -7,11 +7,7 @@ async function run() {
   const stale = await Order.find({ status: 'pending_payment', createdAt: { $lt: cutoff } });
 
   for (const order of stale) {
-    await Promise.all(
-      order.items.map((item) =>
-        Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } })
-      )
-    );
+    await releaseStock(order.items);
     order.status = 'cancelled';
     order.cancellation = { reason: 'Payment not completed', cancelledAt: new Date() };
     await order.save();

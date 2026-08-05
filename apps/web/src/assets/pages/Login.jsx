@@ -3,6 +3,9 @@ import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-do
 import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff } from 'lucide-react';
 import { login, clearError } from '../../store/slices/authSlice';
+import { setCart } from '../../store/slices/cartSlice';
+import api from '../../utils/api';
+import { setMeta } from '../../utils/seo';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import WhatsAppFAB from '../components/common/WhatsAppFAB';
@@ -27,6 +30,13 @@ export default function Login() {
 
   const redirect = searchParams.get('redirect') || location.state?.from || null;
 
+  // Without this the page kept index.html's homepage title and canonical, so
+  // /login declared itself a duplicate of the homepage. noindex because it is
+  // an auth screen with nothing to rank.
+  useEffect(() => {
+    setMeta({ title: 'Sign In | Macgly', description: null, noindex: true });
+  }, []);
+
   // Already authenticated → redirect immediately
   useEffect(() => {
     if (user) navigate(redirect || ROLE_DASHBOARD[user.role] || '/', { replace: true });
@@ -43,6 +53,11 @@ export default function Login() {
         password: form.password,
       })).unwrap();
       toast.success(`Welcome back, ${u.name.split(' ')[0]}!`);
+      // The API merges any guest cart from this browser on the next cart read —
+      // pull it so the header count reflects the merge without a page refresh.
+      api.get('/cart')
+        .then(({ data }) => { if (data.cart) dispatch(setCart(data.cart)); })
+        .catch(() => {});
       navigate(redirect || ROLE_DASHBOARD[u.role] || '/', { replace: true });
     } catch {
       // error shown via Redux state

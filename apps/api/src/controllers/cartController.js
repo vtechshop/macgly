@@ -1,33 +1,12 @@
-const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const AppError = require('../utils/AppError');
 const abandonedCartService = require('../services/abandonedCartService');
-
-function cartFilter(req) {
-  return req.user ? { user: req.user._id } : { sessionId: req.cookies.sessionId || 'anon' };
-}
-
-async function resolveCart(req) {
-  if (!req.user) {
-    return Cart.findOne({ sessionId: req.cookies?.sessionId || 'anon' });
-  }
-  let cart = await Cart.findOne({ user: req.user._id });
-  if (cart) return cart;
-  // Migrate anonymous cart to this user
-  const anonCart = await Cart.findOne({ sessionId: req.cookies?.sessionId || 'anon' });
-  if (anonCart) {
-    anonCart.user = req.user._id;
-    anonCart.sessionId = undefined;
-    await anonCart.save();
-    return anonCart;
-  }
-  return null;
-}
+const { resolveCart } = require('../services/cartService');
 
 async function getCart(req, res, next) {
   try {
     let cart = await resolveCart(req);
-    if (cart) await cart.populate('items.product', 'title images slug stock price gstRate hasVariants variants');
+    if (cart) await cart.populate('items.product', 'title images slug stock price taxRate hasVariants variants');
     res.json({ cart: cart || { items: [], total: 0 } });
   } catch (err) { next(err); }
 }
@@ -57,8 +36,8 @@ async function addItem(req, res, next) {
       if (product.stock < quantity) throw new AppError('Insufficient stock', 400, 'OUT_OF_STOCK');
     }
 
-    let cart = await resolveCart(req);
-    if (!cart) cart = new Cart(cartFilter(req));
+    const cart = await resolveCart(req, { create: true });
+    if (!cart) throw new AppError('Session unavailable — please enable cookies', 400, 'NO_SESSION');
 
     const existing = cart.items.find((i) =>
       i.product.toString() === productId &&
@@ -86,7 +65,7 @@ async function addItem(req, res, next) {
     }
 
     await cart.save();
-    await cart.populate('items.product', 'title images slug stock price gstRate hasVariants');
+    await cart.populate('items.product', 'title images slug stock price taxRate hasVariants');
     res.json({ cart });
   } catch (err) { next(err); }
 }
@@ -107,7 +86,7 @@ async function updateItem(req, res, next) {
 
     item.quantity = quantity;
     await cart.save();
-    await cart.populate('items.product', 'title images slug stock price gstRate hasVariants variants');
+    await cart.populate('items.product', 'title images slug stock price taxRate hasVariants variants');
     res.json({ cart });
   } catch (err) { next(err); }
 }
@@ -119,7 +98,7 @@ async function removeItem(req, res, next) {
 
     cart.items = cart.items.filter((i) => i._id.toString() !== req.params.itemId);
     await cart.save();
-    await cart.populate('items.product', 'title images slug stock price gstRate hasVariants variants');
+    await cart.populate('items.product', 'title images slug stock price taxRate hasVariants variants');
     res.json({ cart });
   } catch (err) { next(err); }
 }

@@ -6,17 +6,53 @@ const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
 const Setting = require('../models/Setting');
 const abandonedCartService = require('../services/abandonedCartService');
+const { resolveCart } = require('../services/cartService');
 const AppError = require('../utils/AppError');
 const { generateOrderId } = require('../utils/helpers');
-const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config/env');
+const { resolveTaxRate, resolveSupplierStateCode, splitGst, computeCommission } = require('../utils/tax');
+const { stateCodeFromName } = require('../utils/indianStates');
+const { isValidGstinFormat } = require('../utils/gstin');
+const { computeCouponDiscount, couponUnusableReason } = require('../utils/coupon');
+const { resolveQuotedShipping } = require('../utils/shippingQuote');
+const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, PLATFORM_GST_STATE_CODE } = require('../config/env');
 const { sendOrderConfirmation, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendShippingUpdate, sendAdminOrderCancelledEmail } = require('../services/emailService');
 const notif = require('../utils/notificationHelper');
 const whatsapp = require('../services/whatsappService');
 const { createVendorCommissions, createAffiliateCommission } = require('../services/commissionService');
+const { ensureInvoiceForOrder } = require('../services/invoiceBuilder');
+const { reserveStock, releaseStock } = require('../services/inventoryService');
+const { applyEarnings } = require('../utils/earningsHelper');
 
 const razorpay = RAZORPAY_KEY_ID
   ? new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET })
   : null;
+
+/**
+ * Normalises the optional B2B billing block sent by checkout.
+ *
+ * Returns undefined when nothing usable was supplied, so B2C orders store no
+ * `billing` sub-document at all and behave exactly as before.
+ *
+ * @throws {AppError} when a GSTIN is supplied but malformed
+ */
+function buildBillingSnapshot(input) {
+  if (!input || typeof input !== 'object') return undefined;
+
+  const gstin = String(input.gstin || '').trim().toUpperCase();
+  const companyName = String(input.companyName || '').trim();
+  const poNumber = String(input.poNumber || '').trim();
+
+  if (gstin && !isValidGstinFormat(gstin)) {
+    throw new AppError('Enter a valid 15-character GSTIN (e.g. 33AAACM1234C1ZP)', 400, 'INVALID_GSTIN');
+  }
+  if (!gstin && !companyName && !poNumber) return undefined;
+
+  return {
+    ...(companyName && { companyName }),
+    ...(gstin && { gstin }),
+    ...(poNumber && { poNumber }),
+  };
+}
 
 async function createOrder(req, res, next) {
   try {
@@ -32,18 +68,14 @@ async function createOrder(req, res, next) {
       throw new AppError('Enter a valid 6-digit pincode', 400, 'INVALID_PINCODE');
     }
 
-    let cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
-    if (!cart) {
-      // Try migrating anonymous cart
-      const anonCart = await Cart.findOne({ sessionId: req.cookies?.sessionId || 'anon' });
-      if (anonCart) {
-        anonCart.user = req.user._id;
-        anonCart.sessionId = undefined;
-        await anonCart.save();
-        await anonCart.populate('items.product');
-        cart = anonCart;
-      }
-    }
+    // Optional B2B billing details. Format is checked here and nowhere else —
+    // no GSTN lookup — and the result is snapshotted onto the order so a later
+    // profile edit can never alter an issued invoice.
+    const billing = buildBillingSnapshot(req.body.billing);
+
+    // Resolves the user's cart, folding in any guest cart from this browser session.
+    const cart = await resolveCart(req);
+    if (cart) await cart.populate('items.product');
     if (!cart?.items?.length) throw new AppError('Cart is empty', 400, 'EMPTY_CART');
 
     // Fetch vendor profiles once for commission rate lookup
@@ -53,25 +85,78 @@ async function createOrder(req, res, next) {
     const vendorMap = Object.fromEntries(vendors.map((v) => [v._id.toString(), v]));
 
     // Validate stock and build order items
+    // Place of supply for goods is the delivery state. `shippingAddress.state` is
+    // free text, so it may not resolve — in that case the components below are
+    // left unset rather than guessed.
+    const placeOfSupplyStateCode = stateCodeFromName(shippingAddress.state);
+
     const items = [];
     for (const item of cart.items) {
       const product = item.product;
       if (!product || !product.published) throw new AppError(`${item.title} is no longer available`, 400, 'PRODUCT_UNAVAILABLE');
-      if (product.stock < item.quantity) throw new AppError(`Insufficient stock for ${product.title}`, 400, 'OUT_OF_STOCK');
-      const itemTotal = product.price * item.quantity;
+
+      // A variant line is stocked on the variant, not the parent. Checking the
+      // parent here would reject every variant product whose parent stock is 0,
+      // which is the normal way variant products are set up.
+      const variant = item.variantId ? product.variants?.id?.(item.variantId) : null;
+      if (item.variantId && !variant) {
+        throw new AppError(`${item.title} is no longer available`, 400, 'PRODUCT_UNAVAILABLE');
+      }
+      const availableStock = variant ? variant.stock : product.stock;
+      if (availableStock < item.quantity) {
+        throw new AppError(`Insufficient stock for ${product.title}`, 400, 'OUT_OF_STOCK');
+      }
+
+      // The price the customer was actually shown. Cart, checkout summary and the
+      // order must agree, so this comes from the cart snapshot rather than being
+      // re-read from the product: for a variant line the parent price is simply
+      // the wrong number, and for any line a catalogue edit mid-session would
+      // charge an amount the customer never saw. Falls back only if a legacy cart
+      // row somehow lacks it.
+      const unitPrice = Number.isFinite(item.price)
+        ? item.price
+        : (variant?.price ?? product.price);
+
+      const itemTotal = unitPrice * item.quantity;
       const platformRate = vendorMap[product.vendorId?.toString()]?.vendorProfile?.commissionRate ?? 10;
-      const platformFee = parseFloat((itemTotal * platformRate / 100).toFixed(2));
+
+      const gstRate = resolveTaxRate(product);
+      const supplierStateCode = resolveSupplierStateCode(
+        vendorMap[product.vendorId?.toString()],
+        PLATFORM_GST_STATE_CODE,
+      );
+      // Components are additive: gstRate and the order-level gstAmount below are
+      // unchanged, so nothing downstream that reads them is affected.
+      const tax = splitGst({ lineTotal: itemTotal, rate: gstRate, supplierStateCode, placeOfSupplyStateCode });
+
+      // Commission is charged on the taxable value, not the GST-inclusive price.
+      // Same helper as commissionService, so the two can never disagree.
+      const { platformFee, vendorEarning } = computeCommission(
+        { price: unitPrice, quantity: item.quantity, gstRate, taxableValue: tax.taxableValue },
+        platformRate,
+      );
+
       items.push({
         product: product._id,
+        // Carried through so inventory can reserve and release the right variant,
+        // and so cancellation restores what was actually taken.
+        variantId: item.variantId || null,
         title: product.title,
         sku: product.sku,
-        price: product.price,
+        price: unitPrice,
         quantity: item.quantity,
-        gstRate: product.gstRate ?? 18,
+        gstRate,
         image: product.images?.[0],
         vendorId: product.vendorId,
         platformFee,
-        vendorEarning: parseFloat((itemTotal - platformFee).toFixed(2)),
+        vendorEarning,
+        // Immutable snapshot: the invoice must show the HSN that applied when the
+        // order was placed, even if the product is later edited or deleted.
+        hsnCode: product.hsnCode?.trim() || undefined,
+        taxableValue: tax.taxableValue,
+        cgst: tax.cgst,
+        sgst: tax.sgst,
+        igst: tax.igst,
       });
     }
 
@@ -80,17 +165,32 @@ async function createOrder(req, res, next) {
     const gstAmount = parseFloat(
       items.reduce((sum, i) => sum + (i.price * i.quantity * i.gstRate) / (100 + i.gstRate), 0).toFixed(2)
     );
-    const discount = cart.coupon?.discount || 0;
+    // Recompute the coupon against THIS subtotal. The value cached on the cart was
+    // calculated when the coupon was applied; if items were removed afterwards it
+    // can exceed the basket, which previously produced ₹0 orders.
+    let discount = 0;
+    if (cart.coupon?.code) {
+      const coupon = await Coupon.findOne({ code: cart.coupon.code, active: true });
+      const unusable = couponUnusableReason(coupon, subtotal);
+      if (unusable) {
+        console.warn(`[order] coupon ${cart.coupon.code} no longer valid at checkout (${unusable})`);
+      } else {
+        discount = computeCouponDiscount(coupon, subtotal);
+      }
+    }
+
     const [freeThreshold, defaultRate] = await Promise.all([
       Setting.get('shipping.free_threshold', 5000),
       Setting.get('shipping.default_rate', 70),
     ]);
     const serverShipping = subtotal >= parseFloat(freeThreshold) ? 0 : parseFloat(defaultRate);
-    // Use client-calculated shipping if provided and subtotal is below free threshold; else use server default
-    const clientShipping = parseFloat(req.body.shippingCharge);
+    // The client tells us which option was picked; it does not get to invent the
+    // price. Accept the figure only if it matches a rate this server actually
+    // quoted for this pincode, otherwise fall back to the configured default.
     const shippingCharge = subtotal >= parseFloat(freeThreshold)
       ? 0
-      : (Number.isFinite(clientShipping) && clientShipping >= 0 ? clientShipping : serverShipping);
+      : await resolveQuotedShipping(shippingAddress.pincode, req.body.shippingCharge, serverShipping);
+
     const totalAmount = Math.max(0, subtotal - discount + shippingCharge);
 
     const orderId = generateOrderId();
@@ -138,6 +238,8 @@ async function createOrder(req, res, next) {
       user: req.user._id,
       items,
       shippingAddress,
+      billing,
+      placeOfSupplyStateCode,
       subtotal,
       gstAmount,
       discount,
@@ -157,16 +259,14 @@ async function createOrder(req, res, next) {
       User.findByIdAndUpdate(req.user._id, { pendingAffiliateRef: null }).catch(() => {});
     }
 
-    // Atomically decrement stock — fails if stock dropped below required quantity between checkout and now
-    const stockUpdates = await Promise.all(items.map((item) =>
-      Product.findOneAndUpdate(
-        { _id: item.product, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity } }
-      )
-    ));
-    if (stockUpdates.some((r) => r === null)) {
+    // Take stock. All-or-nothing — reserveStock rolls back its own partial
+    // decrements, so a failure on one line cannot strand the others.
+    try {
+      await reserveStock(items);
+      await Order.findByIdAndUpdate(order._id, { inventoryApplied: true });
+    } catch (stockErr) {
       await Order.findByIdAndDelete(order._id);
-      throw new AppError('One or more items went out of stock. Please review your cart.', 409, 'OUT_OF_STOCK');
+      throw stockErr;
     }
 
     // COD: create commission records + send confirmation
@@ -258,6 +358,11 @@ async function verifyPayment(req, res, next) {
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
 
     if (!alreadyProcessed) {
+      // Issue the tax invoice. Idempotent, and the download route will issue it
+      // lazily if this fails, so a transient error never blocks payment.
+      ensureInvoiceForOrder(order).catch((e) =>
+        console.error(`[invoice] issue failed for ${order.orderId}:`, e.message));
+
       // Create commission records for vendor and affiliate
       createVendorCommissions(order).catch(() => {});
       if (order.affiliateId) createAffiliateCommission(order, order.affiliateId).catch(() => {});
@@ -345,14 +450,20 @@ async function cancelOrder(req, res, next) {
       throw new AppError('Order cannot be cancelled at this stage. Contact support if already shipped.', 400, 'INVALID_STATUS');
     }
 
+    // Reverse the money before mutating the status — applyEarnings compares the
+    // previous status to the new one. This is the only cancellation path that
+    // was not already routed through it, so commission rows created at payment
+    // were left payable. Earnings are untouched here: this route only allows
+    // pre-delivery statuses, so nothing was ever credited.
+    await applyEarnings(order, 'cancelled').catch((e) =>
+      console.error(`[cancelOrder] reversal failed for ${order.orderId}:`, e.message));
+
     order.status = 'cancelled';
     order.cancellation = { reason: 'Cancelled by customer', cancelledAt: new Date(), cancelledBy: req.user._id };
     await order.save();
 
     // Restore stock
-    await Promise.all(order.items.map((item) =>
-      Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } })
-    ));
+    await releaseStock(order.items);
 
     const wasPaid = order.paymentStatus === 'paid';
     if (wasPaid) {

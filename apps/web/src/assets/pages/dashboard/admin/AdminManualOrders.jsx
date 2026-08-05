@@ -754,9 +754,8 @@ export default function AdminManualOrders() {
                         <MessageCircle size={13} />
                       </button>
                       <a
-                        href={`${import.meta.env.VITE_API_URL}/api/invoices/${order._id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={`/api/invoices/${order.orderId}?format=pdf`}
+                        download={`invoice-${order.orderId}.pdf`}
                         title="Invoice"
                         className="p-1.5 text-secondary-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-flex"
                       >
