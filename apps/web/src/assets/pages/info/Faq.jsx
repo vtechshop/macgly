@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { setMeta } from '../../../utils/seo';
+import { setMeta, injectJsonLd, faqJsonLd } from '../../../utils/seo';
 
 const FAQS = [
   {
@@ -132,6 +132,9 @@ export default function Faq() {
       description: 'Answers to common questions about ordering, payments, GST invoices, shipping, returns, warranties, and selling on Macgly.',
       canonical: 'https://www.macgly.com/info/faq',
     });
+    // Every Q&A on the page, so the schema and the visible content match —
+    // Google requires the answer text to be present on the page itself.
+    injectJsonLd(faqJsonLd(FAQS.flatMap((group) => group.items)));
   }, []);
 
   return (

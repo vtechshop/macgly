@@ -9,6 +9,7 @@ const StockAlert = require('../models/StockAlert');
 const Product   = require('../models/Product');
 const AppError  = require('../utils/AppError');
 const { checkServiceability } = require('../services/delhiveryService');
+const { rememberQuote } = require('../utils/shippingQuote');
 const { DELHIVERY_API_KEY, DELHIVERY_BASE_URL, DELHIVERY_PICKUP_PINCODE } = require('../config/env');
 const axios = require('axios');
 
@@ -36,6 +37,7 @@ router.get('/shipping-rates', async (req, res) => {
     { id: 'express',  label: 'Express Delivery',  desc: '1–2 business days', charge: 120 },
   ];
   if (!pincode || !/^\d{6}$/.test(pincode) || !DELHIVERY_API_KEY) {
+    await rememberQuote(pincode, fallback);
     return res.json({ options: fallback });
   }
   try {
@@ -48,14 +50,16 @@ router.get('/shipping-rates', async (req, res) => {
     ]);
 const standard = Math.ceil(surfaceRes.data?.[0]?.total_amount || 70);
     const express  = Math.ceil(expressRes.data?.[0]?.total_amount || 120);
-    res.json({
-      options: [
-        { id: 'standard', label: 'Standard Delivery', desc: '3–7 business days', charge: standard },
-        { id: 'express',  label: 'Express Delivery',  desc: '1–2 business days', charge: express },
-      ],
-    });
+    const options = [
+      { id: 'standard', label: 'Standard Delivery', desc: '3–7 business days', charge: standard },
+      { id: 'express',  label: 'Express Delivery',  desc: '1–2 business days', charge: express },
+    ];
+    // Record what we quoted so checkout can validate the figure it is sent back.
+    await rememberQuote(pincode, options);
+    res.json({ options });
   } catch (err) {
     console.error('[Delhivery rates error]', err?.response?.status, JSON.stringify(err?.response?.data || err?.message));
+    await rememberQuote(pincode, fallback);
     res.json({ options: fallback });
   }
 });

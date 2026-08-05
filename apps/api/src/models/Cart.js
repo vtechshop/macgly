@@ -24,4 +24,15 @@ cartSchema.virtual('total').get(function () {
 cartSchema.set('toJSON', { virtuals: true });
 cartSchema.set('toObject', { virtuals: true });
 
+// Guest carts are disposable — drop them 30 days after last activity so anonymous
+// sessions don't accumulate. The partial filter keeps user-owned carts untouched.
+cartSchema.index(
+  { updatedAt: 1 },
+  {
+    expireAfterSeconds: 30 * 24 * 60 * 60,
+    partialFilterExpression: { user: { $exists: false } },
+    name: 'guest_cart_ttl',
+  },
+);
+
 module.exports = mongoose.model('Cart', cartSchema);

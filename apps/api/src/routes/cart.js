@@ -4,6 +4,7 @@ const { getCart, addItem, updateItem, removeItem, clearCart } = require('../cont
 const Cart = require('../models/Cart');
 const Coupon = require('../models/Coupon');
 const AppError = require('../utils/AppError');
+const { computeCouponDiscount } = require('../utils/coupon');
 
 router.use(optionalAuth);
 
@@ -39,14 +40,10 @@ router.post('/coupon', authenticate, async (req, res, next) => {
       throw new AppError(`Minimum order amount of ₹${coupon.minOrderAmount} required for this coupon`, 400, 'MIN_ORDER_NOT_MET');
     }
 
-    let discount = 0;
-    if (coupon.type === 'flat') {
-      discount = Math.min(coupon.value, subtotal);
-    } else {
-      discount = (subtotal * coupon.value) / 100;
-      if (coupon.maxDiscount > 0) discount = Math.min(discount, coupon.maxDiscount);
-    }
-    discount = parseFloat(discount.toFixed(2));
+    // Same helper createOrder uses, so the figure shown here and the one charged
+    // can never come from different rules. The stored value is a display
+    // convenience — checkout always recomputes against its own subtotal.
+    const discount = computeCouponDiscount(coupon, subtotal);
 
     cart.coupon = { code: coupon.code, discount, type: coupon.type };
     await cart.save();

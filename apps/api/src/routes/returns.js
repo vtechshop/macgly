@@ -3,6 +3,7 @@ const Return = require('../models/Return');
 const Order = require('../models/Order');
 const AppError = require('../utils/AppError');
 const { authenticate } = require('../middleware/auth');
+const { resolveReturnLines } = require('../utils/returnLines');
 
 router.use(authenticate);
 
@@ -26,13 +27,18 @@ router.post('/', async (req, res, next) => {
     const existing = await Return.findOne({ order: orderId });
     if (existing) throw new AppError('Return already requested for this order', 400, 'DUPLICATE');
 
+    // Resolve the requested lines against the order. A refund must be worth what
+    // was actually sent back — previously every return, however partial, was
+    // recorded at the full order total.
+    const { returnItems, refundAmount } = resolveReturnLines(order, items);
+
     const ret = await Return.create({
       order: orderId,
       user: req.user._id,
-      items: items || [],
+      items: returnItems,
       reason,
       description,
-      refundAmount: order.totalAmount,
+      refundAmount,
     });
 
     res.status(201).json({ return: ret });

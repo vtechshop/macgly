@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import { useFetch } from '../../hooks';
 import Spinner from '../components/common/Spinner';
 import ProductCard from '../components/product/ProductCard';
-import { setMeta } from '../../utils/seo';
+import { setMeta, injectJsonLd, breadcrumbJsonLd } from '../../utils/seo';
 import { normalizeImageUrl } from '../../utils/format';
 
 function StarRow({ filled, empty }) {
@@ -138,8 +138,15 @@ export default function Category() {
         canonical:   `https://www.macgly.com/category/${slug}`,
         image:       img,
       });
+      // Mirrors the <nav> breadcrumb rendered below.
+      injectJsonLd(breadcrumbJsonLd([
+        { name: 'Home', path: '/' },
+        { name: 'Products', path: '/products' },
+        ...(parentCat ? [{ name: parentCat.name, path: `/category/${parentCat.slug}` }] : []),
+        { name: category.name },
+      ]));
     }
-  }, [category, slug]);
+  }, [category, slug, parentCat]);
 
   const pagination = data?.pagination || {};
   const activeFilterCount = [minPrice, maxPrice, minRating, inStock].filter(Boolean).length;

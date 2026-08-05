@@ -4,6 +4,7 @@ const Commission = require('../../models/Commission');
 const AppError   = require('../../utils/AppError');
 const notif      = require('../../utils/notificationHelper');
 const { sendAffiliateKYCDecisionEmail } = require('../../services/emailService');
+const { payApprovedCommissions } = require('../../services/commissionService');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -258,44 +259,54 @@ router.post('/:id/payout', async (req, res, next) => {
     const affiliate = await User.findOne({ _id: req.params.id, role: 'affiliate' }).lean();
     if (!affiliate) throw new AppError('Affiliate not found', 404, 'NOT_FOUND');
 
-    const pending = affiliate.affiliateProfile?.pendingEarnings || 0;
-    if (grossAmount > pending + 1) throw new AppError(`Amount exceeds pending earnings (₹${pending})`, 400, 'AMOUNT_EXCEEDS');
-
-    // Mark commissions paid FIFO
-    const commissions = await Commission.find({ user: affiliate._id, type: 'affiliate', status: 'approved' })
-      .sort({ createdAt: 1 })
-      .lean();
-
-    let remaining = grossAmount;
-    const paidIds = [];
-    for (const c of commissions) {
-      if (remaining <= 0) break;
-      paidIds.push(c._id);
-      remaining -= c.commissionAmount;
+    // What is genuinely owed, from the ledger. The previous guard compared
+    // against affiliateProfile.pendingEarnings, a field nothing ever credits —
+    // it is always 0, so every payout above ₹1 was rejected.
+    const [owedAgg] = await Commission.aggregate([
+      { $match: { user: affiliate._id, type: 'affiliate', status: 'approved' } },
+      { $group: { _id: null, total: { $sum: '$commissionAmount' } } },
+    ]);
+    const owed = Math.round(((owedAgg?.total || 0) + Number.EPSILON) * 100) / 100;
+    if (!owed) throw new AppError('No approved commissions to pay', 400, 'NOTHING_TO_PAY');
+    if (grossAmount > owed + 0.01) {
+      throw new AppError(`Amount exceeds approved commissions (₹${owed.toFixed(2)})`, 400, 'AMOUNT_EXCEEDS');
     }
 
-    if (paidIds.length) {
-      await Commission.updateMany(
-        { _id: { $in: paidIds } },
-        {
-          status:        'paid',
-          paidAt:        new Date(),
-          paymentRef:    reference.trim(),
-          paymentProof:  paymentProof || '',
-          note:          `Manual payout via ${paymentMethod} | Ref: ${reference.trim()}`,
-        },
-      );
-    }
-
-    // Update affiliate earnings
-    await User.findByIdAndUpdate(affiliate._id, {
-      $inc: {
-        'affiliateProfile.pendingEarnings': -grossAmount,
-        'affiliateProfile.paidEarnings':    grossAmount,
+    // `grossAmount` only caps which whole rows are settled; the ledger moves by
+    // the sum of the rows actually marked paid, never by the requested figure.
+    const r = await payApprovedCommissions({
+      userId: affiliate._id,
+      type: 'affiliate',
+      maxAmount: grossAmount,
+      payment: {
+        paymentRef: reference.trim(),
+        paymentProof: paymentProof || '',
+        note: `Manual payout via ${paymentMethod} | Ref: ${reference.trim()}`,
       },
     });
 
-    res.json({ ok: true, paid: paidIds.length, grossAmount });
+    if (!r.paidCount) {
+      throw new AppError(
+        `₹${grossAmount.toFixed(2)} does not cover any single approved commission in full`,
+        400,
+        'AMOUNT_TOO_SMALL',
+      );
+    }
+
+    await User.findByIdAndUpdate(affiliate._id, {
+      $inc: {
+        'affiliateProfile.pendingEarnings': -r.totalPaid,
+        'affiliateProfile.paidEarnings':     r.totalPaid,
+      },
+    });
+
+    res.json({
+      ok: true,
+      paid: r.paidCount,
+      grossAmount,            // what was requested
+      totalPaid: r.totalPaid, // what was actually settled
+      ...(r.shortfall > 0 && { shortfall: r.shortfall }),
+    });
   } catch (err) { next(err); }
 });
 

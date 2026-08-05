@@ -1,14 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
     <meta name="google-site-verification" content="sFv_JLZsda4yDXg1esnOfatbyvr3Z3GIWB0WA-ilyHY" />
 
-    <!-- Favicons -->
+    <!-- Favicons. Every raster icon here is SQUARE and its sizes= attribute is
+         truthful: Google Search silently drops a favicon that is not square, and
+         /favicon.png used to be a 1655x950 rectangle declared as 32x32. -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48 96x96" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
-    <link rel="shortcut icon" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#ea580c" />
@@ -26,9 +29,12 @@
     <meta property="og:url" content="https://www.macgly.com/" />
     <meta property="og:title" content="Macgly - Tools, Machinery &amp; Industrial Equipment India" />
     <meta property="og:description" content="Shop premium tools, machinery and industrial equipment at Macgly. Power tools, agricultural equipment, engineering kits, spare parts and more. Best prices with fast delivery across India." />
-    <meta property="og:image" content="https://www.macgly.com/logo.png" />
+    <!-- Real 1200x630 card. logo.png is 1024x1024, so declaring it as 1200x630
+         made WhatsApp/LinkedIn letterbox or reject the preview. -->
+    <meta property="og:image" content="https://www.macgly.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Macgly — Tools &amp; Machinery" />
     <meta property="og:locale" content="en_IN" />
 
     <!-- Twitter Card -->
@@ -36,7 +42,7 @@
     <meta name="twitter:site" content="@macgly" />
     <meta name="twitter:title" content="Macgly - Tools, Machinery &amp; Industrial Equipment India" />
     <meta name="twitter:description" content="Shop premium tools, machinery and industrial equipment at Macgly. Best prices with fast delivery across India." />
-    <meta name="twitter:image" content="https://www.macgly.com/logo.png" />
+    <meta name="twitter:image" content="https://www.macgly.com/og-image.png" />
 
     <!-- Schema.org structured data -->
     <script type="application/ld+json">
@@ -50,7 +56,7 @@
           "url": "https://www.macgly.com",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://www.macgly.com/logo.png",
+            "url": "https://www.macgly.com/favicon-512.png",
             "width": 512,
             "height": 512
           },

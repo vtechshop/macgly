@@ -4,7 +4,12 @@ const isProd = () => process.env.NODE_ENV === 'production';
 
 // Crash fast in production if critical secrets are missing
 if (isProd()) {
-  const required = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
+  // RAZORPAY_WEBHOOK_SECRET is required: without it every webhook fails
+  // signature verification and paid orders are never confirmed.
+  const required = [
+    'MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET',
+    'RAZORPAY_WEBHOOK_SECRET',
+  ];
   const missing = required.filter((k) => !process.env[k]);
   if (missing.length) {
     console.error('FATAL: Missing required environment variables:', missing.join(', '));
@@ -49,6 +54,11 @@ module.exports = {
   SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD || '',
 
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+
+  // GST state of the platform's own registration, used as the supplier state for
+  // admin-owned products (those with no vendorId). Defaults to 33 (Tamil Nadu),
+  // matching the Coimbatore pickup address in adapters/shipping/DelhiveryAdapter.
+  PLATFORM_GST_STATE_CODE: process.env.PLATFORM_GST_STATE_CODE || '33',
 
   isProd,
 };

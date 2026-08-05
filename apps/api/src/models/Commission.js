@@ -5,10 +5,13 @@ const commissionSchema = new mongoose.Schema({
   order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // vendor or affiliate
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-  saleAmount: { type: Number, required: true },
+  saleAmount: { type: Number, required: true },     // GST-inclusive line total the customer paid
+  // Pre-tax base the platform fee was charged on. Absent on records written
+  // before PAY-08, where the fee was charged on saleAmount instead.
+  taxableValue: { type: Number },
   commissionRate: { type: Number, required: true }, // percentage
-  commissionAmount: { type: Number, required: true },
-  platformFee: { type: Number, default: 0 },
+  commissionAmount: { type: Number, required: true }, // amount payable to the vendor/affiliate
+  platformFee: { type: Number, default: 0 },        // the platform's cut
   status: { type: String, enum: ['pending', 'approved', 'paid', 'cancelled'], default: 'pending' },
   approvedAt:   Date,
   rejectedAt:   Date,

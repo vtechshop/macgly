@@ -1,6 +1,16 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { setMeta, SITE_URL } from '../../../utils/seo';
 
 export default function Privacy() {
+  useEffect(() => {
+    setMeta({
+      title: 'Privacy Policy | Macgly',
+      description: 'How Macgly collects, uses, shares and protects your personal data, your rights over that data, and how to exercise them.',
+      canonical: `${SITE_URL}/info/privacy`,
+    });
+  }, []);
+
   const sections = [
     { title: 'Information We Collect', body: 'We collect information you provide directly: name, email address, phone number, and shipping addresses when you register or place an order. We also collect device and usage data (IP address, browser type, pages visited) to improve our platform.' },
     { title: 'How We Use Your Information', body: 'We use your information to process orders and payments, send order confirmations and shipping updates, provide customer support, personalise your shopping experience, and send promotional communications (only with your consent).' },
