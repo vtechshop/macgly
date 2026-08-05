@@ -6,6 +6,9 @@ const returnSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   items: [{
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    // Copied from the order line so a partial return restores the variant that
+    // was actually sold rather than the parent product.
+    variantId: { type: mongoose.Schema.Types.ObjectId, default: null },
     title: String,
     quantity: Number,
     price: Number,

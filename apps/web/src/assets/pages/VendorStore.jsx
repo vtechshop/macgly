@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Store, Star, Package } from 'lucide-react';
 import api from '../../utils/api';
 import { useFetch } from '../../hooks';
+import { setMeta, SITE_URL } from '../../utils/seo';
 import Spinner from '../components/common/Spinner';
 import ProductCard from '../components/product/ProductCard';
 
@@ -15,11 +17,32 @@ export default function VendorStore() {
 
   const { data: productsData, isLoading: productsLoading } = useFetch(
     ['vendor-store-products', id],
-    () => api.get('/products', { params: { vendor: id, limit: 48 } }).then((r) => r.data)
+    // '/products' is not a route — the catalogue is mounted at /api/catalog.
+    // This returned 404 on every store page, so the grid was always empty.
+    () => api.get('/catalog/products', { params: { vendor: id, limit: 48 } }).then((r) => r.data)
   );
 
   const vendor = vendorData?.vendor;
   const products = productsData?.products || [];
+
+  useEffect(() => {
+    if (vendorLoading) return;
+    // Soft 404 — the SPA fallback answers 200 for an unknown vendor id.
+    if (!vendor) {
+      setMeta({ title: 'Store not found | Macgly', description: null, noindex: true });
+      return;
+    }
+    // The API returns storeName/storeDescription at the top level of `vendor`,
+    // not under vendorProfile — reading vendorProfile.description always gave
+    // undefined and fell through to the generic copy.
+    const name = vendor.storeName || vendor.name || 'Store';
+    setMeta({
+      title: `${name} — Tools & Machinery Store | Macgly`,
+      description: vendor.storeDescription
+        || `Browse tools, machinery and spare parts sold by ${name} on Macgly. Genuine products with pan-India delivery.`,
+      canonical: `${SITE_URL}/store/${id}`,
+    });
+  }, [vendor, vendorLoading, id]);
 
   if (vendorLoading) return <div className="flex justify-center py-32"><Spinner size="lg" /></div>;
 

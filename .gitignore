@@ -28,6 +28,8 @@ coverage/
 junit.xml
 apps/web/cypress/screenshots
 apps/web/cypress/videos
+apps/web/test-results/
+apps/web/playwright-report/
 
 # Uploads (use cloud storage)
 uploads/

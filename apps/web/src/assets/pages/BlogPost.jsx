@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Tag } from 'lucide-react';
 import api from '../../utils/api';
 import { useFetch } from '../../hooks';
+import { setMeta, SITE_URL, injectJsonLd, articleJsonLd, breadcrumbJsonLd } from '../../utils/seo';
 import Spinner from '../components/common/Spinner';
 
 function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : ''; }
@@ -15,6 +17,26 @@ export default function BlogPost() {
   );
 
   const post = data?.post;
+
+  useEffect(() => {
+    if (!post) return;
+    const img = post.coverImage || post.image;
+    setMeta({
+      title: `${post.title} | Macgly Blog`,
+      description: post.excerpt || post.content?.replace(/<[^>]+>/g, '').slice(0, 160),
+      canonical: `${SITE_URL}/blog/${post.slug}`,
+      image: img?.startsWith('http') ? img : null,
+      type: 'article',
+    });
+    injectJsonLd([
+      articleJsonLd(post),
+      breadcrumbJsonLd([
+        { name: 'Home', path: '/' },
+        { name: 'Blog', path: '/blog' },
+        { name: post.title },
+      ]),
+    ]);
+  }, [post]);
 
   if (isLoading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
   if (!post) return (

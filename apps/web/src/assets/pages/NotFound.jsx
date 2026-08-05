@@ -1,7 +1,15 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Home, Search, ArrowLeft } from 'lucide-react';
+import { setMeta } from '../../utils/seo';
 
 export default function NotFound() {
+  // The SPA fallback returns HTTP 200 for unknown URLs, so a crawler has no
+  // status code telling it this page is missing. noindex is the only signal.
+  useEffect(() => {
+    setMeta({ title: 'Page not found | Macgly', description: null, noindex: true });
+  }, []);
+
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 py-16 text-center">
       <div className="text-8xl font-black text-secondary-200 leading-none select-none">404</div>

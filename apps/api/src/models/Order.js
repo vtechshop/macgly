@@ -2,15 +2,35 @@ const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+  // Which variant of the product was sold. Absent for simple products and for
+  // orders written before variant inventory was tracked, both of which fall
+  // back to the parent product's stock.
+  variantId: { type: mongoose.Schema.Types.ObjectId, default: null },
   title: String,
   sku: String,
-  price: Number,
+  price: Number,          // what the customer was actually charged per unit
+  // Catalogue price at the time of sale, recorded only when a manual order was
+  // written at a different price. Makes the override auditable, and is the base
+  // the platform commission was charged on.
+  listPrice: Number,
   quantity: Number,
   gstRate: { type: Number, default: 18 },
   image: String,
   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   platformFee: { type: Number, default: 0 },   // platform's cut for this item
   vendorEarning: { type: Number, default: 0 },  // vendor's net after platform cut
+
+  // ── Tax snapshot (optional, written by the future tax engine) ───────────────
+  // All undefined today. Nothing reads them yet, and no existing calculation
+  // changes. They exist so per-line tax can be persisted at order time rather
+  // than re-derived whenever an invoice is rendered.
+  hsnCode:      String,
+  unit:         String,   // NOS, KG, MTR…
+  taxableValue: Number,   // pre-tax base for this line
+  cgst:         Number,
+  sgst:         Number,
+  igst:         Number,
+  cess:         Number,
 }, { _id: true });
 
 const addressSchema = new mongoose.Schema({
@@ -32,6 +52,25 @@ const orderSchema = new mongoose.Schema({
   source: { type: String, enum: ['online', 'in-store', 'phone'], default: 'online' },
   items: [orderItemSchema],
   shippingAddress: addressSchema,
+
+  // ── B2B billing (optional) ──────────────────────────────────────────────────
+  // Persistence target for GSTIN capture at checkout. Absent on every existing
+  // order and on every B2C order; checkout does not send it yet.
+  billing: {
+    companyName: String,
+    gstin:       String,
+    poNumber:    String,
+    address:     addressSchema,   // when billing differs from shipping
+  },
+
+  // Delivery state code for goods — decides CGST+SGST vs IGST. Written by the
+  // future tax engine; not derived today.
+  placeOfSupplyStateCode: String,
+
+  // True once stock has been taken for this order. Undefined on orders written
+  // before inventory was tracked here, which lets cancellation tell "restore
+  // what we took" apart from "there was never anything to restore".
+  inventoryApplied: { type: Boolean },
 
   subtotal: Number,
   gstAmount: { type: Number, default: 0 },

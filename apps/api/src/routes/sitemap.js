@@ -16,6 +16,9 @@ const STATIC_ROUTES = [
   { path: '/affiliate',         priority: '0.6', changefreq: 'monthly' },
   { path: '/info/about',        priority: '0.6', changefreq: 'monthly' },
   { path: '/info/contact',      priority: '0.6', changefreq: 'monthly' },
+  { path: '/info/faq',          priority: '0.6', changefreq: 'monthly' },
+  { path: '/info/buyer-guide',  priority: '0.6', changefreq: 'monthly' },
+  { path: '/info/seller-guide', priority: '0.6', changefreq: 'monthly' },
   { path: '/info/privacy',      priority: '0.3', changefreq: 'yearly' },
   { path: '/info/terms',        priority: '0.3', changefreq: 'yearly' },
 ];
@@ -30,10 +33,15 @@ function urlTag({ loc, lastmod, changefreq, priority }) {
 
 router.get('/', async (req, res, next) => {
   try {
-    const [products, categories, posts] = await Promise.all([
+    const [products, categories, posts, vendorIds] = await Promise.all([
       Product.find({ published: true }).select('slug updatedAt').lean(),
       Category.find({ isActive: true }).select('slug updatedAt').lean(),
-      Blog.find({ status: 'published' }).select('slug updatedAt').lean(),
+      // Both fields: routes/blog.js reads the legacy isPublished, the admin
+      // route writes both. Matching either keeps the sitemap from advertising a
+      // URL the public API would 404, and vice versa.
+      Blog.find({ $or: [{ status: 'published' }, { isPublished: true }] }).select('slug updatedAt').lean(),
+      // Only vendors with at least one live listing — an empty store is a thin page.
+      Product.distinct('vendorId', { published: true, vendorId: { $ne: null } }),
     ]);
 
     const now = new Date().toISOString();
@@ -50,6 +58,9 @@ router.get('/', async (req, res, next) => {
       ),
       ...posts.map((p) =>
         urlTag({ loc: `${BASE_URL}/blog/${p.slug}`, changefreq: 'monthly', priority: '0.6', lastmod: p.updatedAt?.toISOString() })
+      ),
+      ...vendorIds.map((id) =>
+        urlTag({ loc: `${BASE_URL}/store/${id}`, changefreq: 'weekly', priority: '0.5', lastmod: now })
       ),
     ];
 

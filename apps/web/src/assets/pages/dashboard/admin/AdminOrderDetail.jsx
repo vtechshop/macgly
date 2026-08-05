@@ -320,9 +320,8 @@ export default function AdminOrderDetail() {
         </div>
         <div className="flex items-center gap-2">
           <a
-            href={`${import.meta.env.VITE_API_URL}/api/invoices/${order._id}`}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={`/api/invoices/${order.orderId}?format=pdf`}
+            download={`invoice-${order.orderId}.pdf`}
             className="flex items-center gap-2 px-3 py-2 border border-secondary-200 rounded-lg text-sm text-secondary-700 hover:bg-secondary-50 transition-colors"
           >
             <FileText size={14} /> Download Invoice

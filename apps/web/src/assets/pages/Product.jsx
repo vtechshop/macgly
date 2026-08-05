@@ -7,7 +7,7 @@ import api from '../../utils/api';
 import { setCart, addItemOptimistic, openCartDrawer } from '../../store/slices/cartSlice';
 import { addWishlistId, removeWishlistId } from '../../store/slices/wishlistSlice';
 import { formatCurrency, normalizeImageUrl } from '../../utils/format';
-import { productJsonLd, injectJsonLd, setMeta } from '../../utils/seo';
+import { productJsonLd, breadcrumbJsonLd, injectJsonLd, setMeta } from '../../utils/seo';
 import { useFetch } from '../../hooks';
 import Spinner from '../components/common/Spinner';
 import ReviewSection from '../components/product/ReviewSection';
@@ -115,7 +115,14 @@ export default function Product() {
   const wishlisted = !!product && wishlistIds.includes(product._id);
 
   useEffect(() => {
-    if (!product) return;
+    if (isLoading) return;
+    // Soft 404: the SPA fallback answers 200 for an unknown slug, so without
+    // this the page kept index.html's homepage title and canonical and invited
+    // Google to index it as a homepage duplicate.
+    if (!product) {
+      setMeta({ title: 'Product not found | Macgly', description: null, noindex: true });
+      return;
+    }
     const img = product.images?.[0];
     const absImage = img && img.startsWith('http') ? img : null;
     setMeta({
@@ -125,7 +132,20 @@ export default function Product() {
       image:       absImage,
       type:        'product',
     });
-    injectJsonLd(productJsonLd(product));
+    // Mirrors the <nav> breadcrumb rendered below, so the trail Google shows in
+    // the SERP matches the one on the page.
+    injectJsonLd([
+      productJsonLd(product),
+      breadcrumbJsonLd([
+        { name: 'Home', path: '/' },
+        { name: 'Products', path: '/products' },
+        ...(categorySlug
+          ? [{ name: product.category?.name || product.categoryIds?.[0]?.name || categorySlug.replace(/-/g, ' '),
+               path: `/category/${categorySlug}` }]
+          : []),
+        { name: product.title },
+      ]),
+    ]);
 
     // Recently viewed: read existing, prepend current, cap at 10, write back
     try {
@@ -143,7 +163,7 @@ export default function Product() {
       // Expose to UI (exclude current product)
       setRecentlyViewed(filtered.slice(0, 5));
     } catch { /* localStorage unavailable */ }
-  }, [product]);
+  }, [product, isLoading, categorySlug]);
 
   // Sticky mobile buy bar — show when action buttons scroll off screen
   useEffect(() => {

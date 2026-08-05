@@ -8,6 +8,7 @@ const {
   FRONTEND_URL, isProd,
 } = require('../config/env');
 const { sendPasswordReset } = require('../services/emailService');
+const { clearSession } = require('../middleware/session');
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -176,6 +177,9 @@ async function logout(req, res, next) {
     }
     res.clearCookie('accessToken', COOKIE_OPTS);
     res.clearCookie('refreshToken', COOKIE_OPTS);
+    // Drop the cart session too, so the next person on a shared browser starts clean
+    // instead of inheriting this visitor's guest cart.
+    clearSession(res);
     res.json({ ok: true });
   } catch (err) {
     next(err);

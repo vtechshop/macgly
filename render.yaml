@@ -24,5 +24,17 @@ services:
         sync: false
       - key: RAZORPAY_KEY_SECRET
         sync: false
-      - key: MAILERSEND_API_KEY
+      # Distinct from RAZORPAY_KEY_SECRET. Copy it from the Razorpay dashboard
+      # webhook settings — the API boots only when this is present.
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      # The code calls api.resend.com; MAILERSEND_API_KEY was never read.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: CSRF_SECRET
+        generateValue: true
+      # Printed on tax invoices. Left blank renders "GSTIN not on record".
+      - key: PLATFORM_GSTIN
         sync: false

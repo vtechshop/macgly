@@ -2,6 +2,7 @@ const router     = require('express').Router();
 const Commission = require('../../models/Commission');
 const User       = require('../../models/User');
 const AppError   = require('../../utils/AppError');
+const { payApprovedCommissions } = require('../../services/commissionService');
 
 // ── GET /admin/payouts/pending ────────────────────────────────────────────────
 // Returns vendors that have approved commissions awaiting payout
@@ -55,37 +56,37 @@ router.get('/pending', async (req, res, next) => {
 });
 
 // ── POST /admin/payouts/process ───────────────────────────────────────────────
-// Body: { vendorId, amount, paymentMethod, paymentRef, paymentProof?, commissionIds? }
+// Body: { vendorId, paymentMethod, paymentRef, paymentProof?, commissionIds? }
+// `amount` is still accepted for backward compatibility but is deliberately
+// ignored: the amount paid is the sum of the commissions being marked paid, not
+// a figure supplied by the caller.
 router.post('/process', async (req, res, next) => {
   try {
-    const { vendorId, amount, paymentMethod, paymentRef, paymentProof, commissionIds } = req.body;
+    const { vendorId, paymentMethod, paymentRef, paymentProof, commissionIds } = req.body;
     if (!vendorId)      throw new AppError('vendorId is required',      400, 'MISSING_FIELDS');
     if (!paymentMethod) throw new AppError('paymentMethod is required', 400, 'MISSING_FIELDS');
     if (!paymentRef?.trim()) throw new AppError('paymentRef (UTR) is required', 400, 'MISSING_FIELDS');
 
-    // Determine which commissions to mark paid
-    let ids = commissionIds?.length ? commissionIds : [];
-    if (!ids.length) {
-      // Auto-select all approved commissions for this vendor
-      const pending = await Commission.find({ user: vendorId, type: 'vendor', status: 'approved' })
-        .select('_id')
-        .lean();
-      ids = pending.map((c) => c._id);
-    }
+    // The amount is the sum of the rows actually marked paid — never a figure
+    // from the request. vendorProfile.totalEarnings is deliberately not touched:
+    // it is credited once on delivery by applyEarnings.
+    const r = await payApprovedCommissions({
+      userId: vendorId,
+      type: 'vendor',
+      commissionIds,
+      payment: { paymentRef: paymentRef.trim(), paymentProof: paymentProof || '' },
+    });
 
-    if (!ids.length) throw new AppError('No approved commissions found for this vendor', 400, 'NOTHING_TO_PAY');
+    if (!r.selectedCount) throw new AppError('No approved commissions found for this vendor', 400, 'NOTHING_TO_PAY');
 
-    const paidAt  = new Date();
-    const update  = { status: 'paid', paidAt, paymentRef: paymentRef.trim(), paymentProof: paymentProof || '' };
-    const result  = await Commission.updateMany({ _id: { $in: ids }, status: 'approved' }, update);
-
-    // Update vendor's totalEarnings
-    const totalPaid = amount || 0;
-    if (totalPaid > 0) {
-      await User.findByIdAndUpdate(vendorId, { $inc: { 'vendorProfile.totalEarnings': totalPaid } });
-    }
-
-    res.json({ ok: true, paid: result.modifiedCount, message: `${result.modifiedCount} commission(s) marked as paid` });
+    res.json({
+      ok: true,
+      paid: r.paidCount,
+      totalPaid: r.totalPaid,
+      ...(r.shortfall > 0 && { shortfall: r.shortfall }),
+      message: `${r.paidCount} commission(s) marked as paid, ₹${r.totalPaid.toFixed(2)}`
+        + (r.shortfall > 0 ? ` (${r.selectedCount - r.paidCount} became unavailable — verify before transferring)` : ''),
+    });
   } catch (err) { next(err); }
 });
 
@@ -102,26 +103,21 @@ router.post('/vendor/:vendorId/batch', async (req, res, next) => {
       { status: 'approved', approvedAt: new Date() },
     );
 
-    // Then pay all approved
-    const allApproved = await Commission.find({ user: vendorId, type: 'vendor', status: 'approved' })
-      .select('_id commissionAmount')
-      .lean();
+    // Same helper as /process — the total is derived from the rows that moved.
+    const r = await payApprovedCommissions({
+      userId: vendorId,
+      type: 'vendor',
+      payment: { paymentRef: paymentRef?.trim() || '', paymentProof: paymentProof || '' },
+    });
 
-    if (!allApproved.length) return res.json({ ok: true, paid: 0 });
+    if (!r.selectedCount) return res.json({ ok: true, paid: 0, totalPaid: 0 });
 
-    const ids       = allApproved.map((c) => c._id);
-    const totalPaid = allApproved.reduce((s, c) => s + (c.commissionAmount || 0), 0);
-
-    await Commission.updateMany(
-      { _id: { $in: ids } },
-      { status: 'paid', paidAt: new Date(), paymentRef: paymentRef?.trim() || '', paymentProof: paymentProof || '' },
-    );
-
-    if (totalPaid > 0) {
-      await User.findByIdAndUpdate(vendorId, { $inc: { 'vendorProfile.totalEarnings': totalPaid } });
-    }
-
-    res.json({ ok: true, paid: ids.length, totalPaid });
+    res.json({
+      ok: true,
+      paid: r.paidCount,
+      totalPaid: r.totalPaid,
+      ...(r.shortfall > 0 && { shortfall: r.shortfall }),
+    });
   } catch (err) { next(err); }
 });
 

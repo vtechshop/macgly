@@ -6,10 +6,12 @@ const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 
 const { FRONTEND_URL, NODE_ENV, CSRF_SECRET, isProd } = require('./config/env');
 const AppError = require('./utils/AppError');
 const { apiLimiter } = require('./middleware/rateLimiter');
+const { ensureSession } = require('./middleware/session');
 
 const app = express();
 
@@ -125,7 +127,9 @@ app.use('/api/catalog', require('./routes/catalog'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/vendors', require('./routes/vendors'));
 app.use('/api/orders', require('./routes/orders'));
-app.use('/api/cart', require('./routes/cart'));
+// ensureSession issues a per-browser cart session cookie. Mounted only here —
+// the cart routes are the sole place a guest cart is created or read.
+app.use('/api/cart', ensureSession, require('./routes/cart'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/reviews', require('./routes/reviews'));
@@ -143,29 +147,26 @@ app.use('/api/config', require('./routes/config'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/referrals', require('./routes/referrals'));
-app.get('/sitemap.xml', require('./routes/sitemap'));
-app.get('/robots.txt', (req, res) => {
-  res.type('text/plain');
-  res.send([
-    'User-agent: *',
-    'Allow: /',
-    'Disallow: /dashboard/',
-    'Disallow: /checkout',
-    'Disallow: /order-confirmation/',
-    'Disallow: /login',
-    'Disallow: /register',
-    'Disallow: /forgot-password',
-    'Disallow: /reset-password/',
-    'Disallow: /api/',
-    'Disallow: /*?search=',
-    'Disallow: /*?page=',
-    'Disallow: /*?sort=',
-    'Disallow: /*?filter=',
-    'Disallow: /*?min=',
-    'Disallow: /*?max=',
-    '',
-    'Sitemap: https://www.macgly.com/sitemap.xml',
-  ].join('\n'));
+// app.use, NOT app.get. app.get(path, Router) does not rewrite req.url, so the
+// router still saw '/sitemap.xml', its own router.get('/') never matched, it
+// called next(), and the SPA catch-all answered with index.html at HTTP 200 —
+// Google was being served an HTML page for the sitemap it is told to fetch.
+app.use('/sitemap.xml', require('./routes/sitemap'));
+// robots.txt has exactly one source of truth: apps/web/public/robots.txt, which
+// Vite copies into the build output and express.static below serves. This route
+// only handles the case the static file cannot: a non-canonical hostname.
+//
+// render.yaml builds apps/web and this process serves apps/web/dist, so the API
+// origin (macgly.onrender.com) answers with the whole storefront. Left
+// crawlable, that is the entire catalogue duplicated under a second hostname.
+app.get('/robots.txt', (req, res, next) => {
+  let canonicalHost = '';
+  try { canonicalHost = new URL(FRONTEND_URL).hostname; } catch { /* unset in dev */ }
+  if (canonicalHost && req.hostname !== canonicalHost) {
+    res.type('text/plain');
+    return res.send(`# ${req.hostname} is not the canonical host (${canonicalHost}).\nUser-agent: *\nDisallow: /\n`);
+  }
+  return next();
 });
 
 // Serve React app in production (Vite handles it in dev)
@@ -174,6 +175,11 @@ if (isProd()) {
   const DIST = path.join(__dirname, '../../../apps/web/dist');
   app.use(express.static(DIST, {
     index: false,
+    // Without this, prerendered dist/product/<slug>/index.html makes
+    // serve-static 301 /product/<slug> to /product/<slug>/ — two URLs for one
+    // page, and not the one in the sitemap. The catch-all below resolves the
+    // directory itself, which is also how Vercel serves these files.
+    redirect: false,
     setHeaders(res, filePath) {
       if (filePath.endsWith('index.html')) {
         res.setHeader('Cache-Control', 'no-cache');
@@ -184,6 +190,15 @@ if (isProd()) {
   }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
+    // Prefer a prerendered shell if the build produced one for this route
+    // (apps/web/scripts/prerender.mjs). express.static above runs with
+    // index:false, so it will not serve dist/<route>/index.html itself. Vercel
+    // serves those files statically on the public domain; this keeps the Render
+    // origin identical rather than quietly serving different metadata.
+    const candidate = path.resolve(DIST, `.${req.path}`, 'index.html');
+    if (candidate.startsWith(DIST + path.sep) && fs.existsSync(candidate)) {
+      return res.sendFile(candidate);
+    }
     res.sendFile(path.join(DIST, 'index.html'));
   });
 }

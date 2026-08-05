@@ -5,6 +5,8 @@ import { MapPin, Truck, CreditCard, Check, ChevronRight, Zap, Package, LocateFix
 import api from '../../utils/api';
 import { clearCart } from '../../store/slices/cartSlice';
 import { formatCurrency, normalizeImageUrl } from '../../utils/format';
+import { resolveTaxRate, inclusiveGstAmount } from '../../utils/tax';
+import { isValidGstinFormat } from '../../utils/gstin';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Spinner from '../components/common/Spinner';
@@ -49,10 +51,10 @@ function StepIndicator({ current }) {
 
 function OrderSummary({ items, subtotal, shippingCharge, discount, coupon, couponCode, setCouponCode, onApplyCoupon, onRemoveCoupon, applyingCoupon }) {
   const gstAmount = parseFloat(
-    items.reduce((sum, i) => {
-      const rate = i.product?.taxRate ?? i.product?.gstRate ?? 18;
-      return sum + (i.price * i.quantity * rate) / (100 + rate);
-    }, 0).toFixed(2)
+    items.reduce(
+      (sum, i) => sum + inclusiveGstAmount(i.price * i.quantity, resolveTaxRate(i.product)),
+      0,
+    ).toFixed(2)
   );
   const baseAmount = parseFloat((subtotal - gstAmount).toFixed(2));
   const total = Math.max(0, subtotal + shippingCharge - discount);
@@ -129,6 +131,10 @@ export default function Checkout() {
     line1: '', line2: '', city: '', state: '', pincode: '',
   });
   const [errors, setErrors] = useState({});
+
+  // Optional B2B details. Off by default so the B2C flow is unchanged.
+  const [isBusiness, setIsBusiness] = useState(false);
+  const [billing, setBilling] = useState({ companyName: '', gstin: '' });
 
   const [locating, setLocating] = useState(false);
   const [shippingOptions, setShippingOptions] = useState(DEFAULT_SHIPPING);
@@ -285,7 +291,19 @@ export default function Checkout() {
     if (!address.state.trim()) errs.state = 'State is required';
     if (!address.pincode.trim()) { errs.pincode = 'Pincode is required'; }
     else if (!/^\d{6}$/.test(address.pincode.trim())) errs.pincode = 'Enter a valid 6-digit pincode';
+    if (isBusiness && billing.gstin.trim() && !isValidGstinFormat(billing.gstin)) {
+      errs.gstin = 'Enter a valid 15-character GSTIN';
+    }
     return errs;
+  }
+
+  /** Only sent when the buyer opted in and actually filled something. */
+  function billingPayload() {
+    if (!isBusiness) return undefined;
+    const companyName = billing.companyName.trim();
+    const gstin = billing.gstin.trim().toUpperCase();
+    if (!companyName && !gstin) return undefined;
+    return { companyName, gstin };
   }
 
   async function handleStep1Continue() {
@@ -338,6 +356,7 @@ export default function Checkout() {
       }
       const { data } = await api.post('/orders', {
         shippingAddress: address,
+        billing: billingPayload(),
         paymentMethod,
         couponCode: coupon?.code,
         affiliateRef,
@@ -459,6 +478,47 @@ export default function Checkout() {
                 <Input label="Address Line 2 (optional)" value={address.line2} onChange={setField('line2')} className="col-span-2" />
                 <Input label="City *" value={address.city} onChange={(e) => { setField('city')(e); setErrors((p) => ({ ...p, city: '' })); }} error={errors.city} />
                 <Input label="State *" value={address.state} onChange={(e) => { setField('state')(e); setErrors((p) => ({ ...p, state: '' })); }} error={errors.state} />
+              </div>
+
+              {/* Optional GST details — needed by business buyers to claim input tax credit */}
+              <div className="border-t border-secondary-100 pt-4">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isBusiness}
+                    onChange={(e) => { setIsBusiness(e.target.checked); setErrors((p) => ({ ...p, gstin: '' })); }}
+                    className="w-4 h-4 rounded border-secondary-300 text-primary-600"
+                  />
+                  <span className="text-sm font-medium text-secondary-700">
+                    Buying for a business? <span className="text-secondary-400 font-normal">(GST invoice)</span>
+                  </span>
+                </label>
+
+                {isBusiness && (
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <Input
+                      label="Company / Legal Name"
+                      value={billing.companyName}
+                      onChange={(e) => setBilling((b) => ({ ...b, companyName: e.target.value }))}
+                      className="col-span-2"
+                    />
+                    <Input
+                      label="GSTIN"
+                      value={billing.gstin}
+                      onChange={(e) => {
+                        setBilling((b) => ({ ...b, gstin: e.target.value.toUpperCase() }));
+                        setErrors((p) => ({ ...p, gstin: '' }));
+                      }}
+                      maxLength={15}
+                      placeholder="33AAACM1234C1ZP"
+                      error={errors.gstin}
+                      className="col-span-2 font-mono"
+                    />
+                    <p className="col-span-2 text-xs text-secondary-400 -mt-2">
+                      Appears on your tax invoice. Leave blank if you are not registered.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end pt-1">

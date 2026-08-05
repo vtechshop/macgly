@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff, Package, TrendingUp, ShieldCheck, HeadphonesIcon, ArrowRight } from 'lucide-react';
 import api from '../../utils/api';
+import { setMeta, SITE_URL } from '../../utils/seo';
 import { setUser } from '../../store/slices/authSlice';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
@@ -83,6 +84,15 @@ export default function VendorRegister() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+
+  // Before the early returns below — hooks must not sit behind a conditional.
+  useEffect(() => {
+    setMeta({
+      title: 'Sell on Macgly — Become a Vendor',
+      description: 'Sell tools, machinery and spare parts to verified buyers across India. Free vendor registration, live sales dashboard and secure Razorpay settlements.',
+      canonical: `${SITE_URL}/sell`,
+    });
+  }, []);
 
   // Already a vendor or admin → go to their dashboard
   if (user?.role === 'vendor') return <Navigate to="/dashboard/vendor" replace />;
