@@ -11,9 +11,12 @@ async function getCart(req, res, next) {
   } catch (err) { next(err); }
 }
 
+const MAX_ITEM_QUANTITY = 100;
+
 async function addItem(req, res, next) {
   try {
-    const { productId, quantity = 1, variantId } = req.body;
+    const { productId, variantId } = req.body;
+    const quantity = Math.max(1, Math.min(parseInt(req.body.quantity) || 1, MAX_ITEM_QUANTITY));
     if (!productId) throw new AppError('productId required', 400, 'MISSING_FIELDS');
 
     const product = await Product.findById(productId);
@@ -72,8 +75,8 @@ async function addItem(req, res, next) {
 
 async function updateItem(req, res, next) {
   try {
-    const { quantity } = req.body;
-    if (!quantity || quantity < 1) throw new AppError('quantity must be >= 1', 400, 'INVALID_REQUEST');
+    const quantity = parseInt(req.body.quantity);
+    if (!quantity || quantity < 1 || quantity > MAX_ITEM_QUANTITY) throw new AppError(`quantity must be between 1 and ${MAX_ITEM_QUANTITY}`, 400, 'INVALID_REQUEST');
 
     const cart = await resolveCart(req);
     if (!cart) throw new AppError('Cart not found', 404, 'NOT_FOUND');

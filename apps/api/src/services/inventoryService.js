@@ -36,39 +36,49 @@ function normalise(items) {
  * and be decremented on another. `$elemMatch` forces a single element to satisfy
  * both, and the positional `$` then updates that same element.
  *
+ * @param {object} line     - { product, variantId, quantity }
+ * @param {object} [session] - optional Mongoose session for multi-document transactions
  * @returns {Promise<object|null>} the product, or null when stock was insufficient
  */
-function decrementOne({ product, variantId, quantity }) {
+function decrementOne({ product, variantId, quantity }, session = null) {
+  const opts = session ? { session } : {};
   if (variantId) {
     return Product.findOneAndUpdate(
       { _id: product, variants: { $elemMatch: { _id: variantId, stock: { $gte: quantity } } } },
       { $inc: { 'variants.$.stock': -quantity } },
+      opts,
     );
   }
   return Product.findOneAndUpdate(
     { _id: product, stock: { $gte: quantity } },
     { $inc: { stock: -quantity } },
+    opts,
   );
 }
 
-function incrementOne({ product, variantId, quantity }) {
+function incrementOne({ product, variantId, quantity }, session = null) {
+  const opts = session ? { session } : {};
   if (variantId) {
     return Product.findOneAndUpdate(
       { _id: product, 'variants._id': variantId },
       { $inc: { 'variants.$.stock': quantity } },
+      opts,
     );
   }
-  return Product.findByIdAndUpdate(product, { $inc: { stock: quantity } });
+  return Product.findByIdAndUpdate(product, { $inc: { stock: quantity } }, opts);
 }
 
 /**
  * Puts stock back. Used on cancellation, failed payment and stale-order cleanup.
  * Restores to the same place it was taken from — variant or parent.
+ *
+ * @param {Array}  items    - order items
+ * @param {object} [session] - optional Mongoose session
  */
-async function releaseStock(items) {
+async function releaseStock(items, session = null) {
   const lines = normalise(items);
   if (!lines.length) return;
-  await Promise.all(lines.map(incrementOne));
+  await Promise.all(lines.map((line) => incrementOne(line, session)));
 }
 
 /** Human-readable label for an error message, without assuming the variant still exists. */
@@ -87,22 +97,31 @@ async function describeLine({ product, variantId }) {
  * back before throwing — without that, a 5-item order failing on item 3 would
  * permanently leak the stock taken for items 1 and 2.
  *
- * @param {Array} items order items or {product, variantId, quantity} triples
+ * When a `session` is supplied the caller is responsible for aborting the
+ * transaction on error; the internal rollback is still attempted for
+ * non-transactional callers.
+ *
+ * @param {Array}  items    - order items or {product, variantId, quantity} triples
+ * @param {object} [session] - optional Mongoose session
  * @throws {AppError} 409 OUT_OF_STOCK naming the product (and variant) that ran short
  */
-async function reserveStock(items) {
+async function reserveStock(items, session = null) {
   const lines = normalise(items);
   if (!lines.length) return;
 
-  const results = await Promise.all(lines.map(decrementOne));
+  const results = await Promise.all(lines.map((line) => decrementOne(line, session)));
 
   const failedAt = results.findIndex((r) => r === null);
   if (failedAt === -1) return;
 
-  const applied = lines.filter((_, i) => results[i] !== null);
-  if (applied.length) {
-    await releaseStock(applied).catch((e) =>
-      console.error('[inventory] partial reservation rollback failed:', e.message));
+  // Without a transaction, manually roll back the lines that succeeded.
+  // With a transaction the caller's abortTransaction() handles rollback.
+  if (!session) {
+    const applied = lines.filter((_, i) => results[i] !== null);
+    if (applied.length) {
+      await releaseStock(applied).catch((e) =>
+        console.error('[inventory] partial reservation rollback failed:', e.message));
+    }
   }
 
   const label = await describeLine(lines[failedAt]);

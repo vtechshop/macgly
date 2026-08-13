@@ -8,7 +8,7 @@ if (isProd()) {
   // signature verification and paid orders are never confirmed.
   const required = [
     'MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET',
-    'RAZORPAY_WEBHOOK_SECRET',
+    'RAZORPAY_WEBHOOK_SECRET', 'CSRF_SECRET',
   ];
   const missing = required.filter((k) => !process.env[k]);
   if (missing.length) {
@@ -17,6 +17,10 @@ if (isProd()) {
   }
   if (process.env.JWT_ACCESS_SECRET === 'dev_access_secret' || process.env.JWT_REFRESH_SECRET === 'dev_refresh_secret') {
     console.error('FATAL: Dev JWT secrets used in production');
+    process.exit(1);
+  }
+  if (process.env.CSRF_SECRET === 'dev_csrf_secret') {
+    console.error('FATAL: Dev CSRF_SECRET used in production — set a strong random value in your environment');
     process.exit(1);
   }
 }
@@ -59,6 +63,9 @@ module.exports = {
   // admin-owned products (those with no vendorId). Defaults to 33 (Tamil Nadu),
   // matching the Coimbatore pickup address in adapters/shipping/DelhiveryAdapter.
   PLATFORM_GST_STATE_CODE: process.env.PLATFORM_GST_STATE_CODE || '33',
+
+  GST_API_URL: process.env.GST_API_URL || '',
+  GST_API_KEY: process.env.GST_API_KEY || '',
 
   isProd,
 };

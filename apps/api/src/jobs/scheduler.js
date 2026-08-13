@@ -1,5 +1,6 @@
 const autoReleaseTransfers = require('./autoReleaseTransfers');
 const reconcilePayments = require('./reconcilePayments');
+const reconcileCommissions = require('./reconcileCommissions');
 const reviewRequestJob = require('./reviewRequestJob');
 const trackingSyncJob = require('./trackingSyncJob');
 const abandonedCartService = require('../services/abandonedCartService');
@@ -25,6 +26,7 @@ function startJobs() {
   const HOUR = 60 * MINUTE;
 
   schedule('CleanupStaleOrders', () => cleanupStaleOrders.run(), 30 * MINUTE);
+  schedule('ReconcileCommissions', () => reconcileCommissions.run(), 2 * HOUR);
   schedule('TrackingSync', () => trackingSyncJob.run(), 15 * MINUTE);
   schedule('AutoRelease', () => autoReleaseTransfers.run(), 4 * HOUR);
   schedule('Reconcile', () => reconcilePayments.run(), 2 * HOUR);

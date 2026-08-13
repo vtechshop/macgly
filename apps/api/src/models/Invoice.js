@@ -158,11 +158,16 @@ const invoiceSchema = new Schema({
 
 // A number is unique once assigned; drafts have none, hence sparse.
 invoiceSchema.index({ number: 1 }, { unique: true, sparse: true });
-// At most one tax invoice per order. Credit and debit notes reference the same
-// order and are excluded by the partial filter.
+// At most one tax invoice per order. Credit/debit notes are excluded by kind.
+// $type:'objectId' excludes null/absent order so multiple drafts are allowed.
+// ($ne is not supported in partialFilterExpression; $type is.)
 invoiceSchema.index(
   { order: 1 },
-  { unique: true, partialFilterExpression: { kind: 'vendor_tax_invoice' }, name: 'one_tax_invoice_per_order' },
+  {
+    unique: true,
+    partialFilterExpression: { kind: 'vendor_tax_invoice', order: { $type: 'objectId' } },
+    name: 'one_tax_invoice_per_order',
+  },
 );
 invoiceSchema.index({ 'supplier.userId': 1, issueDate: -1 });
 invoiceSchema.index({ 'recipient.userId': 1, issueDate: -1 });

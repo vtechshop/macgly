@@ -8,10 +8,13 @@ router.get('/', async (req, res, next) => {
     const { page = 1, limit = 12, tag, search } = req.query;
     const filter = { isPublished: true };
     if (tag) filter.tags = tag;
-    if (search) filter.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { excerpt: { $regex: search, $options: 'i' } },
-    ];
+    if (search) {
+      const safeSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').slice(0, 200);
+      filter.$or = [
+        { title: { $regex: safeSearch, $options: 'i' } },
+        { excerpt: { $regex: safeSearch, $options: 'i' } },
+      ];
+    }
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [posts, total] = await Promise.all([
       Blog.find(filter)

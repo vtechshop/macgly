@@ -127,7 +127,7 @@ function requireApproved(req, res, next) {
   next();
 }
 
-router.get('/profile', (req, res) => res.json({ vendor: req.user }));
+router.get('/profile', (req, res) => res.json({ vendor: req.user.toSafeObject ? req.user.toSafeObject() : req.user }));
 
 router.put('/profile', async (req, res, next) => {
   try {
@@ -226,16 +226,45 @@ router.put('/settings/profile', async (req, res, next) => {
 router.put('/settings/bank', async (req, res, next) => {
   try {
     const User = require('../models/User');
-    const { accountHolderName, bankName, bankAccount, ifsc, swiftCode, upiId, panCard } = req.body;
+    const { writeAuditLog, fromReq } = require('../middleware/audit');
+    const { sendEmail } = require('../services/emailService');
+
+    // Step-up: require current password before any financial field changes
+    const { password, accountHolderName, bankName, bankAccount, ifsc, swiftCode, upiId, panCard } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: { code: 'STEP_UP_REQUIRED', message: 'Current password is required to update financial information' } });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
+
+    const valid = await user.comparePassword(password);
+    if (!valid) {
+      writeAuditLog({ ...fromReq(req), action: 'BANK_DETAILS_CHANGE_DENIED', target: req.user._id, targetModel: 'User', meta: { reason: 'bad_password' } });
+      return res.status(401).json({ error: { code: 'INVALID_PASSWORD', message: 'Incorrect password' } });
+    }
+
     const update = {};
     if (accountHolderName !== undefined) update['vendorProfile.accountHolderName'] = accountHolderName.trim();
     if (bankName          !== undefined) update['vendorProfile.bankName']           = bankName.trim();
     if (bankAccount       !== undefined) update['vendorProfile.bankAccount']        = bankAccount.trim();
     if (ifsc              !== undefined) update['vendorProfile.ifsc']               = ifsc.toUpperCase().trim();
     if (swiftCode         !== undefined) update['vendorProfile.swiftCode']          = swiftCode.toUpperCase().trim();
-    if (upiId             !== undefined) update['vendorProfile.upiId']             = upiId.trim();
+    if (upiId             !== undefined) update['vendorProfile.upiId']              = upiId.trim();
     if (panCard           !== undefined) update['vendorProfile.panCard']            = panCard.toUpperCase().trim();
+
     await User.findByIdAndUpdate(req.user._id, update);
+
+    const changedFields = Object.keys(update).map((k) => k.replace('vendorProfile.', ''));
+    writeAuditLog({ ...fromReq(req), action: 'BANK_DETAILS_CHANGED', target: req.user._id, targetModel: 'User', meta: { changedFields } });
+
+    // Notify vendor that financial info was updated
+    sendEmail({
+      to: user.email,
+      subject: 'Your payout/financial information was updated',
+      html: `<p>Hello ${user.name},</p><p>Your financial/bank details on Macgly were updated successfully. If you did not make this change, please contact support immediately.</p>`,
+    }).catch(() => {});
+
     res.json({ success: true });
   } catch (err) { next(err); }
 });
@@ -1590,6 +1619,9 @@ router.delete('/kyc/documents/:id', async (req, res, next) => {
 
 router.post('/gst/verify', async (req, res, next) => {
   try {
+    const { writeAuditLog, fromReq } = require('../middleware/audit');
+    const { verifyGstin } = require('../services/gstVerificationService');
+
     const { gstNumber } = req.body;
     if (!gstNumber) throw new AppError('GST number required', 400);
 
@@ -1599,30 +1631,44 @@ router.post('/gst/verify', async (req, res, next) => {
       return res.status(400).json({ success: false, error: { message: 'Invalid GSTIN format. Expected: 22AAAAA0000A1Z5' } });
     }
 
-    const pan = gstin.slice(2, 12);
-    const stateCode = gstin.slice(0, 2);
-    const stateNames = {
-      '01':'Jammu & Kashmir','02':'Himachal Pradesh','03':'Punjab','04':'Chandigarh',
-      '05':'Uttarakhand','06':'Haryana','07':'Delhi','08':'Rajasthan','09':'Uttar Pradesh',
-      '10':'Bihar','11':'Sikkim','12':'Arunachal Pradesh','13':'Nagaland','14':'Manipur',
-      '15':'Mizoram','16':'Tripura','17':'Meghalaya','18':'Assam','19':'West Bengal',
-      '20':'Jharkhand','21':'Odisha','22':'Chhattisgarh','23':'Madhya Pradesh',
-      '24':'Gujarat','27':'Maharashtra','28':'Andhra Pradesh','29':'Karnataka',
-      '30':'Goa','32':'Kerala','33':'Tamil Nadu','34':'Puducherry','36':'Telangana',
-    };
-    const stateName = stateNames[stateCode] || 'India';
+    const result = await verifyGstin(gstin);
 
+    if (result.status === 'unavailable') {
+      // Provider not configured or unreachable — do NOT set gstVerified
+      writeAuditLog({ ...fromReq(req), action: 'GST_VERIFY_UNAVAILABLE', target: req.user._id, targetModel: 'User', meta: { gstin, reason: result.reason } });
+      return res.status(503).json({
+        success: false,
+        status: 'unavailable',
+        error: { message: 'GST verification service is not available. Please try again later or contact support.' },
+      });
+    }
+
+    if (result.status === 'failed') {
+      writeAuditLog({ ...fromReq(req), action: 'GST_VERIFY_FAILED', target: req.user._id, targetModel: 'User', meta: { gstin, reason: result.reason } });
+      // Clear any previously verified status
+      await require('../models/User').findByIdAndUpdate(req.user._id, {
+        $set: { 'vendorProfile.gstVerified': false, 'vendorProfile.gstin': gstin },
+        $unset: { 'vendorProfile.gstDetails': '' },
+      });
+      return res.status(400).json({
+        success: false,
+        status: 'failed',
+        error: { message: 'GSTIN could not be verified. It may be inactive or not found in the GST registry.' },
+      });
+    }
+
+    // status === 'verified'
     const gstDetails = {
-      tradeName: `Business (PAN: ${pan})`,
-      legalName: `Registered Entity ${pan}`,
-      gstNumber: gstin,
-      status:    'Active',
-      address:   `${stateName}, India`,
-      stateCode,
-      pan,
+      tradeName:   result.data.tradeName   || null,
+      legalName:   result.data.legalName   || null,
+      gstNumber:   gstin,
+      status:      result.data.gstStatus   || 'Active',
+      stateCode:   result.data.stateCode,
+      pan:         result.data.pan,
+      referenceId: result.referenceId      || null,
+      verifiedAt:  result.verifiedAt,
     };
 
-    // Save verified status server-side — never trust client to set this
     await require('../models/User').findByIdAndUpdate(req.user._id, {
       $set: {
         'vendorProfile.gstVerified': true,
@@ -1631,7 +1677,9 @@ router.post('/gst/verify', async (req, res, next) => {
       },
     });
 
-    res.json({ success: true, data: gstDetails, active: true });
+    writeAuditLog({ ...fromReq(req), action: 'GST_VERIFIED', target: req.user._id, targetModel: 'User', meta: { gstin, referenceId: result.referenceId } });
+
+    res.json({ success: true, status: 'verified', data: gstDetails });
   } catch (err) { next(err); }
 });
 

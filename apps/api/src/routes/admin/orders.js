@@ -14,11 +14,14 @@ const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../../config/env');
 
 // ── POST /admin/orders/bulk-status ───────────────────────────────────────────
 // MUST be defined BEFORE /:id routes
+const BULK_STATUS_ALLOWED = new Set(['confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled']);
+
 router.post('/bulk-status', async (req, res, next) => {
   try {
     const { ids, status } = req.body;
     if (!Array.isArray(ids) || !ids.length) throw new AppError('ids array is required', 400, 'MISSING_FIELDS');
     if (!status) throw new AppError('status is required', 400, 'MISSING_FIELDS');
+    if (!BULK_STATUS_ALLOWED.has(status)) throw new AppError(`Invalid status. Allowed: ${[...BULK_STATUS_ALLOWED].join(', ')}`, 400, 'INVALID_STATUS');
 
     const orders = await Order.find({ _id: { $in: ids } });
     if (!orders.length) throw new AppError('No orders found', 404, 'NOT_FOUND');
@@ -429,7 +432,10 @@ router.post('/:id/refund', async (req, res, next) => {
     }
 
     const rz = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
-    const amtPaise = Math.round((req.body.amount || order.totalAmount) * 100);
+    // Cap refund at the original order amount to prevent over-refunding
+    const requestedAmount = parseFloat(req.body.amount) || order.totalAmount;
+    const safeAmount = Math.min(requestedAmount, order.totalAmount);
+    const amtPaise = Math.round(safeAmount * 100);
     const refund = await rz.payments.refund(order.razorpayPaymentId, { amount: amtPaise });
 
     await Order.findByIdAndUpdate(order._id, { paymentStatus: 'refunded' });

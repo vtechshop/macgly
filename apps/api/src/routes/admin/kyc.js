@@ -3,6 +3,40 @@ const User   = require('../../models/User');
 const AppError = require('../../utils/AppError');
 const notif  = require('../../utils/notificationHelper');
 const { sendVendorKYCDecisionEmail } = require('../../services/emailService');
+const { writeAuditLog, fromReq } = require('../../middleware/audit');
+const CloudinaryAdapter = require('../../adapters/storage/CloudinaryAdapter');
+
+const cloudinaryAdapter = new CloudinaryAdapter();
+
+// Extract publicId, format, and resourceType from a Cloudinary URL.
+// Handles both 'upload' (public) and 'authenticated' delivery types.
+function extractDocumentInfo(url) {
+  if (!url) return { publicId: null, format: null, resourceType: 'image' };
+  try {
+    const match = url.match(/\/(image|video|raw)\/(upload|authenticated)\/(?:v\d+\/)?(.+?)(?:\.([a-z0-9]+))?$/i);
+    if (!match) return { publicId: null, format: null, resourceType: 'image' };
+    return {
+      publicId: match[3],
+      format: match[4] || null,       // e.g. 'pdf', 'jpg', 'png'
+      resourceType: match[1] === 'raw' ? 'raw' : 'image',
+    };
+  } catch { return { publicId: null, format: null, resourceType: 'image' }; }
+}
+
+// Replace raw Cloudinary URLs with 5-minute signed URLs in a vendorProfile.
+// Passes the actual format (pdf/jpg/png) and resource type so the signed URL
+// covers the correct resource instead of defaulting to a broken .jpg link.
+function signKycDocuments(vendorProfile) {
+  if (!vendorProfile?.kycDocuments?.length) return vendorProfile;
+  const signed = vendorProfile.kycDocuments.map((doc) => {
+    const { publicId, format, resourceType } = extractDocumentInfo(doc.url);
+    const signedUrl = publicId
+      ? cloudinaryAdapter.signedUrl(publicId, { format, resourceType })
+      : doc.url;
+    return { ...doc, url: signedUrl };
+  });
+  return { ...vendorProfile, kycDocuments: signed };
+}
 
 // ── GET /admin/kyc/pending — merged queue with type tag ───────────────────────
 // MUST be before / so Express doesn't treat 'pending' as an :id param
@@ -116,6 +150,7 @@ router.put('/vendors/:id/approve', async (req, res, next) => {
       },
       { new: true },
     );
+    writeAuditLog({ ...fromReq(req), action: 'KYC_APPROVED', target: updated._id, targetModel: 'User', meta: { vendorEmail: updated.email } });
     notif.notifyVendorApprovalStatus({ vendorUserId: updated._id, vendor: updated.vendorProfile, status: 'approved' }).catch(() => {});
     sendVendorKYCDecisionEmail({ vendor: updated, status: 'approved' }).catch(() => {});
     res.json({ ok: true, user: updated });
@@ -136,6 +171,7 @@ router.put('/vendors/:id/reject', async (req, res, next) => {
       { new: true },
     );
     if (!updated) throw new AppError('Vendor not found', 404, 'NOT_FOUND');
+    writeAuditLog({ ...fromReq(req), action: 'KYC_REJECTED', target: updated._id, targetModel: 'User', meta: { vendorEmail: updated.email, reason: reason.slice(0, 200) } });
     notif.notifyVendorApprovalStatus({ vendorUserId: updated._id, vendor: updated.vendorProfile, status: 'rejected', rejectionReason: reason }).catch(() => {});
     sendVendorKYCDecisionEmail({ vendor: updated, status: 'rejected', rejectionReason: reason }).catch(() => {});
     res.json({ ok: true, user: updated });
@@ -215,6 +251,31 @@ router.put('/affiliate/:id/reject', async (req, res, next) => {
     if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
     notif.notifyAffiliateApprovalStatus({ affiliateUserId: user._id, status: 'rejected', rejectionReason: reason }).catch(() => {});
     res.json({ ok: true, user });
+  } catch (err) { next(err); }
+});
+
+// ── GET /admin/kyc/vendors/:id/documents — signed URLs for KYC document access ──
+router.get('/vendors/:id/documents', async (req, res, next) => {
+  try {
+    const vendor = await User.findOne({ _id: req.params.id, role: 'vendor' })
+      .select('name email vendorProfile.kycDocuments vendorProfile.kycStatus')
+      .lean();
+    if (!vendor) throw new AppError('Vendor not found', 404, 'NOT_FOUND');
+
+    writeAuditLog({
+      ...fromReq(req),
+      action: 'KYC_DOCUMENTS_ACCESSED',
+      target: vendor._id,
+      targetModel: 'User',
+      meta: { vendorEmail: vendor.email, documentCount: vendor.vendorProfile?.kycDocuments?.length || 0 },
+    });
+
+    const signedProfile = signKycDocuments(vendor.vendorProfile || {});
+
+    res.json({
+      kycStatus: signedProfile.kycStatus,
+      kycDocuments: signedProfile.kycDocuments || [],
+    });
   } catch (err) { next(err); }
 });
 

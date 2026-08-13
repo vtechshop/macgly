@@ -219,7 +219,7 @@ async function resetPassword(req, res, next) {
   try {
     const { token, password } = req.body;
     if (!token || !password) throw new AppError('Token and password are required', 400, 'MISSING_FIELDS');
-    if (password.length < 6) throw new AppError('Password must be at least 6 characters', 400, 'WEAK_PASSWORD');
+    if (password.length < 8) throw new AppError('Password must be at least 8 characters', 400, 'WEAK_PASSWORD');
 
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     const user = await User.findOne({

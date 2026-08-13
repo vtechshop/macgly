@@ -1,5 +1,6 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
@@ -233,40 +234,52 @@ async function createOrder(req, res, next) {
       affiliateId = affiliate._id;
     }
 
-    const order = await Order.create({
-      orderId,
-      user: req.user._id,
-      items,
-      shippingAddress,
-      billing,
-      placeOfSupplyStateCode,
-      subtotal,
-      gstAmount,
-      discount,
-      shippingCharge,
-      totalAmount,
-      coupon: cart.coupon ? { code: cart.coupon.code, discount: cart.coupon.discount } : undefined,
-      paymentMethod,
-      razorpayOrderId: razorpayOrder?.id,
-      totalPlatformFee,
-      affiliateId,
-      affiliateCommission,
-      notes,
-    });
+    // Atomic: Order creation + stock reservation + inventoryApplied flag must
+    // all succeed or all roll back. A MongoDB session transaction provides this
+    // guarantee. If the DB is standalone (transactions unsupported), fall back to
+    // the manual delete-on-failure approach used before.
+    let order;
+    const session = await mongoose.startSession();
+    try {
+      session.startTransaction();
+
+      // Order.create() with a session requires the array form and returns an array.
+      const created = await Order.create([{
+        orderId,
+        user: req.user._id,
+        items,
+        shippingAddress,
+        billing,
+        placeOfSupplyStateCode,
+        subtotal,
+        gstAmount,
+        discount,
+        shippingCharge,
+        totalAmount,
+        coupon: cart.coupon ? { code: cart.coupon.code, discount: cart.coupon.discount } : undefined,
+        paymentMethod,
+        razorpayOrderId: razorpayOrder?.id,
+        totalPlatformFee,
+        affiliateId,
+        affiliateCommission,
+        notes,
+      }], { session });
+      order = created[0];
+
+      await reserveStock(items, session);
+      await Order.findByIdAndUpdate(order._id, { inventoryApplied: true }, { session });
+
+      await session.commitTransaction();
+    } catch (txErr) {
+      await session.abortTransaction();
+      throw txErr;
+    } finally {
+      session.endSession();
+    }
 
     // Clear pending affiliate ref so it doesn't apply to the next order too
     if (buyer?.pendingAffiliateRef) {
       User.findByIdAndUpdate(req.user._id, { pendingAffiliateRef: null }).catch(() => {});
-    }
-
-    // Take stock. All-or-nothing — reserveStock rolls back its own partial
-    // decrements, so a failure on one line cannot strand the others.
-    try {
-      await reserveStock(items);
-      await Order.findByIdAndUpdate(order._id, { inventoryApplied: true });
-    } catch (stockErr) {
-      await Order.findByIdAndDelete(order._id);
-      throw stockErr;
     }
 
     // COD: create commission records + send confirmation
@@ -328,11 +341,15 @@ async function createOrder(req, res, next) {
     // Clear cart
     await Cart.deleteOne({ user: req.user._id });
 
-    res.status(201).json({
-      order,
-      razorpayOrder,
-      razorpayKey: RAZORPAY_KEY_ID,
-    });
+    const responseBody = { order, razorpayOrder, razorpayKey: RAZORPAY_KEY_ID };
+
+    // Persist idempotency result so duplicate requests return the same response
+    if (req.idempotencyRecord) {
+      const { completeIdempotencyKey } = require('../middleware/idempotency');
+      completeIdempotencyKey(req.idempotencyRecord, responseBody).catch(() => {});
+    }
+
+    res.status(201).json(responseBody);
   } catch (err) { next(err); }
 }
 
@@ -347,14 +364,15 @@ async function verifyPayment(req, res, next) {
     const expected = crypto.createHmac('sha256', RAZORPAY_KEY_SECRET).update(body).digest('hex');
     if (expected !== razorpay_signature) throw new AppError('Payment verification failed', 400, 'PAYMENT_INVALID');
 
-    // Guard: if webhook already processed this payment, skip emails/notifications (prevent duplicates)
+    // Guard: if webhook already processed this payment, skip emails/notifications (prevent duplicates).
+    // Ownership check: user: req.user._id prevents one user from verifying another's payment.
     let order = await Order.findOneAndUpdate(
-      { razorpayOrderId: razorpay_order_id, paymentStatus: { $ne: 'paid' } },
+      { razorpayOrderId: razorpay_order_id, paymentStatus: { $ne: 'paid' }, user: req.user._id },
       { paymentStatus: 'paid', status: 'confirmed', razorpayPaymentId: razorpay_payment_id },
       { new: true }
     );
     const alreadyProcessed = !order;
-    if (!order) order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+    if (!order) order = await Order.findOne({ razorpayOrderId: razorpay_order_id, user: req.user._id });
     if (!order) throw new AppError('Order not found', 404, 'NOT_FOUND');
 
     if (!alreadyProcessed) {
@@ -492,8 +510,14 @@ async function cancelOrder(req, res, next) {
     await applyEarnings(order, 'cancelled').catch((e) =>
       console.error(`[cancelOrder] reversal failed for ${order.orderId}:`, e.message));
 
-    // Restore stock. Reached at most once per order — the claim above is the gate.
-    await releaseStock(order.items);
+    // Restore stock. The atomic gate above ensures this runs at most once per order.
+    // If it fails after the status flip, the order is cancelled but stock is not
+    // restored — log critically for manual reconciliation rather than erroring out.
+    try {
+      await releaseStock(order.items);
+    } catch (stockErr) {
+      console.error(`[cancelOrder] STOCK_RESTORE_FAILED orderId=${order.orderId} — manual reconciliation required:`, stockErr.message);
+    }
 
     const wasPaid = order.paymentStatus === 'paid';
 

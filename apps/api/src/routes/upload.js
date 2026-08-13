@@ -14,11 +14,17 @@ const upload = multer({
   },
 });
 
+const ALLOWED_FOLDERS = new Set(['uploads', 'products', 'kyc', 'avatars', 'blog', 'banners', 'reviews', 'warranty']);
+
+function resolveFolder(raw) {
+  const f = (raw || 'uploads').replace(/[^a-z0-9_-]/gi, '').toLowerCase();
+  return ALLOWED_FOLDERS.has(f) ? f : 'uploads';
+}
+
 router.post('/', authenticate, upload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No file uploaded', 400));
-    const folder = req.body.folder || 'uploads';
-    const result = await uploadFile(req.file, folder);
+    const result = await uploadFile(req.file, resolveFolder(req.body.folder));
     res.json(result);
   } catch (err) {
     next(err);
@@ -28,7 +34,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res, next) => 
 router.post('/multiple', authenticate, upload.array('files', 10), async (req, res, next) => {
   try {
     if (!req.files?.length) return next(new AppError('No files uploaded', 400));
-    const folder = req.body.folder || 'uploads';
+    const folder = resolveFolder(req.body.folder);
     const urls = await Promise.all(req.files.map((f) => uploadFile(f, folder)));
     res.json({ urls });
   } catch (err) {

@@ -139,7 +139,7 @@ async function getOrders(req, res, next) {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
-        .populate('user', 'name email'),
+        .select('orderId totalAmount affiliateCommission status createdAt'),
       Order.countDocuments(filter),
     ]);
     res.json({ orders, pagination: { page: parseInt(page), limit: parseInt(limit), total } });

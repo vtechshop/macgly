@@ -4,7 +4,7 @@ const Product = require('../models/Product');
 const AppError = require('../utils/AppError');
 const { authenticate } = require('../middleware/auth');
 
-// Public: check warranty by serial number (stored in product.serial)
+// Public: check warranty by serial number — returns non-PII fields only
 router.get('/check/:serial', async (req, res, next) => {
   try {
     const serial = req.params.serial.trim();
@@ -12,20 +12,49 @@ router.get('/check/:serial', async (req, res, next) => {
       .populate('productId', 'title images');
     if (!warranty) throw new AppError('No warranty found for this serial number', 404, 'NOT_FOUND');
     warranty.updateStatus();
-    res.json({ warranty });
+    res.json({
+      warranty: {
+        warrantyId: warranty.warrantyId,
+        status: warranty.status,
+        product: warranty.product,
+        purchaseDate: warranty.purchaseDate,
+        warrantyStartDate: warranty.warrantyStartDate,
+        warrantyEndDate: warranty.warrantyEndDate,
+        warrantyType: warranty.warrantyType,
+        productId: warranty.productId,
+      },
+    });
   } catch (err) { next(err); }
 });
 
 // Protected: register warranty manually (customer self-registers with serial number)
 router.post('/register', authenticate, async (req, res, next) => {
   try {
-    const { productId, orderId, serialNumber, purchaseDate, warrantyPeriodMonths = 12 } = req.body;
+    const { productId, orderId, serialNumber, purchaseDate } = req.body;
     if (!productId || !purchaseDate) throw new AppError('productId and purchaseDate required', 400, 'MISSING_FIELDS');
 
     const product = await Product.findById(productId);
     if (!product) throw new AppError('Product not found', 404, 'NOT_FOUND');
 
-    const periodDays = warrantyPeriodMonths * 30;
+    // Warranty duration must come from the product config, not the client.
+    // Fallback: 12 months. Cap: 36 months (3 years) to prevent abuse.
+    const Order = require('../models/Order');
+    let derivedMonths = 12;
+    if (product.hasWarranty && product.warranty?.duration) {
+      const wd = product.warranty;
+      derivedMonths = wd.durationType === 'lifetime' ? 36 :
+        wd.durationType === 'years' ? Math.min((wd.duration || 1) * 12, 36) :
+        Math.min(wd.duration || 12, 36);
+    }
+    const periodDays = Math.min(derivedMonths, 36) * 30;
+
+    // If orderId supplied, verify the user owns the order and it contains the product
+    if (orderId) {
+      const order = await Order.findOne({ _id: orderId, user: req.user._id });
+      if (!order) throw new AppError('Order not found or does not belong to you', 404, 'NOT_FOUND');
+      const hasProduct = order.items.some((i) => i.product?.toString() === productId.toString());
+      if (!hasProduct) throw new AppError('This product was not in the specified order', 400, 'INVALID_REQUEST');
+    }
     const start = new Date(purchaseDate);
     const end = new Date(start.getTime() + periodDays * 24 * 60 * 60 * 1000);
     const warrantyId = `WR-${Date.now()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;

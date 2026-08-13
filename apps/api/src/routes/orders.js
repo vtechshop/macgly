@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { authenticate } = require('../middleware/auth');
 const { createOrder, getOrders, getOrder, cancelOrder } = require('../controllers/orderController');
+const { requireIdempotencyKey } = require('../middleware/idempotency');
 const Order = require('../models/Order');
 const AppError = require('../utils/AppError');
 
@@ -43,7 +44,7 @@ router.get('/track', async (req, res, next) => {
 
 router.use(authenticate);
 
-router.post('/', createOrder);
+router.post('/', requireIdempotencyKey, createOrder);
 router.get('/', getOrders);
 router.get('/:id', getOrder);
 router.post('/:id/cancel', cancelOrder);

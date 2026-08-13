@@ -73,7 +73,7 @@ router.put('/password', async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) throw new AppError('Both passwords required', 400, 'MISSING_FIELDS');
-    if (newPassword.length < 6) throw new AppError('Password must be at least 6 characters', 400, 'WEAK_PASSWORD');
+    if (newPassword.length < 8) throw new AppError('Password must be at least 8 characters', 400, 'WEAK_PASSWORD');
     const user = await User.findById(req.user._id).select('+password');
     if (!(await user.comparePassword(currentPassword))) throw new AppError('Current password is incorrect', 400, 'INVALID_PASSWORD');
     user.password = newPassword;
@@ -103,10 +103,13 @@ router.get('/addresses', async (req, res, next) => {
 router.post('/addresses', async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
-    if (req.body.isDefault) {
+    const ADDR_FIELDS = ['name', 'phone', 'line1', 'line2', 'city', 'state', 'pincode', 'country', 'label', 'isDefault'];
+    const addr = {};
+    ADDR_FIELDS.forEach((k) => { if (req.body[k] !== undefined) addr[k] = req.body[k]; });
+    if (addr.isDefault) {
       user.addresses.forEach((a) => { a.isDefault = false; });
     }
-    user.addresses.push(req.body);
+    user.addresses.push(addr);
     await user.save();
     res.json({ addresses: user.addresses });
   } catch (err) { next(err); }

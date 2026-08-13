@@ -47,6 +47,7 @@ async function placeOrder(cookies, product, shippingAddress = TN_ADDRESS, quanti
   expect(add.status).toBe(200);
 
   const res = await request(app).post('/api/orders').set('Cookie', cookies)
+    .set('X-Idempotency-Key', `test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
     .send({ shippingAddress, paymentMethod: 'razorpay' });
   expect(res.status).toBe(201);
   return Order.findById(res.body.order._id);

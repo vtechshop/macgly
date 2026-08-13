@@ -33,6 +33,7 @@ async function checkout(cookies, product, body = {}) {
   await request(app).post('/api/cart/items').set('Cookie', cookies)
     .send({ productId: product._id.toString(), quantity: 2 });
   return request(app).post('/api/orders').set('Cookie', cookies)
+    .set('X-Idempotency-Key', `test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
     .send({ shippingAddress: ADDR, paymentMethod: 'razorpay', ...body });
 }
 

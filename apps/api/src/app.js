@@ -79,8 +79,24 @@ app.use(cookieParser());
 // Sanitize MongoDB operators from req.body/params/query
 app.use(mongoSanitize());
 
-// Logging
-if (NODE_ENV !== 'test') app.use(morgan(isProd() ? 'combined' : 'dev'));
+// Logging — custom production format strips Authorization and Cookie headers
+if (NODE_ENV !== 'test') {
+  if (isProd()) {
+    morgan.token('safe-url', (req) => {
+      // Strip any token= or key= query params from logged URL
+      try {
+        const u = new URL(req.url, 'http://x');
+        ['token', 'key', 'secret', 'password', 'api_key', 'apikey'].forEach((p) => {
+          if (u.searchParams.has(p)) u.searchParams.set(p, '[REDACTED]');
+        });
+        return u.pathname + (u.search || '');
+      } catch { return req.url; }
+    });
+    app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :safe-url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
+  } else {
+    app.use(morgan('dev'));
+  }
+}
 
 // Rate limiting
 app.use('/api', apiLimiter);

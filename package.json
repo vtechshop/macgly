@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "overrides": {
+    "qs": ">=6.15.2"
   }
 }

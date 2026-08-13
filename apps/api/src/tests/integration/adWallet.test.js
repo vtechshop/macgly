@@ -7,8 +7,12 @@
  */
 const crypto = require('crypto');
 
+// jest.mock is hoisted — cannot reference out-of-scope variables in the factory.
+// Configure the implementation after require() instead.
+jest.mock('razorpay', () => jest.fn());
 const rzMock = { orders: { create: jest.fn(), fetch: jest.fn() } };
-jest.mock('razorpay', () => jest.fn().mockImplementation(() => rzMock));
+const Razorpay = require('razorpay');
+Razorpay.mockImplementation(() => rzMock);
 
 process.env.RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_key';
 process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'rzp_test_secret';

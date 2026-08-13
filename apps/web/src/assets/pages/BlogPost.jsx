@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Tag } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import api from '../../utils/api';
 import { useFetch } from '../../hooks';
 import { setMeta, SITE_URL, injectJsonLd, articleJsonLd, breadcrumbJsonLd } from '../../utils/seo';
@@ -83,7 +84,7 @@ export default function BlogPost() {
 
       <div
         className="prose prose-secondary max-w-none text-secondary-700 leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: post.content }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '', { USE_PROFILES: { html: true } }) }}
       />
     </div>
   );

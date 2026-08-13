@@ -10,8 +10,16 @@ async function connectDB() {
 }
 
 async function disconnectDB() {
-  await mongoose.connection.dropDatabase();
-  await mongoose.disconnect();
+  // Do not disconnect the shared Mongoose connection between suites.
+  // writeAuditLog() (audit.js) schedules AuditLog.create() via setImmediate.
+  // Those callbacks can fire after the suite ends; if Mongoose is disconnected
+  // at that point it re-enters "connecting" state (readyState=2), causing the
+  // next suite's connectDB() to skip the mongoose.connect() call (it only
+  // reconnects when readyState===0). The next suite then runs against a
+  // connection that never resolves, and its own disconnectDB() times out
+  // waiting for _waitForConnect. globalTeardown (teardown.js → mongod.stop())
+  // owns the actual connection cleanup; --forceExit handles any remaining handles.
+  await clearDB();
 }
 
 async function clearDB() {

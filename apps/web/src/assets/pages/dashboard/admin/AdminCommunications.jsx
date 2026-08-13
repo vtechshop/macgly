@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Mail, MessageCircle, Phone, Bell, Megaphone, Headphones,
   Search, Download, RefreshCw, Eye, Trash2, X,
@@ -102,7 +103,7 @@ function MessageModal({ message: msg, onClose }) {
             <div>
               <p className="text-xs text-secondary-400 mb-1">HTML Preview</p>
               <div className="border border-secondary-200 rounded-xl p-4 max-h-48 overflow-y-auto text-sm"
-                dangerouslySetInnerHTML={{ __html: msg.htmlContent }} />
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.htmlContent || '') }} />
             </div>
           )}
 
