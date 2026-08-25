@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { MapPin, Truck, CreditCard, Check, ChevronRight, Zap, Package, LocateFixed } from 'lucide-react';
@@ -119,6 +119,10 @@ export default function Checkout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((s) => s.auth);
+
+  // Stable per checkout session — prevents double-order on double-click.
+  // useRef so it doesn't change across re-renders.
+  const idempotencyKey = useRef(crypto.randomUUID().replace(/-/g, ''));
 
   const [step, setStep] = useState(1);
   const [cart, setCart] = useState(null);
@@ -361,7 +365,7 @@ export default function Checkout() {
         couponCode: coupon?.code,
         affiliateRef,
         shippingCharge,
-      });
+      }, { headers: { 'X-Idempotency-Key': idempotencyKey.current } });
       if (paymentMethod === 'razorpay' && data.razorpayOrder) {
         const options = {
           key: data.razorpayKey,
