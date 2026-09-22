@@ -32,7 +32,15 @@ import { seedCache, clearCacheKey } from './hooks/index.js';
 import Product from './assets/pages/Product.jsx';
 import Category from './assets/pages/Category.jsx';
 import VendorStore from './assets/pages/VendorStore.jsx';
+import GuidePage from './assets/pages/GuidePage.jsx';
+import Shipping from './assets/pages/info/Shipping.jsx';
+import Returns from './assets/pages/info/Returns.jsx';
 import PublicLayout from './assets/components/layout/PublicLayout.jsx';
+
+// Re-export JSON-LD helpers so prerender.mjs can generate head JSON-LD
+// from the same single source of truth.
+export { productJsonLd, breadcrumbJsonLd, faqJsonLd, guideJsonLd } from './utils/seo.js';
+export { GUIDES, getGuide } from './data/guides.js';
 
 function SSRApp({ url }) {
   return (
@@ -42,6 +50,9 @@ function SSRApp({ url }) {
           <Route path="/product/:slug" element={<Product />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/store/:id" element={<VendorStore />} />
+          <Route path="/guides/:slug" element={<GuidePage />} />
+          <Route path="/info/shipping" element={<Shipping />} />
+          <Route path="/info/returns" element={<Returns />} />
         </Route>
       </Routes>
     </StaticRouter>

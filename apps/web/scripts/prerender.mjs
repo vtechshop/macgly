@@ -132,6 +132,24 @@ function injectSSR(html, ssrBody, seeds) {
     );
 }
 
+/**
+ * Inject a page-specific JSON-LD block into <head>.
+ * `items` is an array of schema.org objects (each may have '@context').
+ * Multiple items are combined into a single @graph.
+ * </script> sequences are escaped to prevent early tag close.
+ */
+function injectHeadJsonLd(html, items) {
+  if (!items?.length) return html;
+  const payload = items.length === 1
+    ? items[0]
+    : { '@context': 'https://schema.org', '@graph': items.map(({ '@context': _, ...r }) => r) };
+  const json = JSON.stringify(payload, null, 2)
+    .replace(/<\//g, '<\\/')       // prevent </script> early close
+    .replace(/<!--/g, '<\\!--');   // prevent embedded comment openers
+  const script = `  <script type="application/ld+json">\n  ${json}\n  </script>`;
+  return html.replace('</head>', `${script}\n  </head>`);
+}
+
 async function emit(routePath, html) {
   const dir = path.join(DIST, routePath);
   await mkdir(dir, { recursive: true });
@@ -161,7 +179,11 @@ async function main() {
     console.error('[prerender] dist-ssr/entry-server.js not found — run: vite build --ssr src/entry-server.jsx --outDir dist-ssr');
     process.exit(1);
   }
-  const { renderRoute } = await import(ssrBundle);
+  const {
+    renderRoute,
+    productJsonLd, breadcrumbJsonLd, faqJsonLd, guideJsonLd,
+    GUIDES,
+  } = await import(ssrBundle);
 
   // ── 3. Fetch all data ────────────────────────────────────────────────────
   let products = [], categories = [], posts = [];
@@ -230,6 +252,21 @@ async function main() {
     });
     if (ssrBody) pageHtml = injectSSR(pageHtml, ssrBody, seeds);
 
+    // Inject Product + BreadcrumbList JSON-LD into <head> so AI crawlers
+    // see it without executing JavaScript.
+    const catId   = detail.categoryIds?.[0];
+    const catName = catId?.name || null;
+    const catSlug = catId?.slug || null;
+    pageHtml = injectHeadJsonLd(pageHtml, [
+      productJsonLd(detail),
+      breadcrumbJsonLd([
+        { name: 'Home', path: '/' },
+        { name: 'Products', path: '/products' },
+        ...(catName && catSlug ? [{ name: catName, path: `/category/${catSlug}` }] : []),
+        { name: detail.title },
+      ]),
+    ]);
+
     await emit(`product/${p.slug}`, pageHtml);
     count++;
   }
@@ -276,6 +313,19 @@ async function main() {
       image: typeof c.image === 'string' && c.image.startsWith('http') ? c.image : undefined,
     });
     if (ssrBody) pageHtml = injectSSR(pageHtml, ssrBody, seeds);
+
+    // Inject BreadcrumbList JSON-LD into <head>.
+    const parentC = c.parentId
+      ? categories.find((x) => String(x._id) === String(c.parentId?._id || c.parentId))
+      : null;
+    pageHtml = injectHeadJsonLd(pageHtml, [
+      breadcrumbJsonLd([
+        { name: 'Home', path: '/' },
+        { name: 'Products', path: '/products' },
+        ...(parentC ? [{ name: parentC.name, path: `/category/${parentC.slug}` }] : []),
+        { name: c.name },
+      ]),
+    ]);
 
     await emit(`category/${c.slug}`, pageHtml);
     count++;
@@ -352,10 +402,67 @@ async function main() {
     count++;
   }
 
+  // ── 8. Guide pages (static content — no API seeds needed) ───────────────────
+  for (const guide of GUIDES) {
+    let ssrBody = '';
+    try {
+      ssrBody = renderRoute(`/guides/${guide.slug}`, []);
+    } catch (err) {
+      console.warn(`[prerender] SSR error /guides/${guide.slug}: ${err.message}`);
+    }
+
+    let pageHtml = applyMeta(shell, {
+      title:       guide.title,
+      description: guide.description,
+      canonical:   `${SITE_URL}/guides/${guide.slug}`,
+      type:        'article',
+    });
+    if (ssrBody) pageHtml = injectSSR(pageHtml, ssrBody, []);
+
+    // Inject Article + FAQPage JSON-LD into <head>.
+    const ldItems = [guideJsonLd(guide)];
+    if (guide.faqs?.length) ldItems.push(faqJsonLd(guide.faqs));
+    pageHtml = injectHeadJsonLd(pageHtml, ldItems);
+
+    await emit(`guides/${guide.slug}`, pageHtml);
+    count++;
+  }
+
+  // ── 9. Static trust pages (Shipping, Returns) ────────────────────────────────
+  const TRUST_PAGES = [
+    {
+      route: 'info/shipping',
+      title: 'Shipping Policy | Macgly',
+      description: 'Macgly ships to all major cities and pin codes across India. Learn about delivery times, shipping partners, and how to track your order.',
+    },
+    {
+      route: 'info/returns',
+      title: 'Returns & Refund Policy | Macgly',
+      description: 'Hassle-free returns at Macgly. Learn about our return window, eligibility, and how to initiate a return or refund.',
+    },
+  ];
+  for (const tp of TRUST_PAGES) {
+    let ssrBody = '';
+    try {
+      ssrBody = renderRoute(`/${tp.route}`, []);
+    } catch (err) {
+      console.warn(`[prerender] SSR error /${tp.route}: ${err.message}`);
+    }
+    let pageHtml = applyMeta(shell, {
+      title:     tp.title,
+      description: tp.description,
+      canonical: `${SITE_URL}/${tp.route}`,
+    });
+    if (ssrBody) pageHtml = injectSSR(pageHtml, ssrBody, []);
+    await emit(tp.route, pageHtml);
+    count++;
+  }
+
   console.log(
     `[prerender] wrote ${count} route files `
     + `(${products.length} products · ${categories.length} categories · `
-    + `${posts.length} blog posts · ${vendors.size} vendor stores)`,
+    + `${posts.length} blog posts · ${vendors.size} vendor stores · `
+    + `${GUIDES.length} guides · ${TRUST_PAGES.length} trust pages)`,
   );
 }
 

@@ -83,6 +83,21 @@ export function articleJsonLd(post) {
   };
 }
 
+export function guideJsonLd(guide) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: guide.headline || guide.title,
+    description: guide.description,
+    datePublished: guide.datePublished,
+    dateModified: guide.dateModified || guide.datePublished,
+    author: { '@type': 'Organization', name: guide.author || 'Macgly Editorial Team' },
+    publisher: { '@id': `${SITE_URL}/#organization` },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/guides/${guide.slug}` },
+    ...(guide.heroImage ? { image: [guide.heroImage] } : {}),
+  };
+}
+
 /** @param {Array<{q: string, a: string}>} items */
 export function faqJsonLd(items) {
   return {

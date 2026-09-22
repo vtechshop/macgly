@@ -13,16 +13,19 @@ import Spinner from '../components/common/Spinner';
 import ReviewSection from '../components/product/ReviewSection';
 import toast from 'react-hot-toast';
 
+/**
+ * Uses <details>/<summary> so content is always in the DOM (no JS conditional).
+ * AI crawlers and screen readers can access specs/FAQs even when collapsed.
+ */
 function AccordionSection({ title, children }) {
-  const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-secondary-200">
-      <button className="flex items-center justify-between w-full py-4 text-left font-medium" onClick={() => setOpen(!open)}>
+    <details className="border-b border-secondary-200 group">
+      <summary className="flex items-center justify-between w-full py-4 text-left font-medium cursor-pointer [&::-webkit-details-marker]:hidden list-none">
         {title}
-        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-      </button>
-      {open && <div className="pb-4 text-sm text-secondary-600">{children}</div>}
-    </div>
+        <ChevronDown size={16} className="shrink-0 transition-transform duration-200 group-open:rotate-180" />
+      </summary>
+      <div className="pb-4 text-sm text-secondary-600">{children}</div>
+    </details>
   );
 }
 
@@ -592,6 +595,16 @@ export default function Product() {
               )}
             </div>
           </div>
+
+          {/* Use-case anchor — intent-answering text for AI search engines */}
+          {product.categoryIds?.[0]?.name && (
+            <div className="rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-secondary-700">
+              <span className="font-semibold text-secondary-800">Ideal for: </span>
+              Professional and home-use {product.categoryIds[0].name.toLowerCase()} applications.
+              {product.brand && ` Trusted brand: ${product.brand}.`}
+              {' '}Available with GST invoice and fast delivery across India.
+            </div>
+          )}
 
           <p className="text-sm text-secondary-600 leading-relaxed">{product.description}</p>
 

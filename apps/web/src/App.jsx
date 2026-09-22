@@ -37,6 +37,9 @@ const Terms                 = lazy(() => import('./assets/pages/info/Terms'));
 const Faq                   = lazy(() => import('./assets/pages/info/Faq'));
 const BuyerGuide            = lazy(() => import('./assets/pages/info/BuyerGuide'));
 const SellerGuide           = lazy(() => import('./assets/pages/info/SellerGuide'));
+const Shipping              = lazy(() => import('./assets/pages/info/Shipping'));
+const Returns               = lazy(() => import('./assets/pages/info/Returns'));
+const GuidePage             = lazy(() => import('./assets/pages/GuidePage'));
 
 // Admin pages — lazy loaded
 const AdminDashboard        = lazy(() => import('./assets/pages/dashboard/admin/AdminDashboard'));
@@ -206,6 +209,9 @@ export default function App() {
               <Route path="/info/faq" element={<Faq />} />
               <Route path="/info/buyer-guide" element={<BuyerGuide />} />
               <Route path="/info/seller-guide" element={<SellerGuide />} />
+              <Route path="/info/shipping" element={<Shipping />} />
+              <Route path="/info/returns" element={<Returns />} />
+              <Route path="/guides/:slug" element={<GuidePage />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/track-order" element={<TrackOrder />} />

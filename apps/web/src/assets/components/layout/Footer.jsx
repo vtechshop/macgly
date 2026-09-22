@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin } from 'lucide-react';
+import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Youtube, Linkedin } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -26,9 +26,41 @@ export default function Footer() {
               India's trusted marketplace for professional tools, industrial machines and genuine spare parts.
             </p>
             <div className="mt-4 space-y-2 text-sm">
-              <div className="flex items-center gap-2"><Phone size={13} /><span>+91 99445 56683</span></div>
-              <div className="flex items-center gap-2"><Mail size={13} /><span>macglyshop@gmail.com</span></div>
-              <div className="flex items-center gap-2 text-secondary-500"><MapPin size={13} /><span>9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore - 641006, Tamil Nadu, India</span></div>
+              <a href="tel:+919944556683" className="flex items-center gap-2 hover:text-white transition-colors">
+                <Phone size={13} /><span>+91 99445 56683</span>
+              </a>
+              <a href="mailto:macglyshop@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors">
+                <Mail size={13} /><span>macglyshop@gmail.com</span>
+              </a>
+              <div className="flex items-start gap-2 text-secondary-500">
+                <MapPin size={13} className="shrink-0 mt-0.5" />
+                <address className="not-italic text-xs leading-relaxed">
+                  9/83, E, 4th Street, T.Balan Nagar,<br />
+                  Ganapathipudur, Coimbatore – 641006,<br />
+                  Tamil Nadu, India
+                </address>
+              </div>
+            </div>
+            {/* Social links — replace PLACEHOLDER URLs with your real profiles */}
+            <div className="flex items-center gap-3 mt-4">
+              {[
+                { icon: Facebook,  href: 'PLACEHOLDER_FACEBOOK_URL',  label: 'Facebook'  },
+                { icon: Instagram, href: 'PLACEHOLDER_INSTAGRAM_URL', label: 'Instagram' },
+                { icon: Twitter,   href: 'PLACEHOLDER_TWITTER_URL',   label: 'Twitter'   },
+                { icon: Youtube,   href: 'PLACEHOLDER_YOUTUBE_URL',   label: 'YouTube'   },
+                { icon: Linkedin,  href: 'PLACEHOLDER_LINKEDIN_URL',  label: 'LinkedIn'  },
+              ].map(({ icon: Icon, href, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="w-8 h-8 rounded-full bg-secondary-800 flex items-center justify-center hover:bg-primary-600 transition-colors"
+                >
+                  <Icon size={14} />
+                </a>
+              ))}
             </div>
           </div>
 
@@ -63,6 +95,8 @@ export default function Footer() {
             <h4 className="text-sm font-bold text-white mb-3 uppercase tracking-wide">Help</h4>
             <ul className="space-y-2 text-sm">
               <li><Link to="/info/faq" className="hover:text-primary-400 transition-colors">FAQs</Link></li>
+              <li><Link to="/info/shipping" className="hover:text-primary-400 transition-colors">Shipping Policy</Link></li>
+              <li><Link to="/info/returns" className="hover:text-primary-400 transition-colors">Returns & Refunds</Link></li>
               <li><Link to="/info/buyer-guide" className="hover:text-primary-400 transition-colors">Buyer's Guide</Link></li>
               <li><Link to="/info/seller-guide" className="hover:text-primary-400 transition-colors">Seller's Guide</Link></li>
               <li><Link to="/track-order" className="hover:text-primary-400 transition-colors">Track Order</Link></li>

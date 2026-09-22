@@ -5,8 +5,10 @@ import api from '../../utils/api';
 import { useFetch } from '../../hooks';
 import Spinner from '../components/common/Spinner';
 import ProductCard from '../components/product/ProductCard';
-import { setMeta, injectJsonLd, breadcrumbJsonLd } from '../../utils/seo';
+import FaqSection from '../components/common/FaqSection';
+import { setMeta, injectJsonLd, breadcrumbJsonLd, faqJsonLd } from '../../utils/seo';
 import { normalizeImageUrl } from '../../utils/format';
+import { CATEGORY_FAQS } from '../../data/categoryFaqs';
 
 function StarRow({ filled, empty }) {
   return (
@@ -129,6 +131,8 @@ export default function Category() {
     ? allCats.find((c) => String(c._id) === String(category.parentId?._id || category.parentId))
     : null;
 
+  const categoryFaqs = CATEGORY_FAQS[slug] || [];
+
   useEffect(() => {
     if (category) {
       const img = category.image && category.image.startsWith('http') ? category.image : null;
@@ -139,12 +143,16 @@ export default function Category() {
         image:       img,
       });
       // Mirrors the <nav> breadcrumb rendered below.
-      injectJsonLd(breadcrumbJsonLd([
+      // Combined JSON-LD: BreadcrumbList + FAQPage (if this category has FAQs).
+      const ldItems = [breadcrumbJsonLd([
         { name: 'Home', path: '/' },
         { name: 'Products', path: '/products' },
         ...(parentCat ? [{ name: parentCat.name, path: `/category/${parentCat.slug}` }] : []),
         { name: category.name },
-      ]));
+      ])];
+      const faqs = CATEGORY_FAQS[slug] || [];
+      if (faqs.length) ldItems.push(faqJsonLd(faqs));
+      injectJsonLd(ldItems);
     }
   }, [category, slug, parentCat]);
 
@@ -298,6 +306,13 @@ export default function Category() {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* FAQ section — renders as visible HTML for AI crawlers */}
+      {categoryFaqs.length > 0 && (
+        <div className="mt-8">
+          <FaqSection faqs={categoryFaqs} />
         </div>
       )}
     </div>

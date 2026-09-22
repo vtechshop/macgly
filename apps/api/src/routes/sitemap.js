@@ -5,6 +5,13 @@ const Blog = require('../models/Blog');
 
 const BASE_URL = process.env.FRONTEND_URL || 'https://www.macgly.com';
 
+// Guide slugs must stay in sync with apps/web/src/data/guides.js
+const GUIDE_SLUGS = [
+  'how-to-choose-a-drilling-machine',
+  'drill-machine-price-guide-india',
+  'corded-vs-cordless-drills-india',
+];
+
 const STATIC_ROUTES = [
   { path: '/',                  priority: '1.0', changefreq: 'daily' },
   { path: '/products',          priority: '0.9', changefreq: 'daily' },
@@ -17,10 +24,16 @@ const STATIC_ROUTES = [
   { path: '/info/about',        priority: '0.6', changefreq: 'monthly' },
   { path: '/info/contact',      priority: '0.6', changefreq: 'monthly' },
   { path: '/info/faq',          priority: '0.6', changefreq: 'monthly' },
+  { path: '/info/shipping',     priority: '0.7', changefreq: 'monthly' },
+  { path: '/info/returns',      priority: '0.7', changefreq: 'monthly' },
   { path: '/info/buyer-guide',  priority: '0.6', changefreq: 'monthly' },
   { path: '/info/seller-guide', priority: '0.6', changefreq: 'monthly' },
   { path: '/info/privacy',      priority: '0.3', changefreq: 'yearly' },
   { path: '/info/terms',        priority: '0.3', changefreq: 'yearly' },
+  // Buying guides — high value for AI search citations
+  ...GUIDE_SLUGS.map((slug) => ({
+    path: `/guides/${slug}`, priority: '0.8', changefreq: 'monthly',
+  })),
 ];
 
 function urlTag({ loc, lastmod, changefreq, priority }) {
