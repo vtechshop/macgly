@@ -12,3 +12,14 @@ export const store = configureStore({
 });
 
 export default store;
+
+/** Create a fresh store per SSR render to avoid cross-request state leaks. */
+export function makeStore() {
+  return configureStore({
+    reducer: {
+      auth: authReducer,
+      cart: cartReducer,
+      wishlist: wishlistReducer,
+    },
+  });
+}

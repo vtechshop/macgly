@@ -65,6 +65,33 @@ export function invalidateCache(keyPrefix) {
   }
 }
 
+// ── SSR helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Pre-populate the cache at build time so renderToString returns real data.
+ * Called by entry-server.jsx before each renderRoute invocation.
+ */
+export function seedCache(key, data) {
+  cache.set(JSON.stringify(key), { data, ts: Date.now() });
+}
+
+export function clearCacheKey(key) {
+  cache.delete(JSON.stringify(key));
+}
+
+/**
+ * Re-hydrate the in-memory cache on the client from data embedded in the
+ * page by SSR (the __SSR_DATA__ script tag).  Call this before mounting
+ * React so useFetch returns synchronously and hydrateRoot sees matching
+ * content instead of a loading spinner.
+ */
+export function hydrateCache(seeds) {
+  for (const { key, data } of (seeds || [])) {
+    const ks = JSON.stringify(key);
+    if (!cache.has(ks)) cache.set(ks, { data, ts: Date.now() });
+  }
+}
+
 /**
  * Simple mutation hook.
  */
