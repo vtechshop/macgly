@@ -126,7 +126,7 @@ export default function Product() {
     const img = product.images?.[0];
     const absImage = img && img.startsWith('http') ? img : null;
     setMeta({
-      title:       product.seo?.title || `${product.title} — Macgly`,
+      title:       product.seo?.title || `${product.title} - Buy Online at Best Price | Macgly`,
       description: product.seo?.description || product.description?.slice(0, 160),
       canonical:   `https://www.macgly.com/product/${product.slug}`,
       image:       absImage,

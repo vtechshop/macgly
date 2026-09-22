@@ -133,7 +133,7 @@ export default function Category() {
     if (category) {
       const img = category.image && category.image.startsWith('http') ? category.image : null;
       setMeta({
-        title:       `${category.name} – Buy Online | Macgly`,
+        title:       `${category.name} - Tools & Equipment Online India | Macgly`,
         description: category.description || `Shop ${category.name} from trusted vendors on Macgly. Genuine products, fast delivery across India.`,
         canonical:   `https://www.macgly.com/category/${slug}`,
         image:       img,

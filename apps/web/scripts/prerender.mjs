@@ -177,7 +177,7 @@ async function main() {
     const fallback = [`Buy ${p.title} online at Macgly.`, p.brand && `Brand: ${p.brand}.`,
       'Genuine product with GST invoice and pan-India delivery.'].filter(Boolean).join(' ');
     await emit(`product/${p.slug}`, applyMeta(shell, {
-      title: p.seo?.title || `${p.title} — Macgly`,
+      title: p.seo?.title || `${p.title} - Buy Online at Best Price | Macgly`,
       description: p.seo?.description || clamp(details.get(p.slug), 160) || clamp(fallback, 160),
       canonical: `${SITE_URL}/product/${p.slug}`,
       image: img,
@@ -189,7 +189,7 @@ async function main() {
   for (const c of categories) {
     if (!c.slug) continue;
     await emit(`category/${c.slug}`, applyMeta(shell, {
-      title: `${c.name} – Buy Online | Macgly`,
+      title: `${c.name} - Tools & Equipment Online India | Macgly`,
       description: clamp(c.description, 160)
         || `Shop ${c.name} from trusted vendors on Macgly. Genuine products, fast delivery across India.`,
       canonical: `${SITE_URL}/category/${c.slug}`,
