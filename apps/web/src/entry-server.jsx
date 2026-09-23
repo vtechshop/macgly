@@ -29,6 +29,7 @@ import { seedCache, clearCacheKey } from './hooks/index.js';
 
 // Direct (non-lazy) imports — lazy() + Suspense produce the fallback
 // spinner in renderToString because dynamic imports don't resolve synchronously.
+import Home from './assets/pages/Home.jsx';
 import Product from './assets/pages/Product.jsx';
 import Category from './assets/pages/Category.jsx';
 import VendorStore from './assets/pages/VendorStore.jsx';
@@ -47,6 +48,7 @@ function SSRApp({ url }) {
     <StaticRouter location={url}>
       <Routes>
         <Route element={<PublicLayout />}>
+          <Route path="/" element={<Home />} />
           <Route path="/product/:slug" element={<Product />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/store/:id" element={<VendorStore />} />

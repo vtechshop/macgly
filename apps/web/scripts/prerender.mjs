@@ -186,16 +186,18 @@ async function main() {
   } = await import(ssrBundle);
 
   // ── 3. Fetch all data ────────────────────────────────────────────────────
-  let products = [], categories = [], posts = [];
+  let products = [], categories = [], posts = [], banners = [];
   try {
-    const [pRes, cRes, bRes] = await Promise.all([
+    const [pRes, cRes, bRes, banRes] = await Promise.all([
       getJson('/api/catalog/products?limit=1000'),
       getJson('/api/catalog/categories'),
       getJson('/api/blog?limit=500'),
+      getJson('/api/catalog/banners').catch(() => ({ banners: [] })),
     ]);
-    products   = pRes.products  || [];
+    products   = pRes.products   || [];
     categories = cRes.categories || cRes.data || [];
-    posts      = bRes.posts     || [];
+    posts      = bRes.posts      || [];
+    banners    = banRes.banners  || [];
   } catch (err) {
     console.warn(`[prerender] SKIPPED — ${API} unreachable (${err.message}).`);
     console.warn('[prerender] Build continues; routes fall back to the SPA shell.');
@@ -458,11 +460,46 @@ async function main() {
     count++;
   }
 
+  // ── 10. Homepage ─────────────────────────────────────────────────────────────
+  // Prerender last so it can reference the already-fetched categories + banners.
+  // Writes directly over dist/index.html (the SPA shell) so the root URL
+  // serves real HTML with nav links and category tiles for crawlers.
+  const homeSeeds = [
+    { key: ['categories'], data: { categories } },
+    { key: ['banners'],    data: { banners } },
+  ];
+  let homeSsrBody = '';
+  try {
+    homeSsrBody = renderRoute('/', homeSeeds);
+  } catch (err) {
+    console.warn(`[prerender] SSR error /: ${err.message}`);
+  }
+  let homeHtml = applyMeta(shell, {
+    title:       'Macgly — Professional Tools & Machinery in India',
+    description: 'Buy genuine tools, machines, spare parts and equipment. Pan India delivery.',
+    canonical:   `${SITE_URL}/`,
+  });
+  if (homeSsrBody) homeHtml = injectSSR(homeHtml, homeSsrBody, homeSeeds);
+  homeHtml = injectHeadJsonLd(homeHtml, [{
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    url: `${SITE_URL}/`,
+    name: 'Macgly',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/products?q={search_term_string}` },
+      'query-input': 'required name=search_term_string',
+    },
+  }]);
+  await writeFile(shellPath, homeHtml, 'utf8');
+  console.log('[prerender] homepage prerendered → dist/index.html');
+  count++;
+
   console.log(
     `[prerender] wrote ${count} route files `
     + `(${products.length} products · ${categories.length} categories · `
     + `${posts.length} blog posts · ${vendors.size} vendor stores · `
-    + `${GUIDES.length} guides · ${TRUST_PAGES.length} trust pages)`,
+    + `${GUIDES.length} guides · ${TRUST_PAGES.length} trust pages · homepage)`,
   );
 }
 
