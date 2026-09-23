@@ -472,7 +472,7 @@ async function main() {
   try {
     homeSsrBody = renderRoute('/', homeSeeds);
   } catch (err) {
-    console.warn(`[prerender] SSR error /: ${err.message}`);
+    console.warn(`[prerender] SSR error /: ${err.message}\n${err.stack}`);
   }
   let homeHtml = applyMeta(shell, {
     title:       'Macgly — Professional Tools & Machinery in India',
