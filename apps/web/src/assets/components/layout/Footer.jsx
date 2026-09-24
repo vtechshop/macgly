@@ -41,25 +41,15 @@ export default function Footer() {
                 </address>
               </div>
             </div>
-            {/* Social links — replace PLACEHOLDER URLs with your real profiles */}
+            {/* Social icons — add real profile URLs here when ready */}
             <div className="flex items-center gap-3 mt-4">
-              {[
-                { icon: Facebook,  href: 'PLACEHOLDER_FACEBOOK_URL',  label: 'Facebook'  },
-                { icon: Instagram, href: 'PLACEHOLDER_INSTAGRAM_URL', label: 'Instagram' },
-                { icon: Twitter,   href: 'PLACEHOLDER_TWITTER_URL',   label: 'Twitter'   },
-                { icon: Youtube,   href: 'PLACEHOLDER_YOUTUBE_URL',   label: 'YouTube'   },
-                { icon: Linkedin,  href: 'PLACEHOLDER_LINKEDIN_URL',  label: 'LinkedIn'  },
-              ].map(({ icon: Icon, href, label }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  className="w-8 h-8 rounded-full bg-secondary-800 flex items-center justify-center hover:bg-primary-600 transition-colors"
+              {[Facebook, Instagram, Twitter, Youtube, Linkedin].map((Icon, i) => (
+                <span
+                  key={i}
+                  className="w-8 h-8 rounded-full bg-secondary-800 flex items-center justify-center"
                 >
                   <Icon size={14} />
-                </a>
+                </span>
               ))}
             </div>
           </div>
