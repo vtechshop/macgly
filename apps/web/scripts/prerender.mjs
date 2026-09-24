@@ -43,6 +43,13 @@ const TIMEOUT_MS = Number(process.env.PRERENDER_TIMEOUT_MS || 20_000);
 
 // ── tiny helpers ─────────────────────────────────────────────────────────────
 
+/** Fit a page title within the ~60-char guideline. */
+function pageTitle(name, suffix) {
+  if ((name + suffix).length <= 60) return name + suffix;
+  const max = 60 - suffix.length - 1;
+  return `${name.slice(0, max).trimEnd()}…${suffix}`;
+}
+
 const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -226,10 +233,12 @@ async function main() {
     const detail  = productDetails.get(p.slug) || p;
     const img     = detail.images?.find((i) => typeof i === 'string' && i.startsWith('http'));
     const title   = detail.seo?.title
-      || `${detail.title} - Buy Online at Best Price | Macgly`;
-    const fallback = [`Buy ${detail.title} online at Macgly.`,
+      || pageTitle(detail.title, ' | Macgly');
+    const fallback = [
+      `Buy ${detail.title} online at Macgly — India's trusted marketplace for professional tools and machinery.`,
       detail.brand && `Brand: ${detail.brand}.`,
-      'Genuine product with GST invoice and pan-India delivery.'].filter(Boolean).join(' ');
+      'Genuine product with GST invoice and fast pan-India delivery.',
+    ].filter(Boolean).join(' ');
     const description = detail.seo?.description
       || clamp(detail.description, 160)
       || clamp(fallback, 160);
@@ -286,9 +295,9 @@ async function main() {
       })
       .slice(0, 24);
 
-    const title       = `${c.name} - Tools & Equipment Online India | Macgly`;
+    const title       = pageTitle(c.name, ' | Macgly');
     const description = clamp(c.description, 160)
-      || `Shop ${c.name} from trusted vendors on Macgly. Genuine products, fast delivery across India.`;
+      || `Shop ${c.name} at Macgly — India's online marketplace for professional tools, machinery and equipment. Genuine products from trusted vendors with fast pan-India delivery.`;
 
     // Seed shapes must match what each useFetch call expects:
     //   ['category', slug]   → api.get('/catalog/categories/:slug').then(r => r.data) = { category }
