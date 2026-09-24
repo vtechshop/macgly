@@ -48,7 +48,7 @@ function SSRApp({ url }) {
     <StaticRouter location={url}>
       <Routes>
         <Route element={<PublicLayout />}>
-          <Route path="/" element={<Home />} />
+          <Route index element={<Home />} />
           <Route path="/product/:slug" element={<Product />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/store/:id" element={<VendorStore />} />

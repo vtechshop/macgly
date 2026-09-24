@@ -32,7 +32,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST       = path.resolve(__dirname, '../dist');
@@ -190,9 +190,16 @@ async function main() {
     renderRoute,
     productJsonLd, breadcrumbJsonLd, faqJsonLd, guideJsonLd,
     GUIDES,
-  } = await import(ssrBundle);
+  } = await import(pathToFileURL(ssrBundle).href);
 
   // ── 3. Fetch all data ────────────────────────────────────────────────────
+  // Render free tier sleeps; a cold start can outlast TIMEOUT_MS.
+  const warmDeadline = Date.now() + 120_000;
+  while (Date.now() < warmDeadline) {
+    try { await getJson('/api/health'); break; }
+    catch { console.log('[prerender] waiting for API to wake…'); await new Promise((r) => setTimeout(r, 5000)); }
+  }
+
   let products = [], categories = [], posts = [], banners = [];
   try {
     const [pRes, cRes, bRes, banRes] = await Promise.all([
