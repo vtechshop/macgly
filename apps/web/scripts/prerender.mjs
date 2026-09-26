@@ -55,8 +55,17 @@ const esc = (s) => String(s ?? '')
 
 const clamp = (s, n) => {
   const t = String(s ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  return t.length <= n ? t : `${t.slice(0, n - 1).trimEnd()}…`;
+  if (t.length <= n) return t;
+  const cut = t.slice(0, n - 1);
+  const atWord = cut.lastIndexOf(' ') > n * 0.6 ? cut.slice(0, cut.lastIndexOf(' ')) : cut;
+  return `${atWord.replace(/[\s,.;:—-]+$/, '')}…`;
 };
+
+/** Meta description within the 110–155 char band Ahrefs/Google expect. */
+function metaDescription(primary, fallback) {
+  const p = clamp(primary, 155);
+  return p.length >= 110 ? p : clamp(fallback, 155);
+}
 
 async function getJson(pathname) {
   const ctrl  = new AbortController();
@@ -167,12 +176,16 @@ async function emit(routePath, html) {
 
 async function main() {
   // ── 1. Verify client build output ────────────────────────────────────────
-  const shellPath = path.join(DIST, 'index.html');
-  if (!existsSync(shellPath)) {
+  // Read from the untouched _shell.html copy: index.html is overwritten with
+  // the prerendered homepage, so reading it again would lose the sentinels.
+  const shellPath   = path.join(DIST, 'index.html');
+  const pristine    = path.join(DIST, '_shell.html');
+  const templatePath = existsSync(pristine) ? pristine : shellPath;
+  if (!existsSync(templatePath)) {
     console.error('[prerender] dist/index.html not found — run vite build first.');
     process.exit(1);
   }
-  const shell = await readFile(shellPath, 'utf8');
+  const shell = await readFile(templatePath, 'utf8');
 
   if (!shell.includes('<!--SSR_BODY_START-->')) {
     console.error('[prerender] SSR sentinels missing from dist/index.html. '
@@ -242,13 +255,11 @@ async function main() {
     const title   = detail.seo?.title
       || pageTitle(detail.title, ' | Macgly');
     const fallback = [
-      `Buy ${detail.title} online at Macgly — India's trusted marketplace for professional tools and machinery.`,
+      `Buy ${detail.title} online at Macgly.`,
       detail.brand && `Brand: ${detail.brand}.`,
-      'Genuine product with GST invoice and fast pan-India delivery.',
+      'Genuine product with GST invoice, best price and fast delivery across India.',
     ].filter(Boolean).join(' ');
-    const description = detail.seo?.description
-      || clamp(detail.description, 160)
-      || clamp(fallback, 160);
+    const description = metaDescription(detail.seo?.description || detail.description, fallback);
 
     // The seed shape must match what useFetch stores when the component
     // calls: api.get(`/catalog/products/${slug}`).then(r => r.data)
@@ -303,8 +314,8 @@ async function main() {
       .slice(0, 24);
 
     const title       = pageTitle(c.name, ' | Macgly');
-    const description = clamp(c.description, 160)
-      || `Shop ${c.name} at Macgly — India's online marketplace for professional tools, machinery and equipment. Genuine products from trusted vendors with fast pan-India delivery.`;
+    const description = metaDescription(c.description,
+      `Shop ${c.name} online at Macgly — genuine products from trusted vendors, GST invoice, best prices and fast delivery across India.`);
 
     // Seed shapes must match what each useFetch call expects:
     //   ['category', slug]   → api.get('/catalog/categories/:slug').then(r => r.data) = { category }
@@ -358,7 +369,7 @@ async function main() {
     const img = b.coverImage || b.featuredImage;
     await emit(`blog/${b.slug}`, applyMeta(shell, {
       title:       `${b.title} | Macgly Blog`,
-      description: clamp(b.excerpt || b.content, 160),
+      description: clamp(b.excerpt || b.content, 155),
       canonical:   `${SITE_URL}/blog/${b.slug}`,
       image:       typeof img === 'string' && img.startsWith('http') ? img : undefined,
       type:        'article',
@@ -387,8 +398,6 @@ async function main() {
     const vendorName = vendorPublic
       ? (vendorPublic.storeName || vendorPublic.name || fallbackName)
       : fallbackName;
-    const vendorDesc = vendorPublic?.storeDescription
-      || `Browse tools, machinery and spare parts sold by ${vendorName} on Macgly.`;
 
     const storeProducts = products
       .filter((p) => String(p.vendorId?._id || p.vendorId) === id)
@@ -411,7 +420,8 @@ async function main() {
 
     let pageHtml = applyMeta(shell, {
       title:       `${vendorName} — Tools & Machinery Store | Macgly`,
-      description: clamp(vendorDesc, 160),
+      description: metaDescription(vendorPublic?.storeDescription,
+        `Browse tools, machinery and spare parts sold by ${vendorName} on Macgly — genuine products with GST invoice and fast delivery across India.`),
       canonical:   `${SITE_URL}/store/${id}`,
     });
     if (ssrBody) pageHtml = injectSSR(pageHtml, ssrBody, seeds);
@@ -431,7 +441,7 @@ async function main() {
 
     let pageHtml = applyMeta(shell, {
       title:       guide.title,
-      description: guide.description,
+      description: clamp(guide.description, 155),
       canonical:   `${SITE_URL}/guides/${guide.slug}`,
       type:        'article',
     });
@@ -492,7 +502,7 @@ async function main() {
   }
   let homeHtml = applyMeta(shell, {
     title:       'Macgly — Professional Tools & Machinery in India',
-    description: 'Buy genuine tools, machines, spare parts and equipment. Pan India delivery.',
+    description: 'Buy genuine power tools, industrial machinery, agricultural equipment and spare parts online at Macgly. GST invoice and fast delivery across India.',
     canonical:   `${SITE_URL}/`,
   });
   if (homeSsrBody) homeHtml = injectSSR(homeHtml, homeSsrBody, homeSeeds);

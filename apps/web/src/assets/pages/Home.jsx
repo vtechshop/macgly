@@ -87,7 +87,7 @@ export default function Home() {
   useEffect(() => {
     setMeta({
       title: 'Macgly — Professional Tools & Machinery in India',
-      description: 'Buy genuine tools, machines, spare parts and equipment. Pan India delivery.',
+      description: 'Buy genuine power tools, industrial machinery, agricultural equipment and spare parts online at Macgly. GST invoice and fast delivery across India.',
       canonical: 'https://www.macgly.com/',
     });
   }, []);
