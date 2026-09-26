@@ -9,7 +9,7 @@
       "destination": "https://macgly.onrender.com/sitemap.xml"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.[a-zA-Z0-9]{2,5}$).*)",
       "destination": "/_shell.html"
     }
   ]

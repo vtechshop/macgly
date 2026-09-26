@@ -511,6 +511,45 @@ async function main() {
     count++;
   }
 
+  // ── 9b. Remaining sitemap pages (head tags only) ──────────────────────────────
+  // Without a file of their own these fall through to _shell.html, whose
+  // canonical is the homepage — so 14 sitemap URLs each declared themselves a
+  // duplicate of "/". Mirrors each page's client-side setMeta().
+  const HEAD_ONLY_PAGES = [
+    ['products',          'All Products — Tools & Machinery | Macgly',
+      'Browse genuine power tools, machinery, spare parts and safety equipment on Macgly. GST invoice and fast delivery across India.'],
+    ['categories',        'All Categories — Tools & Machinery | Macgly',
+      'Browse all product categories at Macgly: agricultural tools, engineering kits, spare parts, electronics, general machinery and more. Pan India delivery.'],
+    ['blog',              'Blog — Tools, Tips & Industry News | Macgly',
+      'Expert guides, tool reviews and industry news from Macgly. Learn about power tools, machines, spare parts and more.'],
+    ['track-order',       'Track Your Order | Macgly',
+      'Track your Macgly order in real time. Enter your order ID and registered phone number to see the latest delivery status.'],
+    ['warranty-check',    'Warranty Check — Verify Your Product Warranty | Macgly',
+      'Enter the serial number of your tool or machine to check its warranty status, coverage period and expiry date on Macgly.'],
+    ['sell',              'Sell on Macgly — Become a Vendor',
+      'Sell tools, machinery and spare parts to verified buyers across India. Free vendor registration, live sales dashboard and secure Razorpay settlements.'],
+    ['affiliate',         'Affiliate Program — Earn Commission | Macgly',
+      'Join the Macgly affiliate program. Share your referral link, earn commission on every order, and track clicks and earnings in a live dashboard.'],
+    ['info/about',        "About Macgly — India's Tools & Machinery Marketplace",
+      "Macgly is built in Coimbatore — India's manufacturing capital — to connect engineers, workshops and factories with genuine tools, machinery and spare parts."],
+    ['info/contact',      'Contact Us | Macgly',
+      "Get in touch with Macgly for support, vendor inquiries, or partnership opportunities. We're here to help."],
+    ['info/faq',          'Frequently Asked Questions | Macgly',
+      'Answers to common questions about ordering, payments, GST invoices, shipping, returns, warranties, and selling on Macgly.'],
+    ['info/buyer-guide',  "Buyer's Guide — How to Shop on Macgly",
+      'A step-by-step guide to buying tools and machinery on Macgly — from finding the right product to tracking your delivery and making warranty claims.'],
+    ['info/seller-guide', "Seller's Guide — Sell Tools & Machinery on Macgly",
+      "How to register as a vendor, list products, fulfil orders, and grow your business on Macgly — India's marketplace for tools and machinery."],
+    ['info/privacy',      'Privacy Policy | Macgly',
+      'How Macgly collects, uses, shares and protects your personal data, your rights over that data, and how to exercise them.'],
+    ['info/terms',        'Terms of Service | Macgly',
+      'The terms governing use of the Macgly marketplace — accounts, orders, payments, shipping, returns, vendor obligations and liability.'],
+  ];
+  for (const [route, title, description] of HEAD_ONLY_PAGES) {
+    await emit(route, applyMeta(shell, { title, description: clamp(description, 155), canonical: `${SITE_URL}/${route}` }));
+    count++;
+  }
+
   // ── 10. Homepage ─────────────────────────────────────────────────────────────
   // Prerender last so it can reference the already-fetched categories + banners.
   // Writes directly over dist/index.html (the SPA shell) so the root URL
@@ -545,6 +584,43 @@ async function main() {
   await writeFile(shellPath, homeHtml, 'utf8');
   console.log('[prerender] homepage prerendered → dist/index.html');
   count++;
+
+  // ── 11. llms.txt — plain-Markdown site summary for AI assistants ─────────────
+  const topCats = categories.filter((c) => !c.parentId && c.slug);
+  const llms = [
+    '# Macgly',
+    '',
+    '> Macgly is an Indian online marketplace for professional tools, industrial machinery, agricultural equipment, spare parts and engineering supplies, based in Coimbatore, Tamil Nadu. Every order comes with a GST invoice and ships across India.',
+    '',
+    '## Shop by category',
+    '',
+    ...topCats.map((c) => `- [${c.name}](${SITE_URL}/category/${c.slug})${c.description ? `: ${clamp(c.description, 140)}` : ''}`),
+    `- [All categories](${SITE_URL}/categories)`,
+    `- [All products](${SITE_URL}/products)`,
+    '',
+    '## Buying guides',
+    '',
+    ...GUIDES.map((g) => `- [${g.title}](${SITE_URL}/guides/${g.slug}): ${clamp(g.description, 140)}`),
+    '',
+    '## Policies and help',
+    '',
+    `- [Shipping policy](${SITE_URL}/info/shipping)`,
+    `- [Returns and refunds](${SITE_URL}/info/returns)`,
+    `- [FAQ](${SITE_URL}/info/faq)`,
+    `- [Buyer's guide](${SITE_URL}/info/buyer-guide)`,
+    `- [Track an order](${SITE_URL}/track-order)`,
+    `- [Contact](${SITE_URL}/info/contact)`,
+    '',
+    '## Optional',
+    '',
+    `- [About Macgly](${SITE_URL}/info/about)`,
+    `- [Sell on Macgly](${SITE_URL}/sell)`,
+    `- [Terms of service](${SITE_URL}/info/terms)`,
+    `- [Privacy policy](${SITE_URL}/info/privacy)`,
+    `- [Sitemap](${SITE_URL}/sitemap.xml)`,
+    '',
+  ].join('\n');
+  await writeFile(path.join(DIST, 'llms.txt'), llms, 'utf8');
 
   console.log(
     `[prerender] wrote ${count} route files `

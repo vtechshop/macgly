@@ -56,7 +56,7 @@ export default function Footer() {
 
           {/* Categories */}
           <div>
-            <h4 className="text-sm font-bold text-white mb-3 uppercase tracking-wide">Categories</h4>
+            <h2 className="text-sm font-bold text-white mb-3 uppercase tracking-wide">Categories</h2>
             <ul className="space-y-2 text-sm">
               <li><Link to="/category/agricultural-industry-farm-tools" className="hover:text-primary-400 transition-colors">Agri & Farm Tools</Link></li>
               <li><Link to="/category/engineering-workshop-kits" className="hover:text-primary-400 transition-colors">Engineering & Workshop</Link></li>
@@ -65,11 +65,17 @@ export default function Footer() {
               <li><Link to="/category/electronics-instruments" className="hover:text-primary-400 transition-colors">Electronics</Link></li>
               <li><Link to="/categories" className="hover:text-primary-400 transition-colors">All Categories</Link></li>
             </ul>
+            <h2 className="text-sm font-bold text-white mt-6 mb-3 uppercase tracking-wide">Buying Guides</h2>
+            <ul className="space-y-2 text-sm">
+              <li><Link to="/guides/how-to-choose-a-drilling-machine" className="hover:text-primary-400 transition-colors">How to Choose a Drill</Link></li>
+              <li><Link to="/guides/drill-machine-price-guide-india" className="hover:text-primary-400 transition-colors">Drill Price Guide</Link></li>
+              <li><Link to="/guides/corded-vs-cordless-drills-india" className="hover:text-primary-400 transition-colors">Corded vs Cordless Drills</Link></li>
+            </ul>
           </div>
 
           {/* Account */}
           <div>
-            <h4 className="text-sm font-bold text-white mb-3 uppercase tracking-wide">My Account</h4>
+            <h2 className="text-sm font-bold text-white mb-3 uppercase tracking-wide">My Account</h2>
             <ul className="space-y-2 text-sm">
               <li><Link to="/login" className="hover:text-primary-400 transition-colors">Sign In</Link></li>
               <li><Link to="/register" className="hover:text-primary-400 transition-colors">Register</Link></li>
@@ -82,7 +88,7 @@ export default function Footer() {
 
           {/* Help */}
           <div>
-            <h4 className="text-sm font-bold text-white mb-3 uppercase tracking-wide">Help</h4>
+            <h2 className="text-sm font-bold text-white mb-3 uppercase tracking-wide">Help</h2>
             <ul className="space-y-2 text-sm">
               <li><Link to="/info/faq" className="hover:text-primary-400 transition-colors">FAQs</Link></li>
               <li><Link to="/info/shipping" className="hover:text-primary-400 transition-colors">Shipping Policy</Link></li>
