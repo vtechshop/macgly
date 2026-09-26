@@ -37,7 +37,7 @@ const emptyForm = {
   // Pricing
   price: '', compareAt: '', cost: '', stock: '',
   // Tax
-  taxable: true, taxRate: 18, taxIncluded: false, hsnCode: '',
+  taxable: true, taxRate: 18, taxIncluded: true, hsnCode: '',
   // Inventory
   trackInventory: true, lowStockThreshold: 10,
   // Shipping
@@ -233,7 +233,7 @@ export default function AdminProducts() {
       shippingCharge: p.shippingCharge ?? '',
       delhiveryEnabled: p.delhiveryEnabled !== false,
       taxRate:     p.taxRate ?? p.gstRate ?? 18,
-      taxIncluded: p.taxIncluded ?? p.gstIncluded ?? false,
+      taxIncluded: p.taxIncluded ?? p.gstIncluded ?? true,
       taxable:     p.taxable !== false,
       hsnCode:     p.hsnCode || p.hsn || '',
       trackInventory: p.trackInventory !== false,
@@ -1031,6 +1031,13 @@ export default function AdminProducts() {
 
             <Input label="Price (₹) *" type="number" step="0.01" value={form.price} onChange={set('price')} required />
             <Input label="Compare Price (₹)" type="number" step="0.01" value={form.compareAt} onChange={set('compareAt')} />
+            {form.taxable && !form.taxIncluded && Number(form.taxRate) > 0 && Number(form.price) > 0 && (
+              <p className="col-span-2 -mt-2 text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2">
+                "Tax included in price" is off, so {form.taxRate}% GST will be added on save: customers will pay{' '}
+                <strong>₹{(Number(form.price) * (1 + Number(form.taxRate) / 100)).toFixed(2)}</strong>.
+                If ₹{form.price} already includes GST, tick "Tax included in price" below.
+              </p>
+            )}
             <Input label="Stock *" type="number" value={form.stock} onChange={set('stock')} required />
             <Input label="SKU (auto if blank)" value={form.sku} onChange={set('sku')} placeholder="Enter SKU" />
             <Input label="Display Order (higher = appears first)" type="number" value={form.displayOrder} onChange={set('displayOrder')} />
@@ -1063,7 +1070,7 @@ export default function AdminProducts() {
                   <input
                     type="checkbox"
                     checked={form.taxable}
-                    onChange={() => setForm((f) => ({ ...f, taxable: !f.taxable, taxIncluded: false }))}
+                    onChange={() => setForm((f) => ({ ...f, taxable: !f.taxable }))}
                     className="accent-primary-600"
                   /> Taxable
                 </label>
@@ -1071,7 +1078,7 @@ export default function AdminProducts() {
                   <input
                     type="checkbox"
                     checked={form.taxIncluded}
-                    onChange={() => setForm((f) => ({ ...f, taxIncluded: !f.taxIncluded, taxable: false }))}
+                    onChange={() => setForm((f) => ({ ...f, taxIncluded: !f.taxIncluded }))}
                     className="accent-primary-600"
                   /> Tax included in price
                 </label>

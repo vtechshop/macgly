@@ -29,7 +29,7 @@ const EMPTY_FORM = {
   title: '', description: '', brand: '', sku: '', tags: '',
   categoryId: '', category: '',
   price: '', compareAt: '', stock: '',
-  taxable: true, taxRate: 18, taxIncluded: false, hsnCode: '',
+  taxable: true, taxRate: 18, taxIncluded: true, hsnCode: '',
   weight: '', shippingCharge: '', delhiveryEnabled: true, shippingZones: [],
   images: [], imageAlts: [], videoUrl: '',
   specifications: [],
@@ -86,7 +86,7 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
       stock:            p.stock ?? '',
       taxable:          p.taxable ?? true,
       taxRate:          p.taxRate ?? 18,
-      taxIncluded:      p.taxIncluded ?? false,
+      taxIncluded:      p.taxIncluded ?? true,
       hsnCode:          p.hsnCode || '',
       weight:           p.weight ?? '',
       shippingCharge:   p.shippingCharge ?? '',
@@ -280,17 +280,24 @@ function ProductFormModal({ open, onClose, editing, cats, onSaved }) {
                     <input type="number" min="0" value={form.stock} onChange={e('stock')} required className={INPUT_CLS} />
                   </Field>
                 </div>
+                {form.taxable && !form.taxIncluded && Number(form.taxRate) > 0 && Number(form.price) > 0 && (
+                  <p className="text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2">
+                    "Tax included in price" is off, so {form.taxRate}% GST will be added on save: customers will pay{' '}
+                    <strong>₹{(Number(form.price) * (1 + Number(form.taxRate) / 100)).toFixed(2)}</strong>.
+                    If ₹{form.price} already includes GST, tick "Tax included in price" below.
+                  </p>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2 pt-1">
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
                       <input type="checkbox" checked={form.taxable}
-                        onChange={() => { set('taxable', !form.taxable); set('taxIncluded', false); }}
+                        onChange={() => set('taxable', !form.taxable)}
                         className="w-4 h-4 accent-primary-600" />
                       <span className="text-secondary-700">Taxable</span>
                     </label>
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
                       <input type="checkbox" checked={form.taxIncluded}
-                        onChange={() => { set('taxIncluded', !form.taxIncluded); set('taxable', false); }}
+                        onChange={() => set('taxIncluded', !form.taxIncluded)}
                         className="w-4 h-4 accent-primary-600" />
                       <span className="text-secondary-700">Tax included in price</span>
                     </label>

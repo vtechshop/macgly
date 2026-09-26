@@ -32,7 +32,7 @@ router.get('/', async (req, res, next) => {
 });
 
 function normalizePriceToInclusive(data) {
-  if (!data.taxIncluded && data.taxRate > 0 && data.price > 0) {
+  if (!data.taxIncluded && data.taxable !== false && data.taxRate > 0 && data.price > 0) {
     data.price = parseFloat((data.price * (1 + data.taxRate / 100)).toFixed(2));
     if (data.compareAt > 0) data.compareAt = parseFloat((data.compareAt * (1 + data.taxRate / 100)).toFixed(2));
   }
