@@ -104,10 +104,42 @@ async function getProduct(req, res, next) {
   }
 }
 
+/** Active categories that hold at least one published product, plus their parents. */
+async function findVisibleCategories() {
+  const allCategories = await Category.find({ isActive: true }).sort({ displayOrder: 1, name: 1 });
+
+  // Find every category referenced by at least one published product
+  const [productCategoryIds, productCategorySlugs] = await Promise.all([
+    Product.distinct('categoryIds', { published: true }),
+    Product.distinct('category',    { published: true }),
+  ]);
+
+  // Seed the active set with IDs from the categoryIds array field
+  const activeIds = new Set(productCategoryIds.map((id) => id.toString()));
+
+  // Resolve legacy slug references → IDs
+  const slugToId = Object.fromEntries(allCategories.map((c) => [c.slug, c._id.toString()]));
+  for (const slug of productCategorySlugs) {
+    if (slug && slugToId[slug]) activeIds.add(slugToId[slug]);
+  }
+
+  // If a subcategory is active, its parent must also be visible
+  const idToParent = Object.fromEntries(
+    allCategories
+      .filter((c) => c.parentId)
+      .map((c) => [c._id.toString(), c.parentId.toString()])
+  );
+  for (const id of [...activeIds]) {
+    const parentId = idToParent[id];
+    if (parentId) activeIds.add(parentId);
+  }
+
+  return allCategories.filter((c) => activeIds.has(c._id.toString()));
+}
+
 async function getCategories(req, res, next) {
   try {
-    const categories = await Category.find({ isActive: true }).sort({ displayOrder: 1, name: 1 });
-    res.json({ categories });
+    res.json({ categories: await findVisibleCategories() });
   } catch (err) {
     next(err);
   }
@@ -153,4 +185,4 @@ async function getFeatured(req, res, next) {
   }
 }
 
-module.exports = { getProducts, getProduct, getCategories, getCategory, getBanners, getFeatured };
+module.exports = { findVisibleCategories, getProducts, getProduct, getCategories, getCategory, getBanners, getFeatured };

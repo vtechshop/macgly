@@ -248,6 +248,28 @@ async function main() {
 
   let count = 0;
 
+  // "People Also Buy" normally loads client-side, so crawlers never saw it and
+  // each product had a single inlink (its category). Pick the next products in
+  // the same category, wrapping around, so inlinks spread evenly; top up from
+  // the whole catalogue when a category is small.
+  const withSlug = products.filter((p) => p.slug);
+  const catOf    = (p) => String(p.categoryIds?.[0]?._id ?? p.categoryIds?.[0] ?? '');
+  const byCat    = new Map();
+  for (const p of withSlug) byCat.set(catOf(p), [...(byCat.get(catOf(p)) || []), p]);
+  function relatedFor(p) {
+    const picked = [];
+    const take = (list) => {
+      const i = list.indexOf(p);
+      for (let k = 1; k < list.length && picked.length < 5; k++) {
+        const q = list[(i + k) % list.length];
+        if (q !== p && !picked.includes(q)) picked.push(q);
+      }
+    };
+    take(byCat.get(catOf(p)) || []);
+    take(withSlug);
+    return picked;
+  }
+
   for (const p of products) {
     if (!p.slug) continue;
     const detail  = productDetails.get(p.slug) || p;
@@ -264,7 +286,10 @@ async function main() {
     // The seed shape must match what useFetch stores when the component
     // calls: api.get(`/catalog/products/${slug}`).then(r => r.data)
     // → r.data === { product: { ... } }
-    const seeds = [{ key: ['product', p.slug], data: { product: detail } }];
+    const seeds = [
+      { key: ['product', p.slug], data: { product: detail } },
+      { key: ['related', detail._id], data: { products: relatedFor(p) } },
+    ];
 
     let ssrBody = '';
     try {

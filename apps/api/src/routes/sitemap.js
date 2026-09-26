@@ -1,9 +1,12 @@
 const router = require('express').Router();
 const Product = require('../models/Product');
-const Category = require('../models/Category');
+const { findVisibleCategories } = require('../controllers/catalogController');
 const Blog = require('../models/Blog');
 
-const BASE_URL = process.env.FRONTEND_URL || 'https://www.macgly.com';
+// Must match the canonical host in apps/web (seo.js, prerender.mjs), not
+// FRONTEND_URL — that is https://macgly.com in production, which redirects,
+// so sitemap URLs never matched the pages' canonicals.
+const BASE_URL = 'https://www.macgly.com';
 
 // Guide slugs must stay in sync with apps/web/src/data/guides.js
 const GUIDE_SLUGS = [
@@ -48,7 +51,8 @@ router.get('/', async (req, res, next) => {
   try {
     const [products, categories, posts, vendorIds] = await Promise.all([
       Product.find({ published: true }).select('slug updatedAt').lean(),
-      Category.find({ isActive: true }).select('slug updatedAt').lean(),
+      // Same set the storefront shows — empty categories are thin pages.
+      findVisibleCategories(),
       // Both fields: routes/blog.js reads the legacy isPublished, the admin
       // route writes both. Matching either keeps the sitemap from advertising a
       // URL the public API would 404, and vice versa.
