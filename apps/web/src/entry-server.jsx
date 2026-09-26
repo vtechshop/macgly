@@ -18,8 +18,9 @@
 // modules initialise (Rollup executes side-effect imports in order).
 import './ssr-polyfills.js';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { renderToString } from 'react-dom/server';
+import { Toaster } from 'react-hot-toast';
 import { StaticRouter } from 'react-router-dom/server';
 import { Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -43,9 +44,13 @@ import PublicLayout from './assets/components/layout/PublicLayout.jsx';
 export { productJsonLd, breadcrumbJsonLd, faqJsonLd, guideJsonLd } from './utils/seo.js';
 export { GUIDES, getGuide } from './data/guides.js';
 
+// The element tree must mirror main.jsx + App.jsx exactly (Suspense boundary
+// around Routes, Toaster after the app). Any structural difference makes
+// hydrateRoot throw away the prerendered DOM and re-render behind a spinner.
 function SSRApp({ url }) {
   return (
     <StaticRouter location={url}>
+      <Suspense fallback={null}>
       <Routes>
         <Route element={<PublicLayout />}>
           <Route index element={<Home />} />
@@ -57,6 +62,7 @@ function SSRApp({ url }) {
           <Route path="/info/returns" element={<Returns />} />
         </Route>
       </Routes>
+      </Suspense>
     </StaticRouter>
   );
 }
@@ -75,6 +81,7 @@ export function renderRoute(url, seeds = []) {
     return renderToString(
       <Provider store={store}>
         <SSRApp url={url} />
+        <Toaster position="top-right" />
       </Provider>
     );
   } finally {
