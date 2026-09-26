@@ -121,7 +121,7 @@ export default function Header() {
                   onChange={(e) => { setSearchQuery(e.target.value); fetchSuggestions(e.target.value); setShowSuggestions(true); }}
                   onFocus={() => suggestions.length && setShowSuggestions(true)}
                 />
-                <button type="submit" className="bg-primary-600 hover:bg-primary-700 text-white h-11 px-5 rounded-r-lg flex items-center justify-center transition-colors shrink-0">
+                <button type="submit" aria-label="Search" className="bg-primary-600 hover:bg-primary-700 text-white h-11 px-5 rounded-r-lg flex items-center justify-center transition-colors shrink-0">
                   <Search size={18} />
                 </button>
 
@@ -156,6 +156,8 @@ export default function Header() {
               <div className="relative" ref={accountRef}>
                 <button
                   onClick={() => setAccountOpen((v) => !v)}
+                  aria-label="Account"
+                  aria-expanded={accountOpen}
                   className="flex items-center gap-2 text-secondary-700 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-secondary-100"
                 >
                   <User size={20} />
@@ -206,6 +208,7 @@ export default function Header() {
               {/* Cart */}
               <button
                 onClick={() => dispatch(openCartDrawer())}
+                aria-label="Cart"
                 className="relative flex items-center gap-2 text-secondary-700 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-secondary-100"
               >
                 <div className="relative">
@@ -221,12 +224,14 @@ export default function Header() {
 
               {/* Mobile search icon */}
               <button className="md:hidden p-2 text-secondary-700 hover:text-primary-600 transition-colors"
+                aria-label="Search"
                 onClick={() => { setMenuOpen(true); setTimeout(() => document.getElementById('mobile-search')?.focus(), 100); }}>
                 <Search size={20} />
               </button>
 
               {/* Mobile hamburger */}
-              <button className="md:hidden p-2 text-secondary-700" onClick={() => setMenuOpen(!menuOpen)}>
+              <button className="md:hidden p-2 text-secondary-700" onClick={() => setMenuOpen(!menuOpen)}
+                aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>
                 {menuOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
             </div>
@@ -268,7 +273,7 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <button type="submit" className="bg-primary-600 text-white h-10 px-4 rounded-r-lg">
+                <button type="submit" aria-label="Search" className="bg-primary-600 text-white h-10 px-4 rounded-r-lg">
                   <Search size={16} />
                 </button>
               </div>

@@ -70,7 +70,7 @@ export default function CartDrawer() {
               {count}
             </span>
           </div>
-          <button onClick={close} className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-500 transition-colors">
+          <button onClick={close} aria-label="Close cart" className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-500 transition-colors">
             <X size={20} />
           </button>
         </div>

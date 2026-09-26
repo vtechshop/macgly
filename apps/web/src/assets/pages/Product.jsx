@@ -286,7 +286,7 @@ export default function Product() {
               <img
                 src={normalizeImageUrl(product.images[activeImg], { width: 800 })}
                 alt={product.imageAlts?.[activeImg] || product.title}
-                fetchPriority="high"
+                fetchpriority="high"
                 className="absolute inset-0 w-full h-full object-contain p-6 transition-opacity duration-200"
                 onError={(e) => e.currentTarget.remove()}
               />
@@ -295,12 +295,14 @@ export default function Product() {
               <>
                 <button
                   onClick={() => setActiveImg((i) => (i - 1 + product.images.length) % product.images.length)}
+                  aria-label="Previous image"
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-secondary-100 flex items-center justify-center text-secondary-500 hover:text-primary-600 hover:border-primary-300 hover:shadow-xl opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 z-10"
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <button
                   onClick={() => setActiveImg((i) => (i + 1) % product.images.length)}
+                  aria-label="Next image"
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-secondary-100 flex items-center justify-center text-secondary-500 hover:text-primary-600 hover:border-primary-300 hover:shadow-xl opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 z-10"
                 >
                   <ChevronRight size={18} />
@@ -309,6 +311,8 @@ export default function Product() {
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                   {product.images.map((_, i) => (
                     <button key={i} onClick={() => setActiveImg(i)}
+                      aria-label={`Show image ${i + 1}`}
+                      aria-current={i === activeImg}
                       className={`rounded-full transition-all duration-200 ${i === activeImg ? 'w-5 h-1.5 bg-primary-500' : 'w-1.5 h-1.5 bg-secondary-300 hover:bg-secondary-400'}`}
                     />
                   ))}
@@ -321,6 +325,8 @@ export default function Product() {
             <div className="flex gap-2 flex-wrap">
               {product.images.map((img, i) => (
                 <button key={i} onClick={() => setActiveImg(i)}
+                  aria-label={`Show image ${i + 1}`}
+                  aria-current={i === activeImg}
                   className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-150 bg-white shadow-sm hover:shadow-md ${i === activeImg ? 'border-primary-500 shadow-primary-100' : 'border-secondary-200 hover:border-primary-300'}`}>
                   <img src={normalizeImageUrl(img, { width: 160 })} alt="" loading="lazy" className="w-full h-full object-contain p-1.5" />
                 </button>

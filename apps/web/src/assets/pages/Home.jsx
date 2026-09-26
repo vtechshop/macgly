@@ -35,7 +35,7 @@ function HeroSection({ banners }) {
       {banner?.image && (
         <img src={normalizeImageUrl(banner.image, { width: 1280 })} alt={banner.title}
           className="absolute inset-0 w-full h-full object-cover opacity-15"
-          fetchPriority="high" />
+          fetchpriority="high" />
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />

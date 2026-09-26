@@ -40,6 +40,7 @@ export default function QuickViewModal({ product, onClose }) {
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto z-10">
         <button
           onClick={onClose}
+          aria-label="Close"
           className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-secondary-100 hover:bg-secondary-200 text-secondary-600 transition-colors"
         >
           <X size={16} />
