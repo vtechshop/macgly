@@ -105,7 +105,7 @@ export default function ProductCard({ product, onAddToCart }) {
             </div>
             {product.images?.[0] && (
               <img
-                src={normalizeImageUrl(product.images[0])}
+                src={normalizeImageUrl(product.images[0], { width: 400 })}
                 alt={product.imageAlts?.[0] || product.title}
                 className="absolute inset-0 w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"

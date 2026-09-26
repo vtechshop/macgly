@@ -58,9 +58,20 @@ describe('normalizeImageUrl', () => {
     expect(normalizeImageUrl(url)).toBe('/uploads/image.jpg');
   });
 
-  test('leaves Cloudinary URLs unchanged', () => {
+  test('adds auto format and quality to Cloudinary URLs', () => {
     const url = 'https://res.cloudinary.com/demo/image/upload/sample.jpg';
-    expect(normalizeImageUrl(url)).toBe(url);
+    expect(normalizeImageUrl(url)).toBe('https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/sample.jpg');
+  });
+
+  test('downsizes Cloudinary URLs without upscaling when a width is given', () => {
+    const url = 'https://res.cloudinary.com/demo/image/upload/sample.jpg';
+    expect(normalizeImageUrl(url, { width: 400 }))
+      .toBe('https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,c_limit,w_400/sample.jpg');
+  });
+
+  test('does not transform a Cloudinary URL twice', () => {
+    const url = 'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/sample.jpg';
+    expect(normalizeImageUrl(url, { width: 400 })).toBe(url);
   });
 
   test('leaves relative URLs unchanged', () => {

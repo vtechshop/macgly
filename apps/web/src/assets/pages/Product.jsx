@@ -284,8 +284,9 @@ export default function Product() {
             <ShoppingCart size={48} className="text-secondary-100" />
             {product.images?.[activeImg] && (
               <img
-                src={normalizeImageUrl(product.images[activeImg])}
+                src={normalizeImageUrl(product.images[activeImg], { width: 800 })}
                 alt={product.imageAlts?.[activeImg] || product.title}
+                fetchPriority="high"
                 className="absolute inset-0 w-full h-full object-contain p-6 transition-opacity duration-200"
                 onError={(e) => e.currentTarget.remove()}
               />
@@ -321,7 +322,7 @@ export default function Product() {
               {product.images.map((img, i) => (
                 <button key={i} onClick={() => setActiveImg(i)}
                   className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-150 bg-white shadow-sm hover:shadow-md ${i === activeImg ? 'border-primary-500 shadow-primary-100' : 'border-secondary-200 hover:border-primary-300'}`}>
-                  <img src={normalizeImageUrl(img)} alt="" className="w-full h-full object-contain p-1.5" />
+                  <img src={normalizeImageUrl(img, { width: 160 })} alt="" loading="lazy" className="w-full h-full object-contain p-1.5" />
                 </button>
               ))}
             </div>

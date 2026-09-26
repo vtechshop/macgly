@@ -33,7 +33,7 @@ function HeroSection({ banners }) {
       background: 'linear-gradient(135deg, #0c1520 0%, #162035 50%, #1a2a3e 100%)',
     }}>
       {banner?.image && (
-        <img src={normalizeImageUrl(banner.image)} alt={banner.title}
+        <img src={normalizeImageUrl(banner.image, { width: 1280 })} alt={banner.title}
           className="absolute inset-0 w-full h-full object-cover opacity-15"
           fetchPriority="high" />
       )}
@@ -128,13 +128,13 @@ export default function Home() {
               ? Array.from({ length: 10 }).map((_, i) => (
                   <div key={i} className="aspect-square rounded-xl bg-secondary-100 animate-pulse" />
                 ))
-              : topCats.map((cat) => {
+              : topCats.map((cat, i) => {
                   const Icon = CAT_ICONS[cat.slug] || CAT_ICONS.default;
                   return (
                     <Link key={cat._id} to={`/category/${cat.slug}`}
                       className="relative rounded-xl overflow-hidden bg-secondary-100 aspect-square group hover:shadow-lg transition-all duration-200">
                       {cat.image
-                        ? <img src={normalizeImageUrl(cat.image)} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onError={(e) => e.currentTarget.closest('a').classList.add('no-img')} />
+                        ? <img src={normalizeImageUrl(cat.image, { width: 400 })} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading={i < 4 ? "eager" : "lazy"} onError={(e) => e.currentTarget.closest('a').classList.add('no-img')} />
                         : <div className="w-full h-full flex items-center justify-center"><Icon size={56} className="text-secondary-300 group-hover:text-primary-400 transition-colors" /></div>
                       }
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2.5">

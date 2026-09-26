@@ -21,7 +21,7 @@ export function normalizeImageUrl(url, { width } = {}) {
   }
   // Auto-format (WebP/AVIF) + quality compression for Cloudinary URLs
   if (url.includes('res.cloudinary.com') && url.includes('/upload/') && !url.includes('f_auto')) {
-    const t = ['f_auto', 'q_auto', width ? `w_${width}` : null].filter(Boolean).join(',');
+    const t = ['f_auto', 'q_auto', width ? `c_limit,w_${width}` : null].filter(Boolean).join(',');
     return url.replace('/upload/', `/upload/${t}/`);
   }
   return url;

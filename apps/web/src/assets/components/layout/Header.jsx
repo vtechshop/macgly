@@ -131,7 +131,7 @@ export default function Header() {
                       <Link key={p._id} to={`/product/${p.slug}`}
                         onClick={() => { setShowSuggestions(false); setSearchQuery(''); }}
                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary-50 transition-colors">
-                        {p.images?.[0] && <img src={normalizeImageUrl(p.images[0])} alt="" className="w-8 h-8 rounded object-contain bg-secondary-100" onError={(e) => e.target.style.display = 'none'} />}
+                        {p.images?.[0] && <img src={normalizeImageUrl(p.images[0], { width: 64 })} alt="" className="w-8 h-8 rounded object-contain bg-secondary-100" onError={(e) => e.target.style.display = 'none'} />}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium line-clamp-1">{p.title}</p>
                           <p className="text-xs text-secondary-400">{p.brand}</p>

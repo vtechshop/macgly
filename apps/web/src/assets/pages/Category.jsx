@@ -212,7 +212,7 @@ export default function Category() {
                 className="relative rounded-xl overflow-hidden bg-secondary-100 aspect-square group hover:shadow-lg transition-all duration-200"
               >
                 {sub.image
-                  ? <img src={normalizeImageUrl(sub.image)} alt={sub.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  ? <img src={normalizeImageUrl(sub.image, { width: 400 })} alt={sub.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   : <div className="w-full h-full flex items-center justify-center"><Package size={40} className="text-secondary-300 group-hover:text-primary-400 transition-colors" /></div>
                 }
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2.5">

@@ -20,7 +20,7 @@ const CATEGORY_ICONS = {
 function CatIcon({ cat, size = 16 }) {
   const Icon = CATEGORY_ICONS[cat.slug] || CATEGORY_ICONS.default;
   if (cat.image) {
-    return <img src={normalizeImageUrl(cat.image)} alt="" className="object-contain" style={{ width: size, height: size }} onError={(e) => { e.target.style.display = 'none'; }} />;
+    return <img src={normalizeImageUrl(cat.image, { width: 64 })} alt="" loading="lazy" className="object-contain" style={{ width: size, height: size }} onError={(e) => { e.target.style.display = 'none'; }} />;
   }
   return <Icon size={size} />;
 }
@@ -114,7 +114,7 @@ function StickyNav({ parents, childrenMap }) {
                   >
                     <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 overflow-hidden transition-colors ${isSubActive ? 'bg-primary-100 text-primary-600' : 'bg-secondary-100 text-secondary-400'}`}>
                       {sub.image
-                        ? <img src={normalizeImageUrl(sub.image)} alt="" className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display='none'; }} />
+                        ? <img src={normalizeImageUrl(sub.image, { width: 64 })} alt="" loading="lazy" className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display='none'; }} />
                         : <CatIcon cat={sub} size={13} />
                       }
                     </div>
@@ -152,7 +152,7 @@ function StickyNav({ parents, childrenMap }) {
                   >
                     <div className="w-6 h-6 rounded bg-secondary-100 flex items-center justify-center shrink-0 text-secondary-400 overflow-hidden">
                       {gc.image
-                        ? <img src={normalizeImageUrl(gc.image)} alt="" className="w-full h-full object-contain p-0.5" onError={(e) => { e.target.style.display='none'; }} />
+                        ? <img src={normalizeImageUrl(gc.image, { width: 64 })} alt="" loading="lazy" className="w-full h-full object-contain p-0.5" onError={(e) => { e.target.style.display='none'; }} />
                         : <CatIcon cat={gc} size={12} />
                       }
                     </div>
