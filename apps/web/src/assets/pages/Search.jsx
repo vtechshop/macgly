@@ -1,13 +1,10 @@
 import { useSearchParams } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import { SlidersHorizontal, X, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import ProductGrid from '../components/product/ProductGrid';
-import { setCart } from '../../store/slices/cartSlice';
 import { useFetch } from '../../hooks';
 import { setMeta } from '../../utils/seo';
-import toast from 'react-hot-toast';
 
 const RATING_OPTIONS = [
   { label: '4★ & above', value: '4' },
@@ -158,7 +155,6 @@ function FilterPanel({ params, set, setParams, categoriesData, brandsData, onClo
 
 export default function Search() {
   const [params, setParams] = useSearchParams();
-  const dispatch = useDispatch();
   const [showFilters, setShowFilters] = useState(false);
 
   const page      = parseInt(params.get('page')      || '1');
@@ -203,16 +199,6 @@ export default function Search() {
       next.delete('page');
       return next;
     });
-  }
-
-  async function handleAddToCart(product) {
-    try {
-      const { data: cartData } = await api.post('/cart/items', { productId: product._id, quantity: 1 });
-      dispatch(setCart(cartData.cart));
-      toast.success(`${product.title} added to cart`);
-    } catch {
-      toast.error('Could not add to cart');
-    }
   }
 
   function goToPage(p) {
@@ -294,7 +280,7 @@ export default function Search() {
             </div>
           )}
 
-          <ProductGrid products={products} loading={isLoading} onAddToCart={handleAddToCart} />
+          <ProductGrid products={products} loading={isLoading} />
 
           {pagination && pagination.pages > 1 && (
             <div className="flex items-center justify-center gap-1.5 mt-8">
