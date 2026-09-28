@@ -8,7 +8,7 @@ import {
 import api from '../../utils/api';
 import CategorySidebar from '../components/common/CategorySidebar';
 import { useFetch } from '../../hooks';
-import { normalizeImageUrl } from '../../utils/format';
+import { normalizeImageUrl, imageSrcSet } from '../../utils/format';
 import { setMeta } from '../../utils/seo';
 
 const CAT_ICONS = {
@@ -134,7 +134,7 @@ export default function Home() {
                     <Link key={cat._id} to={`/category/${cat.slug}`}
                       className="relative rounded-xl overflow-hidden bg-secondary-100 aspect-square group hover:shadow-lg transition-all duration-200">
                       {cat.image
-                        ? <img src={normalizeImageUrl(cat.image, { width: 400 })} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading={i < 4 ? "eager" : "lazy"} onError={(e) => e.currentTarget.closest('a').classList.add('no-img')} />
+                        ? <img src={normalizeImageUrl(cat.image, { width: 400 })} srcSet={imageSrcSet(cat.image)} sizes="(min-width: 1024px) calc((100vw - 256px) / 5), (min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw" alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading={i < 4 ? "eager" : "lazy"} onError={(e) => e.currentTarget.closest('a').classList.add('no-img')} />
                         : <div className="w-full h-full flex items-center justify-center"><Icon size={56} className="text-secondary-300 group-hover:text-primary-400 transition-colors" /></div>
                       }
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2.5">

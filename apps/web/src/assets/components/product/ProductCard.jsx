@@ -4,7 +4,7 @@ import { ShoppingCart, Star, Zap, Plus, Minus, Heart, Eye } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setCart, openCartDrawer, addItemOptimistic, updateItemOptimistic } from '../../../store/slices/cartSlice';
 import { addWishlistId, removeWishlistId } from '../../../store/slices/wishlistSlice';
-import { formatCurrency, normalizeImageUrl } from '../../../utils/format';
+import { formatCurrency, normalizeImageUrl, imageSrcSet } from '../../../utils/format';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
 const QuickViewModal = lazy(() => import('./QuickViewModal'));
@@ -106,6 +106,8 @@ export default function ProductCard({ product, onAddToCart }) {
             {product.images?.[0] && (
               <img
                 src={normalizeImageUrl(product.images[0], { width: 400 })}
+                srcSet={imageSrcSet(product.images[0])}
+                sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                 alt={product.imageAlts?.[0] || product.title}
                 className="absolute inset-0 w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"

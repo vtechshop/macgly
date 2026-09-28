@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { formatCurrency, formatDate, normalizeImageUrl, formatRelativeTime } from '../utils/format';
+import { formatCurrency, formatDate, normalizeImageUrl, imageSrcSet, formatRelativeTime } from '../utils/format';
 
 describe('formatCurrency', () => {
   test('formats INR correctly', () => {
@@ -67,6 +67,14 @@ describe('normalizeImageUrl', () => {
     const url = 'https://res.cloudinary.com/demo/image/upload/sample.jpg';
     expect(normalizeImageUrl(url, { width: 400 }))
       .toBe('https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,c_limit,w_400/sample.jpg');
+  });
+
+  test('builds a Cloudinary srcset and skips other hosts', () => {
+    const url = 'https://res.cloudinary.com/demo/image/upload/sample.jpg';
+    expect(imageSrcSet(url, [200, 400])).toBe(
+      'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,c_limit,w_200/sample.jpg 200w, '
+      + 'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,c_limit,w_400/sample.jpg 400w');
+    expect(imageSrcSet('/uploads/file.png')).toBeUndefined();
   });
 
   test('does not transform a Cloudinary URL twice', () => {
