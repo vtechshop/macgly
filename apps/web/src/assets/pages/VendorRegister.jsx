@@ -8,6 +8,7 @@ import { setUser } from '../../store/slices/authSlice';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
+import { useHydrated } from '../../hooks';
 
 const BENEFITS = [
   { icon: Package, title: 'Reach More Buyers', desc: 'List your tools and machinery to thousands of verified buyers across India.' },
@@ -78,7 +79,9 @@ function UpgradeForm({ user, dispatch, navigate }) {
 export default function VendorRegister() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((s) => s.auth);
+  const hydrated = useHydrated();
+  const storeUser = useSelector((s) => s.auth.user);
+  const user = hydrated ? storeUser : null;
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', businessName: '', gstin: '' });
   const [loading, setLoading] = useState(false);

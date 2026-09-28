@@ -8,6 +8,7 @@ import { setUser } from '../../store/slices/authSlice';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
+import { useHydrated } from '../../hooks';
 
 const BENEFITS = [
   { icon: Link2, title: 'Your Unique Referral Link', desc: 'Share your personal link on social media, WhatsApp, or your website to start earning.' },
@@ -66,7 +67,9 @@ function UpgradeForm({ user, dispatch, navigate }) {
 export default function AffiliateRegister() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((s) => s.auth);
+  const hydrated = useHydrated();
+  const storeUser = useSelector((s) => s.auth.user);
+  const user = hydrated ? storeUser : null;
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' });
   const [loading, setLoading] = useState(false);

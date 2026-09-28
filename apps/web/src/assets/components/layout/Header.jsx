@@ -7,7 +7,7 @@ import { clearCart, openCartDrawer } from '../../../store/slices/cartSlice';
 import { setWishlistIds } from '../../../store/slices/wishlistSlice';
 import api from '../../../utils/api';
 import { normalizeImageUrl } from '../../../utils/format';
-import { useFetch } from '../../../hooks';
+import { useFetch, useHydrated } from '../../../hooks';
 import toast from 'react-hot-toast';
 
 const NAV_LINKS = [
@@ -22,8 +22,11 @@ const NAV_LINKS = [
 ];
 
 export default function Header() {
-  const { user } = useSelector((s) => s.auth);
-  const { count } = useSelector((s) => s.cart);
+  const hydrated = useHydrated();
+  const storeUser  = useSelector((s) => s.auth.user);
+  const storeCount = useSelector((s) => s.cart.count);
+  const user  = hydrated ? storeUser : null;
+  const count = hydrated ? storeCount : 0;
   const { data: wishlistData } = useFetch(
     user ? ['wishlist-ids', user._id] : null,
     () => api.get('/users/wishlist/ids').then((r) => r.data)

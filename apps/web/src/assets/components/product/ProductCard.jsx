@@ -7,12 +7,15 @@ import { addWishlistId, removeWishlistId } from '../../../store/slices/wishlistS
 import { formatCurrency, normalizeImageUrl, imageSrcSet } from '../../../utils/format';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
+import { useHydrated } from '../../../hooks';
 const QuickViewModal = lazy(() => import('./QuickViewModal'));
 
 export default function ProductCard({ product, onAddToCart }) {
   const dispatch = useDispatch();
   const { user } = useSelector((s) => s.auth);
-  const cartItems = useSelector((s) => s.cart.items);
+  const hydrated = useHydrated();
+  const storeCartItems = useSelector((s) => s.cart.items);
+  const cartItems = hydrated ? storeCartItems : [];
   const cartItem = cartItems.find((i) => i.product?._id === product._id || i.product === product._id);
   const qty = cartItem?.quantity || 0;
 

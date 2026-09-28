@@ -5,6 +5,7 @@ import { setCart, clearCart, closeCartDrawer, updateItemOptimistic } from '../..
 import { formatCurrency, normalizeImageUrl } from '../../../utils/format';
 import api from '../../../utils/api';
 import toast from 'react-hot-toast';
+import { useHydrated } from '../../../hooks';
 
 function itemPrice(item) {
   return item.product?.price ?? item.price ?? 0;
@@ -13,7 +14,9 @@ function itemPrice(item) {
 export default function CartDrawer() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { items, count, drawerOpen, lastAdded } = useSelector((s) => s.cart);
+  const hydrated = useHydrated();
+  const cart = useSelector((s) => s.cart);
+  const { items, count, drawerOpen, lastAdded } = hydrated ? cart : { items: [], count: 0, drawerOpen: false, lastAdded: null };
 
   const subtotal = items.reduce((sum, i) => sum + itemPrice(i) * i.quantity, 0);
 

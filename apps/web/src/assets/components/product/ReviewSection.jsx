@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Star, ThumbsUp, ShoppingBag } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import api from '../../../utils/api';
-import { useFetch, useAction } from '../../../hooks';
+import { useFetch, useAction, useHydrated } from '../../../hooks';
 import { formatRelativeTime } from '../../../utils/format';
 import Button from '../common/Button';
 import toast from 'react-hot-toast';
@@ -25,7 +25,9 @@ function StarPicker({ value, onChange }) {
 }
 
 export default function ReviewSection({ productId }) {
-  const { user } = useSelector((s) => s.auth);
+  const hydrated = useHydrated();
+  const storeUser = useSelector((s) => s.auth.user);
+  const user = hydrated ? storeUser : null;
   const [rev, setRev] = useState(0);
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');

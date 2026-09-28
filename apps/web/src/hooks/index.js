@@ -93,6 +93,18 @@ export function hydrateCache(seeds) {
 }
 
 /**
+ * False during SSR and the hydration render, true right after mount.
+ * Prerendered HTML is always built logged-out with an empty cart; anything
+ * showing the user or cart must render that same state until hydrated, or a
+ * cached user / an early /auth/me or /cart response makes hydration mismatch.
+ */
+export function useHydrated() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+  return hydrated;
+}
+
+/**
  * Simple mutation hook.
  */
 export function useAction(fn, { onSuccess, onError } = {}) {
