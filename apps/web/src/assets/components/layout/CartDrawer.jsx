@@ -1,10 +1,10 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { X, ShoppingCart, Minus, Plus, Trash2, Check } from 'lucide-react';
-import { setCart, clearCart, closeCartDrawer, updateItemOptimistic } from '../../../store/slices/cartSlice';
+import { clearCart, closeCartDrawer, updateItemOptimistic } from '../../../store/slices/cartSlice';
+import { syncCartItem } from '../../../utils/cartSync';
 import { formatCurrency, normalizeImageUrl } from '../../../utils/format';
 import api from '../../../utils/api';
-import toast from 'react-hot-toast';
 import { useHydrated } from '../../../hooks';
 
 function itemPrice(item) {
@@ -23,28 +23,8 @@ export default function CartDrawer() {
   function close() { dispatch(closeCartDrawer()); }
 
   function changeQty(item, newQty) {
-    // Optimistic — instant UI
     dispatch(updateItemOptimistic({ itemId: item._id, newQty }));
-
-    // Sync in background
-    const isOptimistic = item._id?.startsWith('opt-');
-    if (isOptimistic) {
-      if (newQty >= 1) {
-        api.post('/cart/items', { productId: item.product?._id ?? item.product, quantity: newQty })
-          .then(({ data }) => dispatch(setCart(data.cart)))
-          .catch(() => api.get('/cart').then(({ data }) => dispatch(setCart(data.cart))).catch(() => {}));
-      }
-      return;
-    }
-    if (newQty < 1) {
-      api.delete(`/cart/items/${item._id}`)
-        .then(({ data }) => dispatch(setCart(data.cart)))
-        .catch(() => { toast.error('Could not remove item'); api.get('/cart').then(({ data }) => dispatch(setCart(data.cart))).catch(() => {}); });
-    } else {
-      api.put(`/cart/items/${item._id}`, { quantity: newQty })
-        .then(({ data }) => dispatch(setCart(data.cart)))
-        .catch(() => { toast.error('Could not update cart'); api.get('/cart').then(({ data }) => dispatch(setCart(data.cart))).catch(() => {}); });
-    }
+    syncCartItem(item.product?._id ?? item.product, item.variantId);
   }
 
   function handleClearCart() {

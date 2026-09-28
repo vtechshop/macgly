@@ -2,7 +2,8 @@ import { useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, Zap, Plus, Minus, Heart, Eye } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { setCart, openCartDrawer, addItemOptimistic, updateItemOptimistic } from '../../../store/slices/cartSlice';
+import { openCartDrawer, addItemOptimistic, updateItemOptimistic } from '../../../store/slices/cartSlice';
+import { syncCartItem } from '../../../utils/cartSync';
 import { addWishlistId, removeWishlistId } from '../../../store/slices/wishlistSlice';
 import { formatCurrency, normalizeImageUrl, imageSrcSet } from '../../../utils/format';
 import api from '../../../utils/api';
@@ -51,32 +52,14 @@ export default function ProductCard({ product, onAddToCart }) {
     }
   }
 
-  async function changeQty(newQty) {
-    const isNew = qty === 0;
-    const isOptimistic = cartItem?._id?.startsWith('opt-');
-
-    if (isNew) {
+  function changeQty(newQty) {
+    if (qty === 0) {
       dispatch(addItemOptimistic({ product, quantity: 1 }));
       dispatch(openCartDrawer(product));
     } else {
       dispatch(updateItemOptimistic({ itemId: cartItem._id, newQty }));
     }
-
-    try {
-      if (newQty < 1 && !isOptimistic) {
-        const { data } = await api.delete(`/cart/items/${cartItem._id}`);
-        dispatch(setCart(data.cart));
-      } else if (isNew || isOptimistic) {
-        const { data } = await api.post('/cart/items', { productId: product._id, quantity: isNew ? 1 : newQty });
-        dispatch(setCart(data.cart));
-      } else {
-        const { data } = await api.put(`/cart/items/${cartItem._id}`, { quantity: newQty });
-        dispatch(setCart(data.cart));
-      }
-    } catch {
-      toast.error('Could not update cart');
-      api.get('/cart').then(({ data }) => { if (data.cart) dispatch(setCart(data.cart)); }).catch(() => {});
-    }
+    syncCartItem(product._id);
   }
 
   async function handleAdd() {
