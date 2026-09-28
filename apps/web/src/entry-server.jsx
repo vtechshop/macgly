@@ -37,6 +37,20 @@ import VendorStore from './assets/pages/VendorStore.jsx';
 import GuidePage from './assets/pages/GuidePage.jsx';
 import Shipping from './assets/pages/info/Shipping.jsx';
 import Returns from './assets/pages/info/Returns.jsx';
+import Search from './assets/pages/Search.jsx';
+import AllCategories from './assets/pages/AllCategories.jsx';
+import Blog from './assets/pages/Blog.jsx';
+import TrackOrder from './assets/pages/TrackOrder.jsx';
+import WarrantyCheck from './assets/pages/WarrantyCheck.jsx';
+import VendorRegister from './assets/pages/VendorRegister.jsx';
+import AffiliateRegister from './assets/pages/AffiliateRegister.jsx';
+import About from './assets/pages/info/About.jsx';
+import Contact from './assets/pages/info/Contact.jsx';
+import Faq from './assets/pages/info/Faq.jsx';
+import BuyerGuide from './assets/pages/info/BuyerGuide.jsx';
+import SellerGuide from './assets/pages/info/SellerGuide.jsx';
+import Privacy from './assets/pages/info/Privacy.jsx';
+import Terms from './assets/pages/info/Terms.jsx';
 import PublicLayout from './assets/components/layout/PublicLayout.jsx';
 
 // Re-export JSON-LD helpers so prerender.mjs can generate head JSON-LD
@@ -60,6 +74,20 @@ function SSRApp({ url }) {
           <Route path="/guides/:slug" element={<GuidePage />} />
           <Route path="/info/shipping" element={<Shipping />} />
           <Route path="/info/returns" element={<Returns />} />
+          <Route path="/products" element={<Search />} />
+          <Route path="/categories" element={<AllCategories />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/track-order" element={<TrackOrder />} />
+          <Route path="/warranty-check" element={<WarrantyCheck />} />
+          <Route path="/sell" element={<VendorRegister />} />
+          <Route path="/affiliate" element={<AffiliateRegister />} />
+          <Route path="/info/about" element={<About />} />
+          <Route path="/info/contact" element={<Contact />} />
+          <Route path="/info/faq" element={<Faq />} />
+          <Route path="/info/buyer-guide" element={<BuyerGuide />} />
+          <Route path="/info/seller-guide" element={<SellerGuide />} />
+          <Route path="/info/privacy" element={<Privacy />} />
+          <Route path="/info/terms" element={<Terms />} />
         </Route>
       </Routes>
       </Suspense>

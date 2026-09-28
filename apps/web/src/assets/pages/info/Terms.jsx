@@ -267,7 +267,7 @@ function SubSection({ sub }) {
   return (
     <div className="mt-5">
       <h3 className="text-base font-bold text-secondary-800 mb-2">{sub.num} {sub.title}</h3>
-      {sub.content && <p className="text-secondary-600 leading-relaxed">{sub.content}</p>}
+      {sub.content && <div className="text-secondary-600 leading-relaxed">{sub.content}</div>}
       {sub.bullets && (
         <ul className="mt-2 space-y-1.5 list-none">
           {sub.bullets.map((b, i) => (

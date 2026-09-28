@@ -511,10 +511,11 @@ async function main() {
     count++;
   }
 
-  // ── 9b. Remaining sitemap pages (head tags only) ──────────────────────────────
+  // ── 9b. Remaining sitemap pages ───────────────────────────────────────────────
   // Without a file of their own these fall through to _shell.html, whose
   // canonical is the homepage — so 14 sitemap URLs each declared themselves a
-  // duplicate of "/". Mirrors each page's client-side setMeta().
+  // duplicate of "/", with no links in the body. Head tags mirror each page's
+  // client-side setMeta(); the body is SSR'd, or left as the shell on error.
   const HEAD_ONLY_PAGES = [
     ['products',          'All Products — Tools & Machinery | Macgly',
       'Browse genuine power tools, machinery, spare parts and safety equipment on Macgly. GST invoice and fast delivery across India.'],
@@ -545,8 +546,35 @@ async function main() {
     ['info/terms',        'Terms of Service | Macgly',
       'The terms governing use of the Macgly marketplace — accounts, orders, payments, shipping, returns, vendor obligations and liability.'],
   ];
+  // Seed the list pages with their first page, keyed exactly as each
+  // component's useFetch call builds it (see Search.jsx / Blog.jsx).
+  const [firstProducts, brandsRes, firstPosts] = await Promise.all([
+    getJson('/api/catalog/products?page=1&sort=displayOrder').catch(() => null),
+    getJson('/api/catalog/brands').catch(() => null),
+    getJson('/api/blog?page=1&limit=12').catch(() => null),
+  ]);
+  const productsKey = { page: 1, search: '', category: '', featured: '', sort: 'displayOrder', minPrice: '', maxPrice: '', brand: '', minRating: '' };
+  const LIST_SEEDS = {
+    products: [
+      ...(firstProducts ? [{ key: ['products', productsKey], data: firstProducts }] : []),
+      ...(brandsRes ? [{ key: ['brands'], data: brandsRes }] : []),
+      { key: ['categories'], data: { categories } },
+    ],
+    categories: [{ key: ['categories'], data: { categories } }],
+    blog: firstPosts ? [{ key: ['blog', '', 1], data: firstPosts }] : [],
+  };
+
   for (const [route, title, description] of HEAD_ONLY_PAGES) {
-    await emit(route, applyMeta(shell, { title, description: clamp(description, 155), canonical: `${SITE_URL}/${route}` }));
+    const seeds = LIST_SEEDS[route] || [];
+    let ssrBody = '';
+    try {
+      ssrBody = renderRoute(`/${route}`, seeds);
+    } catch (err) {
+      console.warn(`[prerender] SSR error /${route}: ${err.message}`);
+    }
+    let pageHtml = applyMeta(shell, { title, description: clamp(description, 155), canonical: `${SITE_URL}/${route}` });
+    if (ssrBody) pageHtml = injectSSR(pageHtml, ssrBody, seeds);
+    await emit(route, pageHtml);
     count++;
   }
 
