@@ -32,7 +32,7 @@ export default function Footer() {
               <a href="mailto:macglyshop@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Mail size={13} /><span>macglyshop@gmail.com</span>
               </a>
-              <div className="flex items-start gap-2 text-secondary-500">
+              <div className="flex items-start gap-2 text-secondary-400">
                 <MapPin size={13} className="shrink-0 mt-0.5" />
                 <address className="not-italic text-xs leading-relaxed">
                   9/83, E, 4th Street, T.Balan Nagar,<br />
@@ -108,7 +108,7 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-secondary-800">
-        <div className="px-4 sm:px-6 lg:px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-secondary-500">
+        <div className="px-4 sm:px-6 lg:px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-secondary-400">
           <span>© {new Date().getFullYear()} Macgly. All rights reserved.</span>
           <div className="flex items-center gap-3">
             <span>Secure Payments</span>
