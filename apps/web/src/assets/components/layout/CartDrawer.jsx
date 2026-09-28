@@ -169,6 +169,7 @@ export default function CartDrawer() {
 
                 <button
                   onClick={() => changeQty(item, 0)}
+                  aria-label="Remove item"
                   className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                 >
                   <Trash2 size={16} />

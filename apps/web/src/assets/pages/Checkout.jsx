@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { MapPin, Truck, CreditCard, Check, ChevronRight, Zap, Package, LocateFixed } from 'lucide-react';
 import api from '../../utils/api';
-import { clearCart } from '../../store/slices/cartSlice';
+import { clearCart, setCart as setStoreCart } from '../../store/slices/cartSlice';
 import { formatCurrency, normalizeImageUrl } from '../../utils/format';
 import { resolveTaxRate, inclusiveGstAmount } from '../../utils/tax';
 import { isValidGstinFormat } from '../../utils/gstin';
@@ -14,8 +14,8 @@ import toast from 'react-hot-toast';
 
 const SHIPPING_ICONS = { standard: Package, express: Zap };
 const DEFAULT_SHIPPING = [
-  { id: 'standard', label: 'Standard Delivery', desc: '3–7 business days', charge: 70 },
-  { id: 'express',  label: 'Express Delivery',  desc: '1–2 business days', charge: 120 },
+  { id: 'standard', label: 'Standard Delivery', desc: '3–7 business days', charge: 0 },
+  { id: 'express',  label: 'Express Delivery',  desc: '1–2 business days', charge: 0 },
 ];
 
 const STEPS = [
@@ -163,6 +163,7 @@ export default function Checkout() {
         return;
       }
       setCart(c);
+      dispatch(setStoreCart(c));
       if (profileRes?.data?.user?.addresses?.length) {
         setSavedAddresses(profileRes.data.user.addresses);
       }
@@ -172,7 +173,40 @@ export default function Checkout() {
       toast.error('Could not load cart');
       navigate('/cart');
     });
-  }, [navigate]);
+  }, [navigate, dispatch]);
+
+  // The cart drawer can change the cart while checkout is open; the summary the
+  // customer confirms must follow it, so re-read the server cart when they differ.
+  const storeItems = useSelector((s) => s.cart.items);
+  const cartSignature = (list) => (list || [])
+    .map((i) => `${i.product?._id ?? i.product}:${i.quantity}`).sort().join('|');
+  const storeSignature = cartSignature(storeItems);
+  const latestStoreSignature = useRef(storeSignature);
+  latestStoreSignature.current = storeSignature;
+  useEffect(() => {
+    if (!cart || storeSignature === cartSignature(cart.items)) return;
+    // Drawer edits are optimistic: give the server a moment to apply them, and
+    // retry while the server cart still lags behind what the drawer shows.
+    let cancelled = false;
+    let timer;
+    const sync = (attempt) => {
+      timer = setTimeout(() => {
+        api.get('/cart').then(({ data }) => {
+          if (cancelled) return;
+          if (!data.cart?.items?.length) {
+            toast.error('Your cart is empty');
+            navigate('/products');
+            return;
+          }
+          setCart(data.cart);
+          if (cartSignature(data.cart.items) !== latestStoreSignature.current && attempt < 3) sync(attempt + 1);
+        }).catch(() => {});
+      }, 700 * attempt);
+    };
+    sync(1);
+    return () => { cancelled = true; clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeSignature]);
 
   const items = cart?.items || [];
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
