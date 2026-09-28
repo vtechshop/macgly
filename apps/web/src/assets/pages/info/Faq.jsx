@@ -55,7 +55,7 @@ const FAQS = [
       },
       {
         q: 'Is there a minimum order value for free shipping?',
-        a: 'Shipping charges are calculated at checkout based on the product weight and your delivery pin code. Live rates from our logistics partner are shown before you complete payment.',
+        a: 'No. Delivery is free on every order, with no minimum order value. Our listed prices already include GST and delivery, so the price you see is the price you pay.',
       },
     ],
   },

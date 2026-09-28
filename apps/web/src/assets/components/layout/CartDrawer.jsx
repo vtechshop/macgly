@@ -195,7 +195,7 @@ export default function CartDrawer() {
               </div>
               <div className="flex justify-between text-secondary-400 text-xs">
                 <span>Shipping</span>
-                <span>Calculated at checkout</span>
+                <span className="text-green-700 font-medium">Free</span>
               </div>
               <div className="flex justify-between font-bold text-base border-t border-secondary-100 pt-2 mt-1">
                 <span>Total</span>

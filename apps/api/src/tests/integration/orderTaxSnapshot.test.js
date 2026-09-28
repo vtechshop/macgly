@@ -168,6 +168,32 @@ describe('order tax snapshot', () => {
     });
   });
 
+  describe('delivery is included in the price', () => {
+    it('charges no delivery below the old ₹5000 threshold, even if the client sends a charge', async () => {
+      const { cookies } = await makeCustomer();
+      const product = await makeProduct({ price: 2500, taxRate: 18 });
+      await request(app).get('/api/cart').set('Cookie', cookies);
+      await request(app).post('/api/cart/items').set('Cookie', cookies)
+        .send({ productId: product._id.toString(), quantity: 1 });
+
+      const res = await request(app).post('/api/orders').set('Cookie', cookies)
+        .set('X-Idempotency-Key', `test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+        .send({ shippingAddress: TN_ADDRESS, paymentMethod: 'razorpay', shippingCharge: 120 });
+      expect(res.status).toBe(201);
+
+      const order = await Order.findById(res.body.order._id);
+      expect(order.shippingCharge).toBe(0);
+      expect(order.totalAmount).toBe(2500);
+    });
+
+    it('quotes every delivery option as free', async () => {
+      const res = await request(app).get('/api/catalog/shipping-rates?pincode=641006&weight=2');
+      expect(res.status).toBe(200);
+      expect(res.body.options.length).toBeGreaterThan(0);
+      expect(res.body.options.every((o) => o.charge === 0)).toBe(true);
+    });
+  });
+
   describe('backward compatibility', () => {
     it('an order written without the new fields still loads and validates', async () => {
       const legacy = await Order.create({

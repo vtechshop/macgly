@@ -4,7 +4,6 @@
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { computeCouponDiscount, couponUnusableReason } = require('../../utils/coupon');
-const { rememberQuote, resolveQuotedShipping } = require('../../utils/shippingQuote');
 const { isValidWebhookSignature } = require('../../utils/razorpaySignature');
 const { resolveReturnLines } = require('../../utils/returnLines');
 
@@ -49,36 +48,6 @@ describe('SEC-03 — coupon discount is bounded by the subtotal', () => {
 
   it('accepts a usable coupon', () => {
     expect(couponUnusableReason(flat(100), 1000)).toBeNull();
-  });
-});
-
-describe('SEC-04 — shipping must match a rate we quoted', () => {
-  beforeAll(async () => { await rememberQuote('641006', [{ charge: 70 }, { charge: 120 }]); });
-
-  it('refuses a client-invented zero', async () => {
-    expect(await resolveQuotedShipping('641006', 0, 70)).toBe(70);
-  });
-
-  it.each([70, 120])('accepts the quoted rate %s', async (c) => {
-    expect(await resolveQuotedShipping('641006', c, 70)).toBe(c);
-  });
-
-  it.each([5, -50, 'free', null, undefined, NaN, {}])('refuses %p', async (c) => {
-    expect(await resolveQuotedShipping('641006', c, 70)).toBe(70);
-  });
-
-  it('falls back to the default when nothing was quoted for the pincode', async () => {
-    expect(await resolveQuotedShipping('999999', 120, 70)).toBe(70);
-  });
-
-  it('does not let one pincode borrow another pincode\'s rate', async () => {
-    await rememberQuote('110001', [{ charge: 243 }]);
-    expect(await resolveQuotedShipping('110001', 243, 70)).toBe(243);
-    expect(await resolveQuotedShipping('641006', 243, 70)).toBe(70);
-  });
-
-  it('ignores a malformed pincode rather than caching junk', async () => {
-    await expect(rememberQuote('abc', [{ charge: 1 }])).resolves.toBeUndefined();
   });
 });
 

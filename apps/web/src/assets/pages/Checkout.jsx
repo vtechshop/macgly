@@ -100,7 +100,7 @@ function OrderSummary({ items, subtotal, shippingCharge, discount, coupon, coupo
         </div>
         <div className="flex justify-between text-secondary-600">
           <span>Shipping</span>
-          <span>{shippingCharge === 0 ? <span className="text-secondary-400 italic">TBD</span> : formatCurrency(shippingCharge)}</span>
+          <span>{shippingCharge === 0 ? <span className="text-green-700 font-medium">Free</span> : formatCurrency(shippingCharge)}</span>
         </div>
         {coupon && (
           <div className="flex justify-between text-green-700">
@@ -144,7 +144,7 @@ export default function Checkout() {
   const [shippingOptions, setShippingOptions] = useState(DEFAULT_SHIPPING);
   const [loadingRates, setLoadingRates] = useState(false);
   const [shippingOption, setShippingOption] = useState('standard');
-  const shippingCharge = shippingOptions.find((o) => o.id === shippingOption)?.charge ?? 70;
+  const shippingCharge = shippingOptions.find((o) => o.id === shippingOption)?.charge ?? 0;
 
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [couponCode, setCouponCode] = useState('');
@@ -563,7 +563,7 @@ export default function Checkout() {
                         <p className="text-sm text-secondary-500">{opt.desc}</p>
                       </div>
                       <div className="text-right">
-                        <p className={`font-bold text-base ${selected ? 'text-blue-600' : 'text-secondary-700'}`}>{formatCurrency(opt.charge)}</p>
+                        <p className={`font-bold text-base ${selected ? 'text-blue-600' : 'text-secondary-700'}`}>{opt.charge === 0 ? 'Free' : formatCurrency(opt.charge)}</p>
                       </div>
                       {selected && (
                         <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shrink-0">
@@ -624,7 +624,7 @@ export default function Checkout() {
               <div className="lg:hidden bg-secondary-50 rounded-xl p-4 space-y-1.5 text-sm">
                 <p className="font-semibold text-secondary-700 mb-2">Order Total</p>
                 <div className="flex justify-between text-secondary-600"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
-                <div className="flex justify-between text-secondary-600"><span>Shipping</span><span>{formatCurrency(shippingCharge)}</span></div>
+                <div className="flex justify-between text-secondary-600"><span>Shipping</span><span>{shippingCharge === 0 ? <span className="text-green-700 font-medium">Free</span> : formatCurrency(shippingCharge)}</span></div>
                 {coupon && <div className="flex justify-between text-green-700"><span>Coupon</span><span>-{formatCurrency(discount)}</span></div>}
                 <div className="flex justify-between font-bold text-base border-t border-secondary-200 pt-2 mt-1">
                   <span>Total</span><span>{formatCurrency(total)}</span>

@@ -124,7 +124,7 @@ export default function Cart() {
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-secondary-600">Shipping</span>
-            <span className="text-green-600">Calculated at checkout</span>
+            <span className="text-green-600 font-medium">Free</span>
           </div>
           <div className="flex justify-between font-semibold text-lg border-t border-secondary-200 pt-3">
             <span>Total</span>

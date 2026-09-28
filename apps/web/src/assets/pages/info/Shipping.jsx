@@ -31,7 +31,7 @@ export default function Shipping() {
         {[
           { icon: Clock, label: 'Delivery time', value: '3–5 business days' },
           { icon: MapPin, label: 'Coverage', value: 'Pan-India delivery' },
-          { icon: IndianRupee, label: 'Free shipping', value: '[PLACEHOLDER: above ₹X]' },
+          { icon: IndianRupee, label: 'Delivery charge', value: 'Free on all orders' },
           { icon: Package, label: 'Shipping partner', value: 'Delhivery & others' },
           { icon: ShieldCheck, label: 'GST invoice', value: 'Included on all orders' },
           { icon: Truck, label: 'Tracking', value: 'Full order tracking' },
@@ -90,10 +90,10 @@ export default function Shipping() {
         <section>
           <h2 className="text-xl font-bold text-secondary-900 mb-3">Shipping Charges</h2>
           <p className="text-secondary-600 leading-relaxed">
-            [PLACEHOLDER: Describe your shipping charge structure — e.g., "Free shipping on orders above ₹X. Orders below ₹X are charged ₹Y for standard delivery. Heavy or oversized items may attract additional shipping charges."]
+            Delivery is free on every order, with no minimum order value. Our listed prices already include GST and delivery, so the price shown on the product page is the price you pay at checkout.
           </p>
           <p className="text-secondary-600 leading-relaxed mt-3">
-            Exact shipping charges (if applicable) are shown at checkout before payment, based on your delivery pin code and the weight of the items ordered.
+            Both Standard and Express delivery are free. Choose the one that suits you at checkout.
           </p>
         </section>
 

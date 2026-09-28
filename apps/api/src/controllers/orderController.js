@@ -5,7 +5,6 @@ const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
-const Setting = require('../models/Setting');
 const abandonedCartService = require('../services/abandonedCartService');
 const { resolveCart } = require('../services/cartService');
 const AppError = require('../utils/AppError');
@@ -14,7 +13,6 @@ const { resolveTaxRate, resolveSupplierStateCode, splitGst, computeCommission } 
 const { stateCodeFromName } = require('../utils/indianStates');
 const { isValidGstinFormat } = require('../utils/gstin');
 const { computeCouponDiscount, couponUnusableReason } = require('../utils/coupon');
-const { resolveQuotedShipping } = require('../utils/shippingQuote');
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, PLATFORM_GST_STATE_CODE } = require('../config/env');
 const { sendOrderConfirmation, sendVendorNewOrderEmail, sendAdminNewOrderEmail, sendShippingUpdate, sendAdminOrderCancelledEmail } = require('../services/emailService');
 const notif = require('../utils/notificationHelper');
@@ -180,17 +178,9 @@ async function createOrder(req, res, next) {
       }
     }
 
-    const [freeThreshold, defaultRate] = await Promise.all([
-      Setting.get('shipping.free_threshold', 5000),
-      Setting.get('shipping.default_rate', 70),
-    ]);
-    const serverShipping = subtotal >= parseFloat(freeThreshold) ? 0 : parseFloat(defaultRate);
-    // The client tells us which option was picked; it does not get to invent the
-    // price. Accept the figure only if it matches a rate this server actually
-    // quoted for this pincode, otherwise fall back to the configured default.
-    const shippingCharge = subtotal >= parseFloat(freeThreshold)
-      ? 0
-      : await resolveQuotedShipping(shippingAddress.pincode, req.body.shippingCharge, serverShipping);
+    // Listed prices include delivery, so delivery is never charged on top.
+    // Any shippingCharge the client sends is ignored.
+    const shippingCharge = 0;
 
     const totalAmount = Math.max(0, subtotal - discount + shippingCharge);
 

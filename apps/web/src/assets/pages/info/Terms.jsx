@@ -111,10 +111,9 @@ const SECTIONS = [
         num: '5.2',
         title: 'Shipping Charges',
         bullets: [
-          'Shipping charges are calculated at checkout based on destination pincode and order weight',
-          'Standard and Express delivery options are available at competitive rates',
-          'Free shipping on orders above ₹5,000 (standard delivery)',
-          'Remote area surcharges may apply as determined by our logistics partner',
+          'Listed product prices include GST and delivery',
+          'Delivery is free on all orders, with no minimum order value',
+          'Standard and Express delivery options are both free of charge',
         ],
       },
       {
