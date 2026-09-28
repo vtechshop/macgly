@@ -194,9 +194,9 @@ export default function Header() {
               {/* Wishlist */}
               <Link
                 to="/dashboard/customer/wishlist"
-                aria-label="Wishlist"
                 className="relative hidden md:flex items-center gap-2 text-secondary-700 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-secondary-100"
               >
+                <span className="sr-only">Wishlist</span>
                 <div className="relative">
                   <Heart size={22} />
                   {wishlistCount > 0 && (
