@@ -65,12 +65,6 @@ export default function Footer() {
               <li><Link to="/category/electronics-instruments" className="hover:text-primary-400 transition-colors">Electronics</Link></li>
               <li><Link to="/categories" className="hover:text-primary-400 transition-colors">All Categories</Link></li>
             </ul>
-            <h2 className="text-sm font-bold text-white mt-6 mb-3 uppercase tracking-wide">Buying Guides</h2>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/guides/how-to-choose-a-drilling-machine" className="hover:text-primary-400 transition-colors">How to Choose a Drill</Link></li>
-              <li><Link to="/guides/drill-machine-price-guide-india" className="hover:text-primary-400 transition-colors">Drill Price Guide</Link></li>
-              <li><Link to="/guides/corded-vs-cordless-drills-india" className="hover:text-primary-400 transition-colors">Corded vs Cordless Drills</Link></li>
-            </ul>
           </div>
 
           {/* Account */}

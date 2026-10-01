@@ -32,7 +32,7 @@ export default function Shipping() {
           { icon: Clock, label: 'Delivery time', value: '3–5 business days' },
           { icon: MapPin, label: 'Coverage', value: 'Pan-India delivery' },
           { icon: IndianRupee, label: 'Delivery charge', value: 'Free on all orders' },
-          { icon: Package, label: 'Shipping partner', value: 'Delhivery & others' },
+          { icon: Package, label: 'Shipping partner', value: 'Delhivery' },
           { icon: ShieldCheck, label: 'GST invoice', value: 'Included on all orders' },
           { icon: Truck, label: 'Tracking', value: 'Full order tracking' },
         ].map(({ icon: Icon, label, value }) => (
@@ -51,9 +51,6 @@ export default function Shipping() {
             Macgly delivers to all major cities and most pin codes across India, including metro cities
             (Mumbai, Delhi, Bangalore, Chennai, Hyderabad, Kolkata, Pune, Ahmedabad) and smaller towns.
             You can verify delivery availability for your pin code on any product page before placing an order.
-          </p>
-          <p className="text-secondary-600 leading-relaxed mt-3">
-            [PLACEHOLDER: Add any pin codes or regions that are NOT currently serviceable, or remove this sentence if pan-India coverage is complete.]
           </p>
         </section>
 
@@ -100,18 +97,14 @@ export default function Shipping() {
         <section>
           <h2 className="text-xl font-bold text-secondary-900 mb-3">Shipping Partners</h2>
           <p className="text-secondary-600 leading-relaxed">
-            Macgly ships orders via <strong>Delhivery</strong> and other reputed logistics partners.
-            The shipping partner is selected based on your delivery location and the nature of the product.
-          </p>
-          <p className="text-secondary-600 leading-relaxed mt-3">
-            [PLACEHOLDER: Add any other shipping partners if applicable — e.g., BlueDart, DTDC, Ekart, etc.]
+            Macgly ships all orders via <strong>Delhivery</strong>.
           </p>
         </section>
 
         <section>
           <h2 className="text-xl font-bold text-secondary-900 mb-3">Order Tracking</h2>
           <p className="text-secondary-600 leading-relaxed">
-            Once your order is shipped, you will receive an email or SMS with the tracking number and a
+            Once your order is shipped, you will receive an email with the tracking number and a
             link to track your shipment. You can also track your order from your{' '}
             <Link to="/dashboard/customer/orders" className="text-primary-600 hover:underline">
               My Orders
@@ -121,13 +114,6 @@ export default function Shipping() {
               Track Order
             </Link>{' '}
             tool with your order ID and email address.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-secondary-900 mb-3">Heavy or Large Items</h2>
-          <p className="text-secondary-600 leading-relaxed">
-            [PLACEHOLDER: Describe how heavy machinery or large items are shipped — e.g., "Heavy machinery (above X kg) may be shipped via road freight. Estimated delivery for such items is 5–10 business days. You will be contacted separately with delivery details." Or remove this section if not applicable.]
           </p>
         </section>
 

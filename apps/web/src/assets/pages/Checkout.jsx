@@ -408,6 +408,8 @@ export default function Checkout() {
           order_id: data.razorpayOrder.id,
           name: 'Macgly',
           description: 'Order Payment',
+          // EMI is not offered, even if it is enabled on the Razorpay account.
+          method: { emi: false, cardless_emi: false },
           handler: async (response) => {
             try {
               await api.post('/payments/verify', response);

@@ -23,16 +23,13 @@ export default function Returns() {
 
       <h1 className="text-3xl font-bold text-secondary-900 mb-2">Returns &amp; Refund Policy</h1>
       <p className="text-secondary-500 mb-8">
-        {/* PLACEHOLDER: Verify the return window with your legal/business team.
-            The FAQ page currently says 7 days; the API enforces 30 days.
-            Set a single consistent value here before launch. */}
-        Last updated: September 2024. We want you to be completely satisfied with your purchase.
+        Last updated: October 2026. We want you to be completely satisfied with your purchase.
       </p>
 
       {/* Key facts */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-10">
         {[
-          { icon: Clock, label: 'Return window', value: '[PLACEHOLDER: X days]' },
+          { icon: Clock, label: 'Return window', value: '7 days from delivery' },
           { icon: RefreshCw, label: 'Refund method', value: 'Original payment method' },
           { icon: CheckCircle, label: 'Condition', value: 'Unused, original packaging' },
         ].map(({ icon: Icon, label, value }) => (
@@ -52,7 +49,7 @@ export default function Returns() {
           </p>
           <ul className="space-y-2">
             {[
-              'Returned within [PLACEHOLDER: X days] of delivery',
+              'Return requested within 7 days of delivery',
               'Item is unused, undamaged, and in its original condition',
               'Original packaging, all accessories, manuals, and tags are intact',
               'A GST invoice or order confirmation is available as proof of purchase',
@@ -71,9 +68,9 @@ export default function Returns() {
             {[
               'Items damaged due to misuse, improper installation, or normal wear and tear',
               'Products with missing serial numbers, tampered stickers, or altered packaging',
-              '[PLACEHOLDER: Perishable items, consumables, or custom-ordered products]',
+              'Customized or made-to-order items',
               'Items that have been installed, assembled, or modified after delivery',
-              '[PLACEHOLDER: Any other non-returnable category specific to your catalog]',
+              'Products marked "Non-Returnable" on the listing',
             ].map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-sm text-secondary-600">
                 <XCircle size={15} className="text-red-400 shrink-0 mt-0.5" />
@@ -100,12 +97,12 @@ export default function Returns() {
               {
                 step: '3',
                 title: 'Schedule a pickup',
-                desc: 'Once your return request is approved, a pickup will be scheduled from your delivery address. [PLACEHOLDER: Add estimated pickup timeframe — e.g., "within 2–3 business days".]',
+                desc: 'Once your return request is approved, our delivery partner will collect the item from your delivery address free of charge. Pack it securely in its original packaging.',
               },
               {
                 step: '4',
                 title: 'Receive your refund',
-                desc: 'After the returned item is inspected and approved, your refund will be processed to your original payment method. [PLACEHOLDER: Add refund timeframe — e.g., "within 5–7 business days".]',
+                desc: 'After the returned item is inspected and approved, your refund will be processed to your original payment method within the timeframes below.',
               },
             ].map(({ step, title, desc }) => (
               <li key={step} className="flex gap-4">
@@ -136,10 +133,9 @@ export default function Returns() {
               </thead>
               <tbody>
                 {[
-                  ['UPI / Net Banking', '[PLACEHOLDER: X–Y business days]'],
-                  ['Debit / Credit Card', '[PLACEHOLDER: X–Y business days]'],
-                  ['Wallet / BNPL', '[PLACEHOLDER: X–Y business days]'],
-                  ['Cash on Delivery (COD)', '[PLACEHOLDER: Refunded as store credit / bank transfer within X days]'],
+                  ['UPI / Net Banking', '3–5 business days'],
+                  ['Debit / Credit Card', '5–7 business days'],
+                  ['Wallet', '2–3 business days'],
                 ].map(([method, time], i) => (
                   <tr key={method} className={i % 2 === 0 ? 'bg-white' : 'bg-secondary-50'}>
                     <td className="px-4 py-2.5 border-b border-secondary-100 text-secondary-700 font-medium">{method}</td>
@@ -158,7 +154,7 @@ export default function Returns() {
             <p className="text-sm text-secondary-700">
               If you receive a damaged or defective item, do not use it.
               Take clear photographs of the damaged packaging and item, then contact us within{' '}
-              <strong>[PLACEHOLDER: X days]</strong> of delivery. Damaged items are collected and
+              <strong>7 days</strong> of delivery. Damaged items are collected and
               replaced or fully refunded at no cost to you.
             </p>
           </div>
@@ -170,7 +166,6 @@ export default function Returns() {
             Macgly is a marketplace. Some products are sold by third-party vendors. Return policies
             may vary slightly by vendor. The return window and eligibility criteria stated here apply
             to all products on the platform unless a product page states a more specific policy.
-            [PLACEHOLDER: Review whether this paragraph applies to your business model or remove it.]
           </p>
         </section>
 

@@ -29,4 +29,8 @@ const PLATFORM_PARTY = {
   },
 };
 
-module.exports = { PLATFORM_PARTY };
+// Days after delivery a customer may raise a return. Also gates when vendor
+// commissions are released, so the two can never disagree.
+const RETURN_WINDOW_DAYS = 7;
+
+module.exports = { PLATFORM_PARTY, RETURN_WINDOW_DAYS };

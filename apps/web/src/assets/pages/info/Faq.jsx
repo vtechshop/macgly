@@ -26,7 +26,7 @@ const FAQS = [
     items: [
       {
         q: 'What payment methods do you accept?',
-        a: 'We accept UPI (GPay, PhonePe, Paytm, BHIM), Credit/Debit cards (Visa, Mastercard, RuPay), Net Banking, and EMI on eligible cards. All payments are processed securely via Razorpay.',
+        a: 'We accept UPI (GPay, PhonePe, Paytm, BHIM), Credit/Debit cards (Visa, Mastercard, RuPay) and Net Banking. All payments are processed securely via Razorpay.',
       },
       {
         q: 'Do you provide GST invoices?',
@@ -51,7 +51,7 @@ const FAQS = [
       },
       {
         q: 'How do I track my order?',
-        a: 'You\'ll receive an SMS and email with the tracking link once your order is dispatched. You can also track it anytime from your account under My Orders, or use our Track Order page with your order ID.',
+        a: 'You\'ll receive an email with your tracking details once your order is dispatched. You can also track it anytime from your account under My Orders, or use our Track Order page with your order ID.',
       },
       {
         q: 'Is there a minimum order value for free shipping?',

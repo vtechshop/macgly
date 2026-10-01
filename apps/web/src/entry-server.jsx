@@ -34,7 +34,6 @@ import Home from './assets/pages/Home.jsx';
 import Product from './assets/pages/Product.jsx';
 import Category from './assets/pages/Category.jsx';
 import VendorStore from './assets/pages/VendorStore.jsx';
-import GuidePage from './assets/pages/GuidePage.jsx';
 import Shipping from './assets/pages/info/Shipping.jsx';
 import Returns from './assets/pages/info/Returns.jsx';
 import Search from './assets/pages/Search.jsx';
@@ -55,8 +54,7 @@ import PublicLayout from './assets/components/layout/PublicLayout.jsx';
 
 // Re-export JSON-LD helpers so prerender.mjs can generate head JSON-LD
 // from the same single source of truth.
-export { productJsonLd, breadcrumbJsonLd, faqJsonLd, guideJsonLd } from './utils/seo.js';
-export { GUIDES, getGuide } from './data/guides.js';
+export { productJsonLd, breadcrumbJsonLd } from './utils/seo.js';
 
 // The element tree must mirror main.jsx + App.jsx exactly (Suspense boundary
 // around Routes, Toaster after the app). Any structural difference makes
@@ -71,7 +69,6 @@ function SSRApp({ url }) {
           <Route path="/product/:slug" element={<Product />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/store/:id" element={<VendorStore />} />
-          <Route path="/guides/:slug" element={<GuidePage />} />
           <Route path="/info/shipping" element={<Shipping />} />
           <Route path="/info/returns" element={<Returns />} />
           <Route path="/products" element={<Search />} />

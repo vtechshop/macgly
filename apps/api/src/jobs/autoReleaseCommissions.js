@@ -1,8 +1,7 @@
 const Commission = require('../models/Commission');
 const Order      = require('../models/Order');
 const { transitionCommission } = require('../services/commissionService');
-
-const RETURN_WINDOW_DAYS = 7;
+const { RETURN_WINDOW_DAYS } = require('../config/platform');
 
 async function run() {
   const cutoff = new Date(Date.now() - RETURN_WINDOW_DAYS * 24 * 60 * 60 * 1000);

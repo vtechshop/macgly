@@ -4,6 +4,7 @@ const Order = require('../models/Order');
 const AppError = require('../utils/AppError');
 const { authenticate } = require('../middleware/auth');
 const { resolveReturnLines } = require('../utils/returnLines');
+const { RETURN_WINDOW_DAYS } = require('../config/platform');
 
 router.use(authenticate);
 
@@ -20,8 +21,8 @@ router.post('/', async (req, res, next) => {
     }
     if (order.deliveredAt) {
       const daysSince = (Date.now() - new Date(order.deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSince > 30) {
-        throw new AppError('Return window has closed. Returns must be raised within 30 days of delivery.', 400, 'RETURN_WINDOW_CLOSED');
+      if (daysSince > RETURN_WINDOW_DAYS) {
+        throw new AppError(`Return window has closed. Returns must be raised within ${RETURN_WINDOW_DAYS} days of delivery.`, 400, 'RETURN_WINDOW_CLOSED');
       }
     }
     const existing = await Return.findOne({ order: orderId });

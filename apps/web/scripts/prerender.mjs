@@ -201,8 +201,7 @@ async function main() {
   }
   const {
     renderRoute,
-    productJsonLd, breadcrumbJsonLd, faqJsonLd, guideJsonLd,
-    GUIDES,
+    productJsonLd, breadcrumbJsonLd,
   } = await import(pathToFileURL(ssrBundle).href);
 
   // ── 3. Fetch all data ────────────────────────────────────────────────────
@@ -455,32 +454,6 @@ async function main() {
     count++;
   }
 
-  // ── 8. Guide pages (static content — no API seeds needed) ───────────────────
-  for (const guide of GUIDES) {
-    let ssrBody = '';
-    try {
-      ssrBody = renderRoute(`/guides/${guide.slug}`, []);
-    } catch (err) {
-      console.warn(`[prerender] SSR error /guides/${guide.slug}: ${err.message}`);
-    }
-
-    let pageHtml = applyMeta(shell, {
-      title:       guide.title,
-      description: clamp(guide.description, 155),
-      canonical:   `${SITE_URL}/guides/${guide.slug}`,
-      type:        'article',
-    });
-    if (ssrBody) pageHtml = injectSSR(pageHtml, ssrBody, []);
-
-    // Inject Article + FAQPage JSON-LD into <head>.
-    const ldItems = [guideJsonLd(guide)];
-    if (guide.faqs?.length) ldItems.push(faqJsonLd(guide.faqs));
-    pageHtml = injectHeadJsonLd(pageHtml, ldItems);
-
-    await emit(`guides/${guide.slug}`, pageHtml);
-    count++;
-  }
-
   // ── 9. Static trust pages (Shipping, Returns) ────────────────────────────────
   const TRUST_PAGES = [
     {
@@ -626,10 +599,6 @@ async function main() {
     `- [All categories](${SITE_URL}/categories)`,
     `- [All products](${SITE_URL}/products)`,
     '',
-    '## Buying guides',
-    '',
-    ...GUIDES.map((g) => `- [${g.title}](${SITE_URL}/guides/${g.slug}): ${clamp(g.description, 140)}`),
-    '',
     '## Policies and help',
     '',
     `- [Shipping policy](${SITE_URL}/info/shipping)`,
@@ -654,7 +623,7 @@ async function main() {
     `[prerender] wrote ${count} route files `
     + `(${products.length} products · ${categories.length} categories · `
     + `${posts.length} blog posts · ${vendors.size} vendor stores · `
-    + `${GUIDES.length} guides · ${TRUST_PAGES.length} trust pages · homepage)`,
+    + `${TRUST_PAGES.length} trust pages · homepage)`,
   );
 }
 

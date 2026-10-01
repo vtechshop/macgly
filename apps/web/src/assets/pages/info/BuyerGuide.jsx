@@ -27,17 +27,16 @@ const STEPS = [
   {
     icon: CreditCard,
     title: 'Checkout and pay',
-    desc: 'Create a free account or sign in, enter your delivery address, choose your shipping option, and pay securely. We accept UPI, cards (Visa, Mastercard, RuPay), Net Banking, and EMI on eligible cards via Razorpay.',
+    desc: 'Create a free account or sign in, enter your delivery address, choose your shipping option, and pay securely. We accept UPI, cards (Visa, Mastercard, RuPay) and Net Banking via Razorpay.',
     tips: [
       'Save your GST details in your profile for automatic invoice generation',
       'UPI is the fastest and most reliable payment method',
-      'EMI is available on orders above ₹3,000 on select cards',
     ],
   },
   {
     icon: Truck,
     title: 'Track your delivery',
-    desc: 'Once dispatched, you\'ll receive an SMS and email with your tracking link. You can also track orders anytime from your account dashboard under My Orders. Standard delivery takes 3–7 business days.',
+    desc: 'Once dispatched, you\'ll receive an email with your tracking details. You can also track orders anytime from your account dashboard under My Orders. Standard delivery takes 3–7 business days.',
     tips: [
       'Metro cities typically receive orders in 2–4 business days',
       'If tracking shows "out for delivery", someone should be available to receive the package',
