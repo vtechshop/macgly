@@ -545,7 +545,11 @@ async function main() {
     } catch (err) {
       console.warn(`[prerender] SSR error /${route}: ${err.message}`);
     }
-    let pageHtml = applyMeta(shell, { title, description: clamp(description, 155), canonical: `${SITE_URL}/${route}` });
+    let pageHtml = applyMeta(shell, {
+      title, description: clamp(description, 155), canonical: `${SITE_URL}/${route}`,
+      // Same rule as Blog.jsx and the sitemap: an empty blog stays unindexed.
+      noindex: route === 'blog' && posts.length === 0,
+    });
     if (ssrBody) pageHtml = injectSSR(pageHtml, ssrBody, seeds);
     await emit(route, pageHtml);
     count++;

@@ -12,14 +12,6 @@ export default function Blog() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    setMeta({
-      title: 'Blog — Tools, Tips & Industry News | Macgly',
-      description: 'Expert guides, tool reviews and industry news from Macgly. Learn about power tools, machines, spare parts and more.',
-      canonical: 'https://www.macgly.com/blog',
-    });
-  }, []);
-
   const { data, isLoading } = useFetch(
     ['blog', search, page],
     () => api.get('/blog', { params: { search: search || undefined, page, limit: 12 } }).then((r) => r.data)
@@ -27,6 +19,18 @@ export default function Blog() {
 
   const posts = data?.posts || [];
   const pagination = data?.pagination || {};
+
+  // With no posts at all the page is an empty shell; keep it out of the index
+  // until the first post is published.
+  const blogIsEmpty = !!data && !search && page === 1 && posts.length === 0;
+  useEffect(() => {
+    setMeta({
+      title: 'Blog — Tools, Tips & Industry News | Macgly',
+      description: 'Expert guides, tool reviews and industry news from Macgly. Learn about power tools, machines, spare parts and more.',
+      canonical: 'https://www.macgly.com/blog',
+      noindex: blogIsEmpty,
+    });
+  }, [blogIsEmpty]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">

@@ -53,7 +53,9 @@ router.get('/', async (req, res, next) => {
     const now = new Date().toISOString();
 
     const urls = [
-      ...STATIC_ROUTES.map(({ path, priority, changefreq }) =>
+      // An empty blog index is a thin page with nothing linking to it; list it
+      // only once there is at least one published post.
+      ...STATIC_ROUTES.filter(({ path }) => path !== '/blog' || posts.length > 0).map(({ path, priority, changefreq }) =>
         urlTag({ loc: `${BASE_URL}${path}`, changefreq, priority, lastmod: now })
       ),
       ...categories.map((c) =>
