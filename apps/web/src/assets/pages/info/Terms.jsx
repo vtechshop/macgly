@@ -134,7 +134,7 @@ const SECTIONS = [
         bullets: [
           'Items can be returned within 7 days of delivery',
           'Product must be unused, unwashed, and in original packaging with all tags, labels, and invoice intact',
-          'Raise a return request via "My Orders" in your dashboard or by emailing ledvtech@gmail.com',
+          'Raise a return request via "My Orders" in your dashboard or by emailing macglyshop@gmail.com',
         ],
       },
       {
@@ -339,7 +339,6 @@ export default function Terms() {
                 <Link to="/info/contact" className="text-primary-600 hover:underline font-medium">Contact our support team</Link>{' '}
                 or email us at{' '}
                 <a href="mailto:macglyshop@gmail.com" className="text-primary-600 hover:underline font-medium">macglyshop@gmail.com</a>
-                {' '}/ <a href="mailto:ledvtech@gmail.com" className="text-primary-600 hover:underline font-medium">ledvtech@gmail.com</a>
                 {' '}or call <a href="tel:+919944556683" className="text-primary-600 hover:underline font-medium">+91 99445 56683</a>.
               </p>
             </div>
