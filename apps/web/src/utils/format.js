@@ -29,7 +29,8 @@ export function normalizeImageUrl(url, { width } = {}) {
 
 /** srcset for Cloudinary images so the browser picks a size to fit the slot. */
 // Capped at 480: phones (dpr ~2.6) would otherwise pick 640 for a ~180px tile.
-export function imageSrcSet(url, widths = [200, 320, 480]) {
+// 360 covers the common ~184px tile at dpr 1.75 (322 device px).
+export function imageSrcSet(url, widths = [200, 320, 360, 480]) {
   if (!url || !url.includes('res.cloudinary.com') || !url.includes('/upload/') || url.includes('f_auto')) return undefined;
   return widths.map((w) => `${normalizeImageUrl(url, { width: w })} ${w}w`).join(', ');
 }
