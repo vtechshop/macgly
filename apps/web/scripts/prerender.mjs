@@ -193,6 +193,15 @@ async function main() {
     process.exit(1);
   }
 
+  // Every page inherits the shell's JSON-LD; one stray comma invalidates it
+  // site-wide and nothing else notices.
+  for (const [, block] of shell.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
+    try { JSON.parse(block); } catch (err) {
+      console.error(`[prerender] invalid JSON-LD in index.html: ${err.message}`);
+      process.exit(1);
+    }
+  }
+
   // ── 2. Load the SSR render bundle ────────────────────────────────────────
   const ssrBundle = path.resolve(__dirname, '../dist-ssr/entry-server.js');
   if (!existsSync(ssrBundle)) {
@@ -575,17 +584,6 @@ async function main() {
     canonical:   `${SITE_URL}/`,
   });
   if (homeSsrBody) homeHtml = injectSSR(homeHtml, homeSsrBody, homeSeeds);
-  homeHtml = injectHeadJsonLd(homeHtml, [{
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    url: `${SITE_URL}/`,
-    name: 'Macgly',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/products?q={search_term_string}` },
-      'query-input': 'required name=search_term_string',
-    },
-  }]);
   await writeFile(shellPath, homeHtml, 'utf8');
   console.log('[prerender] homepage prerendered → dist/index.html');
   count++;
