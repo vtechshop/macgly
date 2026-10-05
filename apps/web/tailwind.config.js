@@ -11,9 +11,11 @@ export default {
           300: '#fdba74',
           400: '#fb923c',
           500: '#f97316',
-          600: '#ea580c',
-          700: '#c2410c',
-          800: '#9a3412',
+          // 600 is the colour of buttons, links and badges. It was #ea580c, which
+          // gives white text only 3.56:1; #c2410c gives 5.18:1 (WCAG AA needs 4.5).
+          600: '#c2410c',
+          700: '#9a3412',
+          800: '#7c2d12',
           900: '#7c2d12',
           950: '#431407',
         },

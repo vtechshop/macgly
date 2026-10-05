@@ -107,7 +107,7 @@ export default function Header() {
               {/* Brand text */}
               <div className="flex flex-col leading-none">
                 <span className="font-black tracking-wider text-xl">
-                  <span style={{ color: '#3B1F0A' }}>MAC</span><span className="text-orange-500">GLY</span>
+                  <span style={{ color: '#3B1F0A' }}>MAC</span><span className="text-primary-600">GLY</span>
                 </span>
                 <span className="text-[9px] font-semibold tracking-[0.2em] uppercase" style={{ color: '#7B4F2E' }}>Tools &amp; Machinery</span>
               </div>

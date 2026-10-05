@@ -13,7 +13,7 @@
     @apply font-semibold;
   }
   :focus-visible {
-    outline: 2px solid #ea580c;
+    outline: 2px solid #c2410c;
     outline-offset: 3px;
     border-radius: 2px;
   }

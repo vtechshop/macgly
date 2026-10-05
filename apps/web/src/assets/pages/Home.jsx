@@ -116,7 +116,7 @@ export default function Home() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-bold text-secondary-900">Shop by Category</h2>
-              <p className="text-sm text-secondary-400 mt-0.5">Select a category to explore products</p>
+              <p className="text-sm text-secondary-600 mt-0.5">Select a category to explore products</p>
             </div>
             <Link to="/categories" className="text-sm font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1">
               All Categories <ChevronRight size={14} />
