@@ -185,7 +185,19 @@ async function main() {
     console.error('[prerender] dist/index.html not found — run vite build first.');
     process.exit(1);
   }
-  const shell = await readFile(templatePath, 'utf8');
+  let shell = await readFile(templatePath, 'utf8');
+
+  // Inline the main stylesheet. As a separate file it is one more blocking
+  // round trip before first paint; the app is an SPA, so the copy in the HTML
+  // is only downloaded on the first page of a visit.
+  const cssLink = shell.match(/<link rel="stylesheet"[^>]*href="(\/assets\/[^"]+\.css)"[^>]*>/);
+  if (cssLink) {
+    const css = await readFile(path.join(DIST, cssLink[1]), 'utf8');
+    if (!css.includes('</style')) {
+      shell = shell.replace(cssLink[0], () => `<style>${css}</style>`);
+      if (existsSync(pristine)) await writeFile(pristine, shell, 'utf8');
+    }
+  }
 
   if (!shell.includes('<!--SSR_BODY_START-->')) {
     console.error('[prerender] SSR sentinels missing from dist/index.html. '
