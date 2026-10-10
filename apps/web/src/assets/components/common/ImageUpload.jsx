@@ -35,13 +35,16 @@ export default function ImageUpload({ urls = [], onChange, uploadUrl = '/admin/u
         form.append('image', file);
         const { data } = await api.post(`${uploadUrl}?folder=products`, form, {
           headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 120000, // the default 15 s is too short for a large photo on a slow connection
         });
         uploaded.push(data.url);
       }
       onChange([...urls, ...uploaded]);
       toast.success(`${uploaded.length} image(s) uploaded`);
-    } catch {
-      toast.error('Upload failed');
+    } catch (err) {
+      const reason = err.response?.data?.error?.message
+        || (err.response ? `server returned ${err.response.status}` : err.code === 'ECONNABORTED' ? 'the upload timed out' : 'could not reach the server');
+      toast.error(`Upload failed: ${reason}`, { duration: 8000 });
     } finally {
       setUploading(false);
       e.target.value = '';

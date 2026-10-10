@@ -16,7 +16,15 @@ router.post('/image', upload.single('image'), async (req, res, next) => {
   try {
     if (!req.file) throw new AppError('Image required', 400, 'MISSING_FILE');
     const folder = req.query.folder || 'products';
-    const result = await uploadFile(req.file, folder);
+    let result;
+    try {
+      result = await uploadFile(req.file, folder);
+    } catch (err) {
+      // The storage provider's reason (bad credentials, quota, bad image) is safe
+      // to show an admin and is the only way to diagnose a failed upload.
+      console.error('[upload] storage error:', err);
+      throw new AppError(`Image storage rejected the upload: ${err.message || err.error?.message || 'unknown error'}`, 502, 'STORAGE_ERROR');
+    }
     res.json(result);
   } catch (err) { next(err); }
 });

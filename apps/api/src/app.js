@@ -252,6 +252,14 @@ app.use((err, req, res, next) => {
     return res.status(403).json({ error: { code: 'INVALID_CSRF', message: 'Invalid CSRF token' } });
   }
 
+  // Upload rejected by multer (too large, too many files, wrong field)
+  if (err.name === 'MulterError') {
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'File is too large. The maximum size is 5 MB.'
+      : `Upload rejected: ${err.message}`;
+    return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ error: { code: err.code, message } });
+  }
+
   // Operational AppError
   if (err.isOperational) {
     return res.status(err.statusCode).json({ error: { code: err.code, message: err.message } });
