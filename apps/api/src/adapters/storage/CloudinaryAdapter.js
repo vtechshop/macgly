@@ -1,4 +1,7 @@
-const cloudinary = require('cloudinary');
+// Must be the v2 interface: the package root is the legacy v1 API, whose
+// upload_stream(callback, options) has the arguments the other way round, so
+// the callback below was never called and every upload hung.
+const cloudinary = require('cloudinary').v2;
 const {
   CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET,
 } = require('../../config/env');
@@ -20,6 +23,7 @@ class CloudinaryAdapter {
           fetch_format: 'auto',
           width: 1200,
           crop: 'limit',
+          timeout: 60000,
         },
         (err, result) => {
           if (err) return reject(err);
