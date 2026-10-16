@@ -51,6 +51,7 @@ import SellerGuide from './assets/pages/info/SellerGuide.jsx';
 import Privacy from './assets/pages/info/Privacy.jsx';
 import Terms from './assets/pages/info/Terms.jsx';
 import PublicLayout from './assets/components/layout/PublicLayout.jsx';
+import ErrorBoundary from './assets/components/common/ErrorBoundary.jsx';
 
 // Re-export JSON-LD helpers so prerender.mjs can generate head JSON-LD
 // from the same single source of truth.
@@ -62,6 +63,7 @@ export { productJsonLd, breadcrumbJsonLd } from './utils/seo.js';
 function SSRApp({ url }) {
   return (
     <StaticRouter location={url}>
+      <ErrorBoundary>
       <Suspense fallback={null}>
       <Routes>
         <Route element={<PublicLayout />}>
@@ -88,6 +90,7 @@ function SSRApp({ url }) {
         </Route>
       </Routes>
       </Suspense>
+      </ErrorBoundary>
     </StaticRouter>
   );
 }

@@ -1,40 +1,66 @@
 import { Component } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { WifiOff, AlertTriangle, RefreshCw } from 'lucide-react';
 
+const isChunkError = (err) => /dynamically imported module|Importing a module script failed|ChunkLoadError|Loading chunk/i.test(String(err?.message || err));
+const RELOAD_KEY = 'macgly_chunk_reload';
+
+/**
+ * Replaces a blank screen with a message and a Retry button when a page fails
+ * to render, most often because its code could not be downloaded (connection
+ * dropped mid-load, or the cached page points at code from an older deploy).
+ */
 export default class ErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+  state = { error: null, offline: false };
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return { error, offline: typeof navigator !== 'undefined' && navigator.onLine === false };
   }
 
-  componentDidCatch(error, info) {
-    console.error('[ErrorBoundary]', error, info.componentStack);
+  componentDidCatch(error) {
+    console.error('[ErrorBoundary]', error);
+    // Online but the page's code is missing: usually a new deploy replaced the
+    // file. One automatic reload picks up the new version; the flag stops loops.
+    if (isChunkError(error) && navigator.onLine !== false) {
+      let recent = true; // if storage is blocked, never auto-reload (no way to stop a loop)
+      try {
+        recent = Date.now() - Number(sessionStorage.getItem(RELOAD_KEY) || 0) < 60_000;
+        if (!recent) sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+      } catch { /* storage blocked */ }
+      if (!recent) window.location.reload();
+    }
+  }
+
+  componentDidMount() {
+    this.onOnline = () => { if (this.state.error) window.location.reload(); };
+    window.addEventListener('online', this.onOnline);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('online', this.onOnline);
   }
 
   render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
-            <AlertTriangle size={28} className="text-red-500" />
-          </div>
-          <div>
-            <p className="font-bold text-secondary-800 text-lg">Something went wrong</p>
-            <p className="text-secondary-500 text-sm mt-1">This page ran into an error. Try refreshing.</p>
-          </div>
-          <button
-            onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
-            className="px-5 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors"
-          >
-            Reload Page
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
+    const { error, offline } = this.state;
+    if (!error) return this.props.children;
+
+    const chunk = isChunkError(error);
+    const Icon = offline ? WifiOff : AlertTriangle;
+    const title = offline ? "You're offline" : chunk ? "This page couldn't load" : 'Something went wrong';
+    const text = offline
+      ? 'Check your internet connection. The page will reload automatically when you are back online.'
+      : chunk
+        ? 'Part of the page did not download. This usually fixes itself when you try again.'
+        : 'An unexpected error stopped this page from loading. Please try again.';
+
+    return (
+      <div role="alert" className="min-h-[70vh] flex flex-col items-center justify-center text-center px-6 py-16">
+        <Icon size={40} className="text-secondary-400" aria-hidden="true" />
+        <h1 className="mt-4 text-xl font-bold text-secondary-900">{title}</h1>
+        <p className="mt-2 max-w-sm text-sm text-secondary-600">{text}</p>
+        <button type="button" onClick={() => window.location.reload()} className="btn-primary mt-6 px-6 py-2.5 text-sm font-semibold">
+          <RefreshCw size={15} aria-hidden="true" /> Try again
+        </button>
+      </div>
+    );
   }
 }

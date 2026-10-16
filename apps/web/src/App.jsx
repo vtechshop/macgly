@@ -5,6 +5,7 @@ import { setUser, clearUser } from './store/slices/authSlice';
 import { setCart } from './store/slices/cartSlice';
 import api from './utils/api';
 import Spinner from './assets/components/common/Spinner';
+import ErrorBoundary from './assets/components/common/ErrorBoundary';
 
 import PublicLayout from './assets/components/layout/PublicLayout';
 import DashboardLayout from './assets/components/layout/DashboardLayout';
@@ -185,6 +186,7 @@ export default function App() {
       <ScrollToTop />
       <AutoRefresh />
       <AuthInit>
+        <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Auth — standalone, no navbar/footer */}
@@ -312,6 +314,7 @@ export default function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        </ErrorBoundary>
       </AuthInit>
     </BrowserRouter>
   );
