@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const User   = require('../../models/User');
 const AppError = require('../../utils/AppError');
+const { vendorKycGaps } = require('../../utils/vendorKyc');
 const notif  = require('../../utils/notificationHelper');
 const { sendVendorKYCDecisionEmail } = require('../../services/emailService');
 const { writeAuditLog, fromReq } = require('../../middleware/audit');
@@ -123,20 +124,11 @@ router.put('/vendors/:id/approve', async (req, res, next) => {
     const user = await User.findOne({ _id: req.params.id, role: 'vendor' });
     if (!user) throw new AppError('Vendor not found', 404, 'NOT_FOUND');
 
-    const { force } = req.body;
-    const vp   = user.vendorProfile || {};
-    const docs = vp.kycDocuments || [];
-
-    if (!force) {
-      if (!vp.businessName?.trim() || !vp.businessType || !vp.businessAddress?.trim() || !vp.businessPhone?.trim()) {
-        throw new AppError('Business information is incomplete', 400, 'INCOMPLETE_KYC');
-      }
-      if (!vp.gstVerified) {
-        throw new AppError('GST has not been verified', 400, 'GST_NOT_VERIFIED');
-      }
-      if (!docs.some((d) => d.type === 'id_proof') || !docs.some((d) => d.type === 'address_proof')) {
-        throw new AppError('ID proof and address proof documents are required', 400, 'MISSING_DOCUMENTS');
-      }
+    // No override: a vendor is approved only with complete KYC. (A `force`
+    // flag used to skip every check, and the Vendors page always sent it.)
+    const gaps = vendorKycGaps(user.vendorProfile);
+    if (gaps.length) {
+      throw new AppError(`Cannot approve yet — KYC is incomplete. Missing: ${gaps.join(', ')}.`, 400, 'KYC_INCOMPLETE');
     }
 
     const updated = await User.findByIdAndUpdate(
@@ -218,8 +210,18 @@ router.put('/affiliates/:id/reject', async (req, res, next) => {
 
 router.put('/vendor/:id/approve', async (req, res, next) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, { 'vendorProfile.approved': true }, { new: true });
-    if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
+    const existing = await User.findOne({ _id: req.params.id, role: 'vendor' });
+    if (!existing) throw new AppError('User not found', 404, 'NOT_FOUND');
+    const gaps = vendorKycGaps(existing.vendorProfile);
+    if (gaps.length) {
+      throw new AppError(`Cannot approve yet — KYC is incomplete. Missing: ${gaps.join(', ')}.`, 400, 'KYC_INCOMPLETE');
+    }
+    const user = await User.findByIdAndUpdate(req.params.id, {
+      'vendorProfile.approved': true,
+      'vendorProfile.kycStatus': 'approved',
+      'vendorProfile.kycVerifiedAt': new Date(),
+      'vendorProfile.kycVerifiedBy': req.user._id,
+    }, { new: true });
     notif.notifyVendorApprovalStatus({ vendorUserId: user._id, vendor: user.vendorProfile, status: 'approved' }).catch(() => {});
     res.json({ ok: true, user });
   } catch (err) { next(err); }

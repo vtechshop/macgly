@@ -4,6 +4,7 @@ const Product = require('../../models/Product');
 const Order   = require('../../models/Order');
 const AppError = require('../../utils/AppError');
 const notif   = require('../../utils/notificationHelper');
+const { vendorKycGaps } = require('../../utils/vendorKyc');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -131,28 +132,21 @@ router.put('/:id/approve', async (req, res, next) => {
     const user = await User.findOne({ _id: req.params.id, role: 'vendor' });
     if (!user) throw new AppError('Vendor not found', 404, 'NOT_FOUND');
 
-    const vp = user.vendorProfile || {};
-    const docs = vp.kycDocuments || [];
-    const kycComplete =
-      vp.gstVerified &&
-      vp.businessName?.trim() &&
-      vp.businessType &&
-      vp.businessAddress?.trim() &&
-      vp.businessPhone?.trim() &&
-      docs.some((d) => d.type === 'id_proof') &&
-      docs.some((d) => d.type === 'address_proof');
+    // Approval requires complete KYC; it used to approve anyway and leave KYC
+    // pending, which told vendors "approved" while they were still onboarding.
+    const gaps = vendorKycGaps(user.vendorProfile);
+    if (gaps.length) {
+      throw new AppError(`Cannot approve yet — KYC is incomplete. Missing: ${gaps.join(', ')}.`, 400, 'KYC_INCOMPLETE');
+    }
 
     const update = {
       'vendorProfile.approved': true,
       'vendorProfile.rejectionReason': '',
+      'vendorProfile.kycStatus': 'approved',
+      'vendorProfile.kycVerifiedAt': new Date(),
+      'vendorProfile.kycVerifiedBy': req.user._id,
       isActive: true,
     };
-
-    if (kycComplete) {
-      update['vendorProfile.kycStatus']    = 'approved';
-      update['vendorProfile.kycVerifiedAt'] = new Date();
-      update['vendorProfile.kycVerifiedBy'] = req.user._id;
-    }
 
     const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true })
       .select('-password -refreshTokens');
@@ -163,7 +157,7 @@ router.put('/:id/approve', async (req, res, next) => {
       status:       'approved',
     }).catch(() => {});
 
-    res.json({ ok: true, vendor: updated, kycAutoApproved: !!kycComplete });
+    res.json({ ok: true, vendor: updated, kycAutoApproved: true });
   } catch (err) { next(err); }
 });
 

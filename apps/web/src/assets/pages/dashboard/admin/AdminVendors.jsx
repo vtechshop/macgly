@@ -196,7 +196,10 @@ function KYCReviewSection({ vp, vendorId, onAction, onRefresh }) {
     { label: 'Business Type',    ok: !!vp.businessType },
     { label: 'Business Address', ok: !!vp.businessAddress?.trim() },
     { label: 'Phone Number',     ok: !!vp.businessPhone?.trim() },
-    { label: `GST Verified${vp.gstin ? ` (${vp.gstin})` : ''}`, ok: !!vp.gstVerified },
+    { label: 'PAN',              ok: !!vp.panCard?.trim() },
+    { label: 'Bank Account Details', ok: !!(vp.bankAccount?.trim() && vp.ifsc?.trim() && vp.accountHolderName?.trim()) },
+    // Same rules as the API (utils/vendorKyc.js): GST only if a GSTIN was given.
+    ...(vp.gstin?.trim() ? [{ label: `GST Verified (${vp.gstin})`, ok: !!vp.gstVerified }] : []),
     { label: 'ID Proof uploaded',      ok: docs.some((d) => d.type === 'id_proof') },
     { label: 'Address Proof uploaded', ok: docs.some((d) => d.type === 'address_proof') },
   ];
@@ -205,7 +208,7 @@ function KYCReviewSection({ vp, vendorId, onAction, onRefresh }) {
   async function approveKYC() {
     setBusy(true);
     try {
-      await api.put(`/admin/kyc/vendors/${vendorId}/approve`, { force: true });
+      await api.put(`/admin/kyc/vendors/${vendorId}/approve`);
       toast.success('KYC approved — vendor now has full access');
       onRefresh();
     } catch (e) {
@@ -747,19 +750,15 @@ export default function AdminVendors() {
 
   async function handleApprove(vendor) {
     try {
-      const { data } = await api.put(`/admin/vendors/${vendor._id}/approve`);
-      if (data.kycAutoApproved) {
-        toast.success(`✅ Vendor approved + KYC auto-approved! Full access granted.`);
-      } else {
-        toast.success(`Vendor approved. Vendor must complete KYC for full access.`);
-      }
+      await api.put(`/admin/vendors/${vendor._id}/approve`);
+      toast.success('✅ Vendor approved with KYC — full access granted.');
       loadData();
-    } catch (err) { toast.error(err?.response?.data?.error?.message || 'Failed'); }
+    } catch (err) { toast.error(err?.response?.data?.error?.message || 'Failed', { duration: 8000 }); }
   }
 
   async function handleApproveKYC(vendor) {
     try {
-      await api.put(`/admin/kyc/vendors/${vendor._id}/approve`, { force: true });
+      await api.put(`/admin/kyc/vendors/${vendor._id}/approve`);
       toast.success(`KYC approved for ${vendor.vendorProfile?.businessName || vendor.name}`);
       setViewingVendor(null);
       loadData();

@@ -65,7 +65,10 @@ router.post('/become-vendor', async (req, res, next) => {
 router.post('/cancel-vendor', async (req, res, next) => {
   try {
     if (req.user.role !== 'vendor') throw new AppError('Your account is not a vendor account', 400, 'NOT_VENDOR');
-    if (req.user.vendorProfile?.approved) {
+    // A vendor marked approved before KYC was enforced (approval used to skip
+    // it) is still mid-onboarding and must be able to leave; only a vendor
+    // with verified KYC has a real store that needs support to close.
+    if (req.user.vendorProfile?.approved && req.user.vendorProfile?.kycStatus === 'approved') {
       throw new AppError('Your vendor account is already approved. Please contact support to close it.', 409, 'VENDOR_APPROVED');
     }
     const Order = require('../models/Order');

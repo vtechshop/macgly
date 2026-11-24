@@ -402,9 +402,13 @@ export default function AdminKYC() {
     const endpoint = item.type === 'vendor'
       ? `/admin/kyc/vendors/${item._id}/approve`
       : `/admin/kyc/affiliates/${item._id}/approve`;
-    await api.put(endpoint);
-    toast.success(`${item.name} approved`);
-    load();
+    try {
+      await api.put(endpoint);
+      toast.success(`${item.name} approved`);
+      load();
+    } catch (err) {
+      toast.error(err?.response?.data?.error?.message || 'Approval failed', { duration: 8000 });
+    }
   }
 
   async function handleReject(item, reason) {

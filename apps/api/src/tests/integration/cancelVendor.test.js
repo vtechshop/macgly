@@ -60,11 +60,18 @@ describe('POST /api/users/cancel-vendor', () => {
     expect(res.body.user.role).toBe('customer');
   });
 
-  test('approved vendor is refused', async () => {
-    const { cookies } = await createUser('vendor', { approved: true });
+  test('approved vendor with verified KYC is refused', async () => {
+    const { cookies } = await createUser('vendor', { approved: true, kycStatus: 'approved' });
     const res = await cancel(cookies);
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe('VENDOR_APPROVED');
+  });
+
+  test('vendor marked approved without KYC can still switch back', async () => {
+    const { cookies } = await createUser('vendor', { approved: true, kycStatus: 'not_submitted' });
+    const res = await cancel(cookies);
+    expect(res.status).toBe(200);
+    expect(res.body.user.role).toBe('customer');
   });
 
   test('vendor with an order is refused and keeps their products', async () => {
