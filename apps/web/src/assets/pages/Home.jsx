@@ -54,7 +54,7 @@ function HeroSection({ banners }) {
             {banner?.title || <>Professional<br />Tools &amp; Machinery</>}
           </h1>
           <p className="mt-3 text-sm leading-relaxed max-w-sm" style={{ color: '#8898b3' }}>
-            Trusted by engineers, contractors &amp; workshops across India. Genuine brands, fast delivery.
+            Trusted by engineers, contractors &amp; workshops across India. Genuine brands, free delivery on every order.
           </p>
           <div className="flex flex-wrap gap-3 mt-7">
             <Link to={banner?.link || '/products'} className="btn-primary px-6 py-2.5 text-sm font-bold"
@@ -70,7 +70,7 @@ function HeroSection({ banners }) {
         </div>
 
         <div className="hidden lg:flex flex-col gap-3 mr-2 shrink-0">
-          {[['50K+', 'Engineers'], ['500+', 'Products'], ['Pan India', 'Delivery']].map(([n, l]) => (
+          {[['50K+', 'Engineers'], ['500+', 'Products'], ['FREE', 'Delivery']].map(([n, l]) => (
             <div key={l} className="rounded-xl px-5 py-4 text-center min-w-[110px]"
               style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(6px)' }}>
               <div className="font-black text-xl leading-none" style={{ color: '#fb923c' }}>{n}</div>
@@ -87,7 +87,7 @@ export default function Home() {
   useEffect(() => {
     setMeta({
       title: 'Macgly — Professional Tools & Machinery in India',
-      description: 'Buy genuine power tools, industrial machinery, agricultural equipment and spare parts online at Macgly. GST invoice and fast delivery across India.',
+      description: 'Buy genuine power tools, industrial machinery, agricultural equipment and spare parts online at Macgly. GST invoice and free delivery across India.',
       canonical: 'https://www.macgly.com/',
     });
   }, []);

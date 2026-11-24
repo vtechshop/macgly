@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X, ShoppingCart, Zap, Star, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
+import { X, ShoppingCart, Zap, Star, CheckCircle, XCircle, ChevronRight, Truck } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { addItemOptimistic, openCartDrawer, setCart } from '../../../store/slices/cartSlice';
 import { formatCurrency, normalizeImageUrl } from '../../../utils/format';
@@ -102,6 +102,9 @@ export default function QuickViewModal({ product, onClose }) {
                 </>
               )}
             </div>
+            <p className="text-sm text-green-700 font-semibold flex items-center gap-1.5 -mt-1">
+              <Truck size={15} className="shrink-0" aria-hidden="true" /> Free Delivery on this product
+            </p>
 
             {product.stock > 0 ? (
               <p className="text-xs text-green-600 font-semibold flex items-center gap-1">

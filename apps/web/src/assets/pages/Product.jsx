@@ -407,6 +407,9 @@ export default function Product() {
                 </>
               )}
             </div>
+            <p className="text-sm font-bold text-green-700 flex items-center gap-1.5">
+              <Truck size={16} className="shrink-0" aria-hidden="true" /> FREE Delivery on this product · No minimum order
+            </p>
             {product.taxRate > 0 && (() => {
               const rate = product.taxRate;
               const gstAmt = activePrice * rate / (100 + rate);
@@ -508,7 +511,7 @@ export default function Product() {
                 <span className="text-secondary-200">·</span>
                 <span className="flex items-center gap-1"><CheckCircle size={12} className="text-green-500 shrink-0" /> Easy Returns</span>
                 <span className="text-secondary-200">·</span>
-                <span className="flex items-center gap-1"><Truck size={12} className="text-green-500 shrink-0" /> Pan India Delivery</span>
+                <span className="flex items-center gap-1"><Truck size={12} className="text-green-500 shrink-0" /> <strong className="font-semibold text-green-700">Free Delivery</strong></span>
               </div>
 
 
@@ -587,7 +590,7 @@ export default function Product() {
                 <div className="flex items-start gap-2.5 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
                   <CheckCircle size={15} className="text-green-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-green-700">Delivery available to {pincode}</p>
+                    <p className="text-sm font-semibold text-green-700">Free delivery to {pincode}</p>
                     <p className="text-xs text-green-600 mt-0.5">Estimated delivery: 3–5 business days</p>
                   </div>
                 </div>
@@ -609,7 +612,7 @@ export default function Product() {
               <span className="font-semibold text-secondary-800">Ideal for: </span>
               Professional and home-use {product.categoryIds[0].name.toLowerCase()} applications.
               {product.brand && ` Trusted brand: ${product.brand}.`}
-              {' '}Available with GST invoice and fast delivery across India.
+              {' '}Available with GST invoice and free delivery across India.
             </div>
           )}
 

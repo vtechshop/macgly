@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Star, Zap, Plus, Minus, Heart, Eye } from 'lucide-react';
+import { ShoppingCart, Star, Zap, Plus, Minus, Heart, Eye, Truck } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { openCartDrawer, addItemOptimistic, updateItemOptimistic } from '../../../store/slices/cartSlice';
 import { syncCartItem } from '../../../utils/cartSync';
@@ -152,6 +152,9 @@ export default function ProductCard({ product, onAddToCart }) {
                 <span className="text-xs text-secondary-400 line-through">{formatCurrency(product.compareAt)}</span>
               )}
             </div>
+            <p className="text-[11px] text-green-700 font-semibold flex items-center gap-1 mt-0.5">
+              <Truck size={12} className="shrink-0" aria-hidden="true" /> Free Delivery
+            </p>
             {product.stock > 0 && product.stock <= 5 && (
               <p className="text-[10px] text-orange-600 font-semibold flex items-center gap-0.5 mt-0.5">
                 <Zap size={10} /> Only {product.stock} left
