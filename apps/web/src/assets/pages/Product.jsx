@@ -94,13 +94,16 @@ export default function Product() {
     }
   }
 
-  const { data, isLoading, error } = useFetch(
+  const { data, isLoading, error, refetch } = useFetch(
     ['product', slug],
     () => api.get(`/catalog/products/${slug}`).then((r) => r.data)
   );
 
   const product = data?.product;
-  const categoryId   = product?.categoryIds?.[0]?._id || product?.categoryIds?.[0];
+  // Only the API saying 404 means the product does not exist. A timeout or a
+  // server error says nothing about the product, so it gets a retry screen.
+  const notFound = !isLoading && !product && (!error || error.response?.status === 404);
+  const categoryId  = product?.categoryIds?.[0]?._id || product?.categoryIds?.[0];
   const categorySlug = product?.category?.slug || product?.category || product?.categoryIds?.[0]?.slug;
   const { data: relatedData } = useFetch(
     product ? ['related', product._id] : null,
@@ -123,6 +126,7 @@ export default function Product() {
     // this the page kept index.html's homepage title and canonical and invited
     // Google to index it as a homepage duplicate.
     if (!product) {
+      if (!notFound) return;
       setMeta({ title: 'Product not found | Macgly', description: null, noindex: true });
       return;
     }
@@ -166,7 +170,7 @@ export default function Product() {
       // Expose to UI (exclude current product)
       setRecentlyViewed(filtered.slice(0, 5));
     } catch { /* localStorage unavailable */ }
-  }, [product, isLoading, categorySlug]);
+  }, [product, isLoading, categorySlug, notFound]);
 
   // Sticky mobile buy bar — show when action buttons scroll off screen
   useEffect(() => {
@@ -248,7 +252,16 @@ export default function Product() {
   }
 
   if (isLoading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
-  if (error || !product) return (
+  if (!product && !notFound) return (
+    <div className="px-4 sm:px-6 lg:px-10 py-20 text-center">
+      <p className="text-lg font-medium">We couldn&apos;t load this product right now</p>
+      <p className="text-sm text-secondary-500 mt-1">Please check your connection and try again.</p>
+      <button type="button" onClick={refetch} className="btn-primary px-6 py-2.5 mt-4 font-semibold">
+        Try again
+      </button>
+    </div>
+  );
+  if (!product) return (
     <div className="px-4 sm:px-6 lg:px-10 py-20 text-center">
       <p className="text-lg font-medium">Product not found</p>
       <Link to="/products" className="text-primary-600 hover:underline mt-2 inline-block">Browse products</Link>

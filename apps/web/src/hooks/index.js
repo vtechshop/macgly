@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 const cache = new Map();
 const CACHE_TTL = 30_000; // 30 seconds
@@ -39,6 +39,7 @@ export function useFetch(queryKey, fetcher, { keepPrevious = false, enabled = tr
   const [data, setData] = useState(cached);
   const [isLoading, setIsLoading] = useState(active && !cached);
   const [error, setError] = useState(null);
+  const [nonce, setNonce] = useState(0);
   const prevRef = useRef(cached);
 
   useEffect(() => {
@@ -64,28 +65,50 @@ export function useFetch(queryKey, fetcher, { keepPrevious = false, enabled = tr
     }
     setIsLoading(true);
     setError(null);
-    fetcher()
-      .then((d) => {
-        if (cancelled) return;
-        cache.set(keyStr, { data: d, ts: Date.now() });
-        prevRef.current = d;
-        setData(d);
-        setIsLoading(false);
-      })
-      .catch((e) => {
-        if (cancelled) return;
-        setError(e);
-        setIsLoading(false);
-      });
-    return () => { cancelled = true; };
+    let timer;
+    const attempt = (n) => {
+      fetcher()
+        .then((d) => {
+          if (cancelled) return;
+          cache.set(keyStr, { data: d, ts: Date.now() });
+          prevRef.current = d;
+          setData(d);
+          setIsLoading(false);
+        })
+        .catch((e) => {
+          if (cancelled) return;
+          // The free-tier API sleeps when idle: the first requests time out or
+          // get a 502/503 while it wakes. Keep the spinner and try again rather
+          // than showing an error for something that exists.
+          if (n < MAX_RETRIES && isTransient(e)) {
+            timer = setTimeout(() => attempt(n + 1), 2000 * (n + 1));
+            return;
+          }
+          setError(e);
+          setIsLoading(false);
+        });
+    };
+    attempt(0);
+    return () => { cancelled = true; clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyStr]);
+  }, [keyStr, nonce]);
+
+  const refetch = useCallback(() => setNonce((n) => n + 1), []);
 
   return {
     data: data ?? (keepPrevious ? prevRef.current : null),
     isLoading,
     error,
+    refetch,
   };
+}
+
+const MAX_RETRIES = 2;
+
+/** No response at all (timeout, offline, server asleep) or a 5xx. */
+export function isTransient(err) {
+  const status = err?.response?.status;
+  return !status || status >= 500;
 }
 
 export function invalidateCache(keyPrefix) {
