@@ -12,6 +12,13 @@ import { setCart } from '../store/slices/cartSlice';
 
 const pending = new Set();
 let running = false;
+const waiters = [];
+
+/** Resolves once every queued quantity change has reached the server. */
+export function whenCartSynced() {
+  if (!running && !pending.size) return Promise.resolve();
+  return new Promise((resolve) => waiters.push(resolve));
+}
 
 const keyOf = (productId, variantId) => `${productId}:${variantId || ''}`;
 const itemKey = (i) => keyOf(i.product?._id ?? i.product, i.variantId);
@@ -54,5 +61,6 @@ async function run() {
   } finally {
     running = false;
     if (pending.size) run();
+    else waiters.splice(0).forEach((resolve) => resolve());
   }
 }

@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { MapPin, Truck, CreditCard, Check, ChevronRight, Zap, Package, LocateFixed } from 'lucide-react';
 import api from '../../utils/api';
 import { clearCart, setCart as setStoreCart } from '../../store/slices/cartSlice';
+import { whenCartSynced } from '../../utils/cartSync';
 import { formatCurrency, normalizeImageUrl } from '../../utils/format';
 import { resolveTaxRate, inclusiveGstAmount } from '../../utils/tax';
 import { isValidGstinFormat } from '../../utils/gstin';
@@ -49,10 +50,16 @@ function StepIndicator({ current }) {
   );
 }
 
+// Server cart lines carry the price snapshot (variant-aware); fall back to the
+// product price for a line only the browser knows about so far.
+function linePrice(item) {
+  return item.price ?? item.product?.price ?? 0;
+}
+
 function OrderSummary({ items, subtotal, shippingCharge, discount, coupon, couponCode, setCouponCode, onApplyCoupon, onRemoveCoupon, applyingCoupon }) {
   const gstAmount = parseFloat(
     items.reduce(
-      (sum, i) => sum + inclusiveGstAmount(i.price * i.quantity, resolveTaxRate(i.product)),
+      (sum, i) => sum + inclusiveGstAmount(linePrice(i) * i.quantity, resolveTaxRate(i.product)),
       0,
     ).toFixed(2)
   );
@@ -87,7 +94,7 @@ function OrderSummary({ items, subtotal, shippingCharge, discount, coupon, coupo
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-secondary-800 line-clamp-2 leading-tight">{item.product?.title}</p>
             </div>
-            <span className="shrink-0 text-sm font-semibold">{formatCurrency(item.price * item.quantity)}</span>
+            <span className="shrink-0 text-sm font-semibold">{formatCurrency(linePrice(item) * item.quantity)}</span>
           </div>
         ))}
       </div>
@@ -175,41 +182,21 @@ export default function Checkout() {
     });
   }, [navigate, dispatch]);
 
-  // The cart drawer can change the cart while checkout is open; the summary the
-  // customer confirms must follow it, so re-read the server cart when they differ.
+  // The summary reads the same store the cart drawer edits, so quantity changes
+  // show here instantly. The store was seeded from the server cart above, and
+  // cartSync writes the server's answer back into it; handlePlaceOrder waits
+  // for that before ordering, so what is shown is what gets charged.
   const storeItems = useSelector((s) => s.cart.items);
-  const cartSignature = (list) => (list || [])
-    .map((i) => `${i.product?._id ?? i.product}:${i.quantity}`).sort().join('|');
-  const storeSignature = cartSignature(storeItems);
-  const latestStoreSignature = useRef(storeSignature);
-  latestStoreSignature.current = storeSignature;
+  const orderPlacedRef = useRef(false);
+  const items = cart ? storeItems : [];
   useEffect(() => {
-    if (!cart || storeSignature === cartSignature(cart.items)) return;
-    // Drawer edits are optimistic: give the server a moment to apply them, and
-    // retry while the server cart still lags behind what the drawer shows.
-    let cancelled = false;
-    let timer;
-    const sync = (attempt) => {
-      timer = setTimeout(() => {
-        api.get('/cart').then(({ data }) => {
-          if (cancelled) return;
-          if (!data.cart?.items?.length) {
-            toast.error('Your cart is empty');
-            navigate('/products');
-            return;
-          }
-          setCart(data.cart);
-          if (cartSignature(data.cart.items) !== latestStoreSignature.current && attempt < 3) sync(attempt + 1);
-        }).catch(() => {});
-      }, 700 * attempt);
-    };
-    sync(1);
-    return () => { cancelled = true; clearTimeout(timer); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeSignature]);
+    if (cart && !storeItems.length && !orderPlacedRef.current) {
+      toast.error('Your cart is empty');
+      navigate('/products');
+    }
+  }, [cart, storeItems.length, navigate]);
 
-  const items = cart?.items || [];
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + linePrice(i) * i.quantity, 0);
   const discount = coupon?.discount || 0;
   const total = Math.max(0, subtotal + shippingCharge - discount);
 
@@ -388,6 +375,9 @@ export default function Checkout() {
     setPlacing(true);
     const affiliateRef = getStoredAffRef();
     try {
+      // A quantity change from the drawer may still be on its way to the
+      // server; the order is built from the server cart, so let it land first.
+      await whenCartSynced();
       if (paymentMethod === 'razorpay') {
         const loaded = await loadRazorpayScript();
         if (!loaded) { toast.error('Could not load payment gateway. Please try again.'); setPlacing(false); return; }
@@ -414,6 +404,7 @@ export default function Checkout() {
             try {
               await api.post('/payments/verify', response);
               localStorage.removeItem('aff_ref');
+              orderPlacedRef.current = true;
               dispatch(clearCart());
               navigate(`/order-confirmation/${data.order._id}`);
             } catch { toast.error('Payment verification failed'); }
@@ -437,6 +428,7 @@ export default function Checkout() {
         rzp.open();
       } else {
         localStorage.removeItem('aff_ref');
+        orderPlacedRef.current = true;
         dispatch(clearCart());
         toast.success('Order placed successfully!');
         navigate(`/order-confirmation/${data.order._id}`);
