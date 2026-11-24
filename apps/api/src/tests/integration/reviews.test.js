@@ -26,9 +26,10 @@ async function createUserWithToken(role = 'customer') {
   return { user, token, cookies: [`accessToken=${token}; Path=/; HttpOnly`] };
 }
 
+let seq = 0;
 async function seedProduct() {
   const Product = require('../../models/Product');
-  const ts = Date.now();
+  const ts = `${Date.now()}-${++seq}`;
   return Product.create({
     title: 'Reviewed Product',
     slug: `prod-${ts}`,
@@ -79,7 +80,7 @@ describe('GET /api/reviews/product/:productId', () => {
     expect(res.body.hasPurchased).toBe(true);
   });
 
-  test('hasPurchased=true for admin without order', async () => {
+  test('hasPurchased=false for admin without order', async () => {
     const product = await seedProduct();
     const { cookies } = await createUserWithToken('admin');
 
@@ -88,7 +89,20 @@ describe('GET /api/reviews/product/:productId', () => {
       .set('Cookie', cookies);
 
     expect(res.status).toBe(200);
-    expect(res.body.hasPurchased).toBe(true);
+    expect(res.body.hasPurchased).toBe(false);
+  });
+
+  test('hasPurchased=false when the delivered order was for a different product', async () => {
+    const product = await seedProduct();
+    const other = await seedProduct();
+    const { user, cookies } = await createUserWithToken('customer');
+    await createDeliveredOrder(user._id, other._id);
+
+    const res = await request(app)
+      .get(`/api/reviews/product/${product._id}`)
+      .set('Cookie', cookies);
+
+    expect(res.body.hasPurchased).toBe(false);
   });
 
   test('returns 200 with empty result for invalid productId format', async () => {
@@ -127,7 +141,7 @@ describe('POST /api/reviews', () => {
     expect(res.body.error.code).toBe('NOT_PURCHASED');
   });
 
-  test('allows admin to review any product without order', async () => {
+  test('blocks admin without purchase', async () => {
     const product = await seedProduct();
     const { cookies } = await createUserWithToken('admin');
 
@@ -136,7 +150,37 @@ describe('POST /api/reviews', () => {
       .set('Cookie', cookies)
       .send({ productId: product._id.toString(), rating: 3, title: 'Admin review' });
 
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('NOT_PURCHASED');
+  });
+
+  test('blocks customer whose delivered order was for a different product', async () => {
+    const product = await seedProduct();
+    const other = await seedProduct();
+    const { user, cookies } = await createUserWithToken('customer');
+    await createDeliveredOrder(user._id, other._id);
+
+    const res = await request(app)
+      .post('/api/reviews')
+      .set('Cookie', cookies)
+      .send({ productId: product._id.toString(), rating: 5 });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('NOT_PURCHASED');
+  });
+
+  test('blocks customer whose order is not delivered yet', async () => {
+    const product = await seedProduct();
+    const { user, cookies } = await createUserWithToken('customer');
+    const order = await createDeliveredOrder(user._id, product._id);
+    await order.constructor.updateOne({ _id: order._id }, { status: 'shipped' });
+
+    const res = await request(app)
+      .post('/api/reviews')
+      .set('Cookie', cookies)
+      .send({ productId: product._id.toString(), rating: 5 });
+
+    expect(res.status).toBe(403);
   });
 
   test('returns 409 on duplicate review', async () => {
@@ -163,7 +207,7 @@ describe('POST /api/reviews', () => {
 
   test('returns 400 when rating missing', async () => {
     const product = await seedProduct();
-    const { cookies } = await createUserWithToken('admin');
+    const { cookies } = await createUserWithToken('customer');
     const res = await request(app).post('/api/reviews').set('Cookie', cookies)
       .send({ productId: product._id.toString() });
     expect(res.status).toBe(400);

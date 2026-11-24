@@ -40,13 +40,11 @@ router.get('/product/:productId', optionalAuth, async (req, res, next) => {
         : Promise.resolve(null),
     ]);
 
-    const isAdmin = req.user?.role === 'admin';
-
     res.json({
       reviews,
       pagination: { page: parseInt(page), total, pages: Math.ceil(total / parseInt(limit)) },
       hasReviewed: !!existingReview,
-      hasPurchased: isAdmin || !!purchase,
+      hasPurchased: !!purchase,
     });
   } catch (err) { next(err); }
 });
@@ -57,19 +55,15 @@ router.post('/', authenticate, async (req, res, next) => {
     const { productId, rating, title, body } = req.body;
     if (!productId || !rating) throw new AppError('productId and rating required', 400, 'MISSING_FIELDS');
 
-    const isAdmin = req.user.role === 'admin';
-
-    // Non-admin must have a delivered order containing this product
-    let verified = false;
-    if (!isAdmin) {
-      const purchase = await Order.findOne({
-        user: req.user._id,
-        status: 'delivered',
-        'items.product': productId,
-      });
-      if (!purchase) throw new AppError('You can only review products you have purchased and received', 403, 'NOT_PURCHASED');
-      verified = true;
-    }
+    // Only someone with a delivered order containing this exact product may
+    // review it — admins included, so every review is a verified purchase.
+    const purchase = await Order.findOne({
+      user: req.user._id,
+      status: 'delivered',
+      'items.product': productId,
+    });
+    if (!purchase) throw new AppError('You can only review products you have purchased and received', 403, 'NOT_PURCHASED');
+    const verified = true;
 
     const existing = await Review.findOne({ product: productId, user: req.user._id });
     if (existing) throw new AppError('You have already reviewed this product', 409, 'DUPLICATE_REVIEW');
