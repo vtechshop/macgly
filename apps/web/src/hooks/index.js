@@ -3,11 +3,29 @@ import { useState, useEffect, useRef } from 'react';
 const cache = new Map();
 const CACHE_TTL = 30_000; // 30 seconds
 
-function getCached(key) {
+function getEntry(key) {
   const entry = cache.get(key);
   if (!entry) return null;
   if (Date.now() - entry.ts > CACHE_TTL) { cache.delete(key); return null; }
-  return entry.data;
+  return entry;
+}
+
+function getCached(key) {
+  return getEntry(key)?.data ?? null;
+}
+
+// One background refresh per prerendered key, shared by every component that
+// reads it (the homepage and the category sidebar both read ['categories']).
+const revalidating = new Map();
+
+function revalidateSeeded(keyStr, fetcher) {
+  if (!revalidating.has(keyStr)) {
+    const p = fetcher()
+      .then((d) => { cache.set(keyStr, { data: d, ts: Date.now() }); return d; })
+      .finally(() => revalidating.delete(keyStr));
+    revalidating.set(keyStr, p);
+  }
+  return revalidating.get(keyStr);
 }
 
 /**
@@ -26,12 +44,23 @@ export function useFetch(queryKey, fetcher, { keepPrevious = false, enabled = tr
   useEffect(() => {
     if (!active || !keyStr) { setIsLoading(false); return; }
     let cancelled = false;
-    const hit = getCached(keyStr);
-    if (hit) {
-      setData(hit);
-      prevRef.current = hit;
+    const entry = getEntry(keyStr);
+    if (entry) {
+      setData(entry.data);
+      prevRef.current = entry.data;
       setIsLoading(false);
-      return;
+      if (!entry.seeded) return;
+      // Prerendered data is a build-time snapshot: keep showing it, but fetch
+      // the live version once so admin edits (e.g. new category images) show
+      // up without a redeploy. On failure the snapshot simply stays.
+      revalidateSeeded(keyStr, fetcher)
+        .then((d) => {
+          if (cancelled) return;
+          prevRef.current = d;
+          setData(d);
+        })
+        .catch(() => {});
+      return () => { cancelled = true; };
     }
     setIsLoading(true);
     setError(null);
@@ -83,12 +112,13 @@ export function clearCacheKey(key) {
  * Re-hydrate the in-memory cache on the client from data embedded in the
  * page by SSR (the __SSR_DATA__ script tag).  Call this before mounting
  * React so useFetch returns synchronously and hydrateRoot sees matching
- * content instead of a loading spinner.
+ * content instead of a loading spinner. Entries are marked `seeded` so
+ * useFetch refreshes them from the API once after mount.
  */
 export function hydrateCache(seeds) {
   for (const { key, data } of (seeds || [])) {
     const ks = JSON.stringify(key);
-    if (!cache.has(ks)) cache.set(ks, { data, ts: Date.now() });
+    if (!cache.has(ks)) cache.set(ks, { data, ts: Date.now(), seeded: true });
   }
 }
 
