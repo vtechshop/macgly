@@ -13,6 +13,7 @@ import ErrorBoundary from '../common/ErrorBoundary';
 import NotificationBell from '../common/NotificationBell';
 import api from '../../../utils/api';
 import { clearUser } from '../../../store/slices/authSlice';
+import CancelVendorButton from '../common/CancelVendorButton';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -346,6 +347,7 @@ export default function DashboardLayout({ requiredRole }) {
                   <div>
                     <p className="text-sm font-semibold text-yellow-800">Account pending approval</p>
                     <p className="text-xs text-yellow-700 mt-0.5">Our team will review your vendor account within 1 business day. You can add products now — they'll go live once approved.</p>
+                    <CancelVendorButton className="mt-2 !text-xs" />
                   </div>
                 </div>
               )}

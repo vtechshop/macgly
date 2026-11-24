@@ -57,6 +57,36 @@ router.post('/become-vendor', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// A vendor who has not been approved yet can go back to being a customer on
+// their own — otherwise a mistaken "sell on Macgly" sign-up leaves them stuck
+// on the onboarding screen. Same reset as the admin's DELETE /admin/vendors/:id.
+// Approved vendors, or any vendor whose products appear in an order, have
+// money and obligations attached and must go through support instead.
+router.post('/cancel-vendor', async (req, res, next) => {
+  try {
+    if (req.user.role !== 'vendor') throw new AppError('Your account is not a vendor account', 400, 'NOT_VENDOR');
+    if (req.user.vendorProfile?.approved) {
+      throw new AppError('Your vendor account is already approved. Please contact support to close it.', 409, 'VENDOR_APPROVED');
+    }
+    const Order = require('../models/Order');
+    const Product = require('../models/Product');
+    if (await Order.exists({ 'items.vendorId': req.user._id })) {
+      throw new AppError('Your store already has orders. Please contact support to close it.', 409, 'VENDOR_HAS_ORDERS');
+    }
+
+    await Product.deleteMany({ vendorId: req.user._id });
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        role: 'customer',
+        vendorProfile: { businessName: '', onboardingComplete: false, approved: false, commissionRate: 10 },
+      },
+      { new: true },
+    );
+    res.json({ user: user.toSafeObject() });
+  } catch (err) { next(err); }
+});
+
 router.post('/become-affiliate', async (req, res, next) => {
   try {
     if (req.user.role === 'affiliate') return res.json({ user: req.user.toSafeObject() });

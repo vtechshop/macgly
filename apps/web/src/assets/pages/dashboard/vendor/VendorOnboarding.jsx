@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { Building2, Phone, FileText, CreditCard, ShieldCheck } from 'lucide-react';
 import api from '../../../../utils/api';
 import { setUser } from '../../../../store/slices/authSlice';
+import CancelVendorButton from '../../../components/common/CancelVendorButton';
 import toast from 'react-hot-toast';
 
 export default function VendorOnboarding() {
@@ -159,6 +160,10 @@ export default function VendorOnboarding() {
             <p className="text-center text-xs text-secondary-400">All fields are required before your account can be submitted for approval</p>
           </>
         )}
+      </div>
+
+      <div className="text-center mt-6">
+        <CancelVendorButton />
       </div>
     </div>
   );
