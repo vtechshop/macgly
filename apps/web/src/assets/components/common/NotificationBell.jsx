@@ -5,7 +5,9 @@ import {
   ShoppingBag, Package, CreditCard, ShieldCheck,
   Store, UserCheck, IndianRupee, Megaphone, HelpCircle, Star,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../../../utils/api';
+import { playNewMessage } from '../../../utils/sounds';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -36,6 +38,44 @@ const TYPE_META = {
   system:             { Icon: Bell,         color: 'bg-secondary-100 text-secondary-500'},
 };
 
+// ── New-notification pop-ups ──────────────────────────────────────────────────
+// Shared across bell instances (the dashboard mounts one for mobile and one
+// for desktop) so each notification pops up once, and only ones that arrived
+// after the page was opened.
+
+const announced = new Set();
+const openedAt = Date.now();
+
+async function announceNew(navigate) {
+  try {
+    const { data } = await api.get('/notifications', { params: { limit: 5 } });
+    const fresh = (data.notifications || []).filter((n) =>
+      !n.isRead && !announced.has(n._id) && new Date(n.createdAt).getTime() >= openedAt - 60000);
+    if (!fresh.length) return;
+    fresh.forEach((n) => announced.add(n._id));
+    playNewMessage();
+    fresh.slice(0, 3).forEach((n) => {
+      const { Icon, color } = TYPE_META[n.type] || TYPE_META.system;
+      toast((t) => (
+        <button
+          type="button"
+          className="flex items-start gap-3 text-left"
+          onClick={() => { toast.dismiss(t.id); if (n.link) navigate(n.link); }}
+        >
+          <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${color}`}>
+            <Icon size={15} />
+          </span>
+          <span>
+            <span className="block text-sm font-semibold text-secondary-900">{n.title}</span>
+            {n.message && <span className="block text-xs text-secondary-600 mt-0.5 line-clamp-2">{n.message}</span>}
+            {n.link && <span className="block text-xs font-semibold text-primary-600 mt-1">View →</span>}
+          </span>
+        </button>
+      ), { duration: 10000, position: 'top-right' });
+    });
+  } catch {}
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function NotificationBell({ variant = 'dark' }) {
@@ -46,13 +86,18 @@ export default function NotificationBell({ variant = 'dark' }) {
   const panelRef = useRef(null);
   const navigate = useNavigate();
 
-  // Fast unread count poll (every 30s)
+  // Fast unread count poll (every 30s). When the count goes up, pop up the
+  // new notifications so nobody has to keep an eye on the bell.
+  const lastCount = useRef(null);
   const loadUnread = useCallback(async () => {
     try {
       const { data } = await api.get('/notifications/unread-count');
-      setUnread(data.count ?? 0);
+      const count = data.count ?? 0;
+      if (lastCount.current !== null && count > lastCount.current) announceNew(navigate);
+      lastCount.current = count;
+      setUnread(count);
     } catch {}
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     loadUnread();

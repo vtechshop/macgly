@@ -70,12 +70,13 @@ function SubmissionModal({ submissionId, onClose, onUpdate }) {
     if (!replyText.trim()) return toast.error('Enter a reply message');
     setSending(true);
     try {
-      await api.post(`/admin/contact-submissions/${submissionId}/reply`, { message: replyText.trim() });
+      const { data: replyRes } = await api.post(`/admin/contact-submissions/${submissionId}/reply`, { message: replyText.trim() });
       setReplyText('');
       setReplyMode(false);
       setRev((r) => r + 1);
       onUpdate();
-      toast.success('Reply sent');
+      if (replyRes.emailSent) toast.success(`Reply emailed to ${replyRes.data?.email || 'the customer'}`);
+      else toast.error('Reply saved, but the email could not be sent. Check the email (Resend) setup or reply from Gmail.', { duration: 8000 });
     } catch { toast.error('Failed to send reply'); }
     finally { setSending(false); }
   }

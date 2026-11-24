@@ -2,6 +2,31 @@ const router = require('express').Router();
 const ContactSubmission = require('../../models/ContactSubmission');
 const Communication = require('../../models/Communication');
 const AppError = require('../../utils/AppError');
+const { sendEmail } = require('../../services/emailService');
+
+const escapeHtml = (s = '') => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const asHtml = (s) => escapeHtml(s).replace(/\n/g, '<br>');
+
+function contactReplyHtml({ name, reply, original }) {
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#1f2937">
+      <div style="background:#111827;padding:20px 28px;border-radius:8px 8px 0 0">
+        <span style="color:#ea580c;font-size:20px;font-weight:800">MACGLY</span>
+        <span style="color:#9ca3af;font-size:11px;margin-left:8px">TOOLS &amp; MACHINERY</span>
+      </div>
+      <div style="background:#fff;padding:24px 28px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 16px">Hi ${escapeHtml(name)},</p>
+        <p style="margin:0 0 20px;line-height:1.6">${asHtml(reply)}</p>
+        <p style="margin:0 0 20px">— Macgly Support</p>
+        <div style="border-left:3px solid #e5e7eb;padding:4px 0 4px 12px;color:#6b7280;font-size:13px">
+          <p style="margin:0 0 4px;font-weight:600">Your message:</p>
+          <p style="margin:0">${asHtml(original)}</p>
+        </div>
+        <p style="margin:20px 0 0;color:#9ca3af;font-size:12px">Reply to this email to continue the conversation.</p>
+      </div>
+    </div>`;
+}
 
 // ─── Stats (before /:id) ──────────────────────────────────────────────────────
 router.get('/stats', async (req, res, next) => {
@@ -121,6 +146,23 @@ router.post('/:id/reply', async (req, res, next) => {
     const submission = await ContactSubmission.findById(req.params.id);
     if (!submission) throw new AppError('Submission not found', 404, 'NOT_FOUND');
 
+    // Email the reply to the customer. Their answer goes to the support inbox
+    // (reply-to), since the sender address noreply@macgly.com is not read.
+    const supportInbox = process.env.ADMIN_EMAIL || 'macglyshop@gmail.com';
+    const emailSubject = subject || `Re: ${submission.subject || 'Your message to Macgly'}`;
+    let emailSent = false;
+    try {
+      emailSent = await sendEmail({
+        to: submission.email,
+        replyTo: supportInbox,
+        subject: emailSubject,
+        html: contactReplyHtml({ name: submission.name, reply: message.trim(), original: submission.message }),
+        text: `Hi ${submission.name},\n\n${message.trim()}\n\n— Macgly Support\n\nYour message:\n${submission.message}`,
+      });
+    } catch (e) {
+      console.error('[Contact] reply email failed:', e.message);
+    }
+
     submission.replies.push({ message: message.trim() });
     submission.status = 'replied';
     submission.repliedAt = new Date();
@@ -128,15 +170,17 @@ router.post('/:id/reply', async (req, res, next) => {
 
     await Communication.create({
       type: 'email', direction: 'outgoing',
-      from: process.env.ADMIN_EMAIL || 'vtechshop.customercare@gmail.com',
-      fromName: 'Vtech Support',
+      from: supportInbox,
+      fromName: 'Macgly Support',
       to: submission.email, toName: submission.name,
-      subject: subject || `Re: ${submission.subject || 'Your inquiry'}`,
-      message: message.trim(), status: 'sent', sentAt: new Date(),
+      subject: emailSubject,
+      message: message.trim(),
+      status: emailSent ? 'sent' : 'failed',
+      ...(emailSent ? { sentAt: new Date() } : {}),
       metadata: { contactSubmissionId: submission._id },
     }).catch(() => {}); // non-critical
 
-    res.json({ data: submission });
+    res.json({ data: submission, emailSent });
   } catch (err) { next(err); }
 });
 

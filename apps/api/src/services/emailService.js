@@ -1,9 +1,11 @@
 const { RESEND_API_KEY } = require('../config/env');
 
-async function sendEmail({ to, subject, html, text, attachments }) {
+// Resolves true when Resend accepted the email, false when it was not sent
+// (no API key configured, or Resend rejected it). Existing callers ignore it.
+async function sendEmail({ to, subject, html, text, attachments, replyTo }) {
   if (!RESEND_API_KEY) {
     console.log(`[Email DEV] To: ${to} | Subject: ${subject}`);
-    return;
+    return false;
   }
 
   const body = {
@@ -12,6 +14,7 @@ async function sendEmail({ to, subject, html, text, attachments }) {
     subject,
     html,
     text: text || subject,
+    ...(replyTo ? { reply_to: replyTo } : {}),
     ...(attachments?.length ? { attachments } : {}),
   };
 
@@ -27,7 +30,9 @@ async function sendEmail({ to, subject, html, text, attachments }) {
   if (!res.ok) {
     const err = await res.text();
     console.error(`Resend error [${res.status}] to=${to}:`, err);
+    return false;
   }
+  return true;
 }
 
 async function sendOrderConfirmation({ order, user }) {

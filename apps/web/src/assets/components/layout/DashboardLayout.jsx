@@ -44,7 +44,7 @@ const navsByRole = {
     { type: 'item', to: '/dashboard/admin/warranty', label: 'Warranty', icon: ShieldCheck },
     { type: 'section', label: 'Support' },
     { type: 'item', to: '/dashboard/admin/tickets', label: 'Support Tickets', icon: HelpCircle },
-    { type: 'item', to: '/dashboard/admin/contact-submissions', label: 'Contact Messages', icon: Inbox },
+    { type: 'item', to: '/dashboard/admin/contact-submissions', label: 'Contact Messages', icon: Inbox, badge: 'contact' },
     { type: 'section', label: 'Operations' },
     { type: 'item', to: '/dashboard/admin/inventory', label: 'Inventory', icon: Warehouse },
     { type: 'item', to: '/dashboard/admin/manual-orders', label: 'Manual Orders', icon: ClipboardList },
@@ -212,21 +212,26 @@ export default function DashboardLayout({ requiredRole }) {
       .catch(() => {});
   }, [user?._id, user?.role]);
 
-  // Admin: commission pending counts for sidebar badges
+  // Admin: pending counts for sidebar badges (commissions, unread contact
+  // messages). Refreshed every minute so a new message shows up without a reload.
   useEffect(() => {
     if (user?.role !== 'admin') return;
-    Promise.all([
-      api.get('/admin/commissions/stats', { params: { type: 'vendor' } }),
-      api.get('/admin/commissions/stats', { params: { type: 'affiliate' } }),
+    const load = () => Promise.all([
+      api.get('/admin/commissions/stats', { params: { type: 'vendor' } }).catch(() => null),
+      api.get('/admin/commissions/stats', { params: { type: 'affiliate' } }).catch(() => null),
+      api.get('/admin/contact-submissions/stats').catch(() => null),
     ])
-      .then(([v, a]) => {
+      .then(([v, a, c]) => {
         setBadgeCounts({
-          vendorComm:    v.data.pendingCount    || 0,
-          affiliateComm: a.data.pendingCount || 0,
+          vendorComm:    v?.data.pendingCount || 0,
+          affiliateComm: a?.data.pendingCount || 0,
+          contact:       c?.data.data?.new    || 0,
         });
-      })
-      .catch(() => {});
-  }, [user?._id, user?.role]);
+      });
+    load();
+    const t = setInterval(load, 60000);
+    return () => clearInterval(t);
+  }, [user?._id, user?.role, location.pathname]);
 
   if (!isInitialized) return (
     <div className="h-screen flex items-center justify-center bg-secondary-50">
