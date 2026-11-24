@@ -133,7 +133,7 @@ export default function SellerGuide() {
       <div className="bg-primary-50 border border-primary-100 rounded-xl p-6 text-center space-y-3">
         <h2 className="font-bold text-secondary-900">Ready to start selling?</h2>
         <p className="text-sm text-secondary-500">
-          Join hundreds of verified vendors already growing their business on Macgly.
+          Reach buyers across India and grow your business on Macgly.
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
           <Link to="/sell" className="btn-primary">Register as Vendor</Link>

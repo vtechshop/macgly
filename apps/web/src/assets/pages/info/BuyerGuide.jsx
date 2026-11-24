@@ -112,7 +112,7 @@ export default function BuyerGuide() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
         {[
           { icon: Shield, label: 'Genuine Products', sub: 'Every item verified for authenticity' },
-          { icon: Truck, label: 'Pan India Delivery', sub: '20,000+ pin codes served' },
+          { icon: Truck, label: 'Free Delivery', sub: 'On every order, across India' },
           { icon: RotateCcw, label: '7-Day Returns', sub: 'Hassle-free, no questions asked' },
         ].map(({ icon: Icon, label, sub }) => (
           <div key={label} className="card p-4 text-center">

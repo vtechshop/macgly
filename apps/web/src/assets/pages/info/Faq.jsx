@@ -43,7 +43,7 @@ const FAQS = [
     items: [
       {
         q: 'Do you ship across India?',
-        a: 'Yes. We deliver to 20,000+ pin codes across India through our logistics partners. Enter your pin code on the product page to confirm serviceability and estimated delivery time before ordering.',
+        a: 'Yes. We deliver across India through our logistics partners, and delivery is free on every order. Enter your pin code on the product page to confirm serviceability and estimated delivery time before ordering.',
       },
       {
         q: 'How long does delivery take?',
