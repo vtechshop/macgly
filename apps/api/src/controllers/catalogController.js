@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Banner = require('../models/Banner');
 const AppError = require('../utils/AppError');
+const { parseTerms, anyTermRegex, scoreProduct } = require('../utils/productSearch');
 
 async function getProducts(req, res, next) {
   try {
@@ -49,9 +50,14 @@ async function getProducts(req, res, next) {
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
     }
-    if (search) {
-      const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const terms = search ? parseTerms(search) : [];
+    if (search && terms.length) {
+      // Any word may match (see utils/productSearch.js); category names count
+      // too, so "drill" finds products filed under "Drill and Demolishing Hammers".
+      const re = anyTermRegex(terms);
+      const matchingCats = await Category.find({ name: re }).select('_id').lean();
       const searchOr = [{ title: re }, { brand: re }, { tags: re }, { category: re }, { sku: re }, { description: re }];
+      if (matchingCats.length) searchOr.push({ categoryIds: { $in: matchingCats.map((c) => c._id) } });
       if (filter.$or) {
         filter.$and = [{ $or: filter.$or }, { $or: searchOr }];
         delete filter.$or;
@@ -70,6 +76,43 @@ async function getProducts(req, res, next) {
     const sortObj = sortMap[sort] || sortMap.displayOrder;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Searching with the default order ("Featured"): rank by relevance so the
+    // products that match every word, in the title, come first.
+    if (terms.length && (sort === 'displayOrder' || !sortMap[sort])) {
+      const candidates = await Product.find(filter)
+        .select('title brand tags category sku description categoryIds displayOrder createdAt')
+        .limit(2000).lean();
+      const catIds = [...new Set(candidates.flatMap((p) => (p.categoryIds || []).map(String)))];
+      const catNames = Object.fromEntries(
+        (await Category.find({ _id: { $in: catIds } }).select('name').lean()).map((c) => [String(c._id), c.name]),
+      );
+      const ranked = candidates
+        .map((p) => ({
+          id: p._id,
+          score: scoreProduct(p, terms, (p.categoryIds || []).map((id) => catNames[String(id)]).filter(Boolean), search),
+          displayOrder: p.displayOrder || 0,
+          createdAt: p.createdAt,
+        }))
+        .sort((a, b) => b.score - a.score || b.displayOrder - a.displayOrder || b.createdAt - a.createdAt);
+      const pageIds = ranked.slice(skip, skip + parseInt(limit)).map((r) => r.id);
+      const pageDocs = await Product.find({ _id: { $in: pageIds } })
+        .select('-faqs -specifications -description')
+        .populate('vendorId', 'name vendorProfile.storeName')
+        .populate('categoryIds', 'name slug');
+      const byId = new Map(pageDocs.map((d) => [String(d._id), d]));
+      const products = pageIds.map((id) => byId.get(String(id))).filter(Boolean);
+      return res.json({
+        products,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: ranked.length,
+          pages: Math.ceil(ranked.length / parseInt(limit)),
+        },
+      });
+    }
+
     const [products, total] = await Promise.all([
       Product.find(filter).sort(sortObj).skip(skip).limit(parseInt(limit))
         .select('-faqs -specifications -description')
