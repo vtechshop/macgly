@@ -8,6 +8,7 @@ import {
 import { useEffect } from 'react';
 import api from '../../../../utils/api';
 import { formatCurrency, formatDate } from '../../../../utils/format';
+import { isValidGstinFormat } from '../../../../utils/gstin';
 import toast from 'react-hot-toast';
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -198,8 +199,9 @@ function KYCReviewSection({ vp, vendorId, onAction, onRefresh }) {
     { label: 'Phone Number',     ok: !!vp.businessPhone?.trim() },
     { label: 'PAN',              ok: !!vp.panCard?.trim() },
     { label: 'Bank Account Details', ok: !!(vp.bankAccount?.trim() && vp.ifsc?.trim() && vp.accountHolderName?.trim()) },
-    // Same rules as the API (utils/vendorKyc.js): GST only if a GSTIN was given.
-    ...(vp.gstin?.trim() ? [{ label: `GST Verified (${vp.gstin})`, ok: !!vp.gstVerified }] : []),
+    // Same rules as the API (utils/vendorKyc.js): GSTIN optional; if given it
+    // must be well-formed, and the admin checks it on the GST portal (link below).
+    ...(vp.gstin?.trim() ? [{ label: `Valid GSTIN (${vp.gstin}) — check on GST portal before approving`, ok: isValidGstinFormat(vp.gstin) }] : []),
     { label: 'ID Proof uploaded',      ok: docs.some((d) => d.type === 'id_proof') },
     { label: 'Address Proof uploaded', ok: docs.some((d) => d.type === 'address_proof') },
   ];
@@ -286,6 +288,15 @@ function KYCReviewSection({ vp, vendorId, onAction, onRefresh }) {
             </button>
           </div>
         </div>
+      )}
+
+      {vp.gstin?.trim() && (
+        <p className="text-xs text-secondary-600">
+          GSTIN <span className="font-mono font-semibold">{vp.gstin}</span> is not checked automatically.{' '}
+          <a href="https://services.gst.gov.in/services/searchtp" target="_blank" rel="noopener noreferrer"
+            className="text-primary-600 font-semibold underline">Search it on the GST portal ↗</a>{' '}
+          and confirm it is Active and matches the business name. Approving KYC marks it verified.
+        </p>
       )}
 
       {/* Action buttons */}

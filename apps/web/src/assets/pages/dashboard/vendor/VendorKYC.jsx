@@ -9,6 +9,7 @@ import {
 import api from '../../../../utils/api';
 import { useFetch } from '../../../../hooks';
 import { setUser } from '../../../../store/slices/authSlice';
+import { isValidGstinFormat } from '../../../../utils/gstin';
 import Spinner from '../../../components/common/Spinner';
 import toast from 'react-hot-toast';
 
@@ -33,13 +34,13 @@ const DOC_TYPES = [
 const FAQS = [
   { q: 'What documents are accepted?', a: 'Business License, GST Certificate, PAN, Aadhaar, Passport. JPG/PNG/PDF under 5MB.' },
   { q: 'How long does verification take?', a: '2-3 business days. You will receive an email notification upon approval.' },
-  { q: 'Why is GST mandatory?', a: 'GST verification ensures tax compliance and confirms your business legitimacy.' },
+  { q: 'Do I need a GSTIN?', a: 'Only if you are GST-registered (required above ₹40 lakh annual turnover). If you have one, enter it and our team checks it on the GST portal during review. If not, leave it blank.' },
   { q: 'What if my application is rejected?', a: 'The admin will provide a reason. Fix the specific issue shown and resubmit.' },
 ];
 
 const STEP_META = [
   { number: 1, title: 'Business Info' },
-  { number: 2, title: 'GST Verify' },
+  { number: 2, title: 'GST Details' },
   { number: 3, title: 'Documents' },
   { number: 4, title: 'Submit' },
 ];
@@ -169,7 +170,7 @@ export default function VendorKYC() {
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [gstVerifying, setGstVerifying] = useState(false);
+  const [gstSaving, setGstSaving] = useState(false);
   const [gstVerified, setGstVerified] = useState(false);
   const [gstDetails, setGstDetails] = useState(null);
   const [gstError, setGstError] = useState('');
@@ -200,8 +201,7 @@ export default function VendorKYC() {
       const hasDocs = (kycData.documents || []).some((d) => d.type === 'id_proof') &&
                       (kycData.documents || []).some((d) => d.type === 'address_proof');
       if (!hasBusinessInfo) setActiveStep(1);
-      else if (!verified) setActiveStep(2);
-      else if (!hasDocs) setActiveStep(3);
+      else if (!hasDocs) setActiveStep(kycData.taxId || verified ? 3 : 2);
       else setActiveStep(4);
     }
   }, [kycData, formLoaded]);
@@ -223,9 +223,16 @@ export default function VendorKYC() {
   const locked      = isSubmitted || isApproved;
   const effectiveStep = locked ? 4 : activeStep;
 
+  // GST is optional (only GST-registered sellers have a GSTIN) and is checked
+  // by our team during review — there is no automatic verification provider.
+  const savedGstin = (kyc.taxId || '').toUpperCase();
+  const gstinTyped = formData.taxId.trim().toUpperCase();
+  const gstinFormatError = gstinTyped && !isValidGstinFormat(gstinTyped) ? 'Invalid GSTIN format (e.g. 22AAAAA0000A1Z5)' : '';
+  const gstStepDone = gstVerified || isValidGstinFormat(savedGstin) || (!savedGstin && (docsComplete || activeStep > 2));
+
   const completedSteps = [];
   if (businessInfoComplete) completedSteps.push(1);
-  if (gstVerified) completedSteps.push(2);
+  if (gstStepDone) completedSteps.push(2);
   if (docsComplete) completedSteps.push(3);
   if (isApproved) completedSteps.push(4);
 
@@ -252,28 +259,17 @@ export default function VendorKYC() {
     } finally { setSaving(false); }
   }
 
-  async function verifyGST() {
-    const gstin = formData.taxId.trim().toUpperCase();
-    if (!gstin) { setGstError('Enter a GSTIN number'); return; }
-    setGstVerifying(true);
+  async function saveGstAndContinue() {
+    if (gstinFormatError) { setGstError(gstinFormatError); return; }
+    setGstSaving(true);
     setGstError('');
     try {
-      const { data } = await api.post('/vendors/gst/verify', { gstNumber: gstin });
-      setGstVerified(true);
-      setGstDetails(data.data);
-      if (!data.active) toast.info('GST verified but currently inactive');
-      else toast.success('GST verified successfully');
-      setFormData((p) => ({
-        ...p,
-        businessName: p.businessName || data.data.tradeName || data.data.legalName || p.businessName,
-        businessAddress: p.businessAddress || data.data.address || p.businessAddress,
-      }));
-      await api.put('/vendors/kyc', { ...formData, taxId: gstin, gstVerified: true, gstDetails: data.data });
+      await api.put('/vendors/kyc', { taxId: gstinTyped });
       setRev((r) => r + 1);
+      setActiveStep(3);
     } catch (e) {
-      setGstError(e.response?.data?.error?.message || 'GST verification failed');
-      setGstVerified(false);
-    } finally { setGstVerifying(false); }
+      setGstError(e.response?.data?.error?.message || 'Could not save GSTIN');
+    } finally { setGstSaving(false); }
   }
 
   function handleTaxIdChange(e) {
@@ -332,7 +328,7 @@ export default function VendorKYC() {
 
   const checklist = [
     { label: 'Business information filled', done: businessInfoComplete },
-    { label: 'GST number verified', done: gstVerified },
+    { label: savedGstin ? `GSTIN added (${savedGstin}) — checked by our team` : 'GSTIN (optional — not GST-registered)', done: gstStepDone },
     { label: 'ID proof uploaded', done: docs.some((d) => d.type === 'id_proof') },
     { label: 'Address proof uploaded', done: docs.some((d) => d.type === 'address_proof') },
   ];
@@ -473,32 +469,28 @@ export default function VendorKYC() {
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50">
               <FileText size={17} className="text-primary-600" />
             </div>
-            <h2 className="font-bold text-secondary-900">GST Verification</h2>
+            <h2 className="font-bold text-secondary-900">GST Details</h2>
             {gstVerified && <CheckCircle2 size={17} className="text-green-500 ml-auto" />}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-secondary-700 mb-1.5">
-              GSTIN <span className="text-red-500">*</span>
-              <span className="text-secondary-400 font-normal ml-1">(mandatory)</span>
+              GSTIN <span className="text-secondary-400 font-normal ml-1">(optional)</span>
             </label>
-            <div className="flex gap-2">
-              <input
-                className={`input flex-1 uppercase font-mono ${gstVerified ? 'border-green-400 bg-green-50' : ''}`}
-                placeholder="22AAAAA0000A1Z5"
-                value={formData.taxId}
-                onChange={handleTaxIdChange}
-                maxLength={15}
-                disabled={gstVerified}
-              />
-              <button onClick={verifyGST} disabled={gstVerifying || gstVerified}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold shrink-0 transition-colors ${
-                  gstVerified ? 'bg-green-500 text-white cursor-default' : 'bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50'
-                }`}>
-                {gstVerifying ? <Spinner size="sm" /> : gstVerified ? '✓ Verified' : 'Verify GST'}
-              </button>
-            </div>
-            {gstError && <p className="text-xs text-red-500 mt-1">{gstError}</p>}
+            <input
+              className={`input w-full uppercase font-mono ${gstVerified ? 'border-green-400 bg-green-50' : ''} ${gstinFormatError ? 'border-red-400' : ''}`}
+              placeholder="22AAAAA0000A1Z5"
+              value={formData.taxId}
+              onChange={handleTaxIdChange}
+              maxLength={15}
+              disabled={gstVerified}
+            />
+            {(gstError || gstinFormatError) && <p className="text-xs text-red-500 mt-1">{gstError || gstinFormatError}</p>}
+            <p className="text-xs text-secondary-500 mt-2">
+              Not GST-registered? Leave this blank — registration is only required above ₹40 lakh annual turnover.
+              If you enter a GSTIN, our team checks it on the GST portal during review.
+            </p>
+            {gstVerified && <p className="text-xs text-green-600 font-semibold mt-1">✓ GSTIN verified by our team</p>}
 
             {gstVerified && gstDetails && (
               <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl text-sm space-y-1">
@@ -524,9 +516,9 @@ export default function VendorKYC() {
               className="px-4 py-2 border border-secondary-300 text-secondary-700 rounded-lg text-sm font-medium hover:bg-secondary-50">
               ← Back
             </button>
-            <button onClick={() => setActiveStep(3)} disabled={!gstVerified}
+            <button onClick={gstVerified ? () => setActiveStep(3) : saveGstAndContinue} disabled={gstSaving || !!gstinFormatError}
               className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 disabled:opacity-40 ml-auto">
-              Continue to Documents <ChevronRight size={15} />
+              {gstSaving ? 'Saving…' : gstinTyped || gstVerified ? 'Save & Continue' : 'Skip — not GST-registered'} <ChevronRight size={15} />
             </button>
           </div>
         </div>

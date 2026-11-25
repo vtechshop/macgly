@@ -4,7 +4,7 @@ const Product = require('../../models/Product');
 const Order   = require('../../models/Order');
 const AppError = require('../../utils/AppError');
 const notif   = require('../../utils/notificationHelper');
-const { vendorKycGaps } = require('../../utils/vendorKyc');
+const { vendorKycGaps, approvalUpdate } = require('../../utils/vendorKyc');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -139,14 +139,7 @@ router.put('/:id/approve', async (req, res, next) => {
       throw new AppError(`Cannot approve yet — KYC is incomplete. Missing: ${gaps.join(', ')}.`, 400, 'KYC_INCOMPLETE');
     }
 
-    const update = {
-      'vendorProfile.approved': true,
-      'vendorProfile.rejectionReason': '',
-      'vendorProfile.kycStatus': 'approved',
-      'vendorProfile.kycVerifiedAt': new Date(),
-      'vendorProfile.kycVerifiedBy': req.user._id,
-      isActive: true,
-    };
+    const update = { ...approvalUpdate(user.vendorProfile, req.user._id), isActive: true };
 
     const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true })
       .select('-password -refreshTokens');

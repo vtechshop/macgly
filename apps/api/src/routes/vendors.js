@@ -21,6 +21,7 @@ const { sendShippingUpdate, sendVendorKYCSubmittedEmail } = require('../services
 const { createShipment } = require('../services/shippingService');
 const whatsapp = require('../services/whatsappService');
 const { normalizeIndianPhone } = require('../utils/phone');
+const { isValidGstinFormat } = require('../utils/gstin');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1557,6 +1558,20 @@ router.put('/kyc', async (req, res, next) => {
     } = req.body;
     // gstVerified and gstDetails are server-controlled only — never trust client values
 
+    // GSTIN is optional (only GST-registered sellers have one); when given it
+    // must be well-formed. There is no automatic verification provider — an
+    // admin checks it on the GST portal when approving KYC.
+    let gstin;
+    if (taxId !== undefined) {
+      gstin = String(taxId || '').trim().toUpperCase();
+      if (gstin && !isValidGstinFormat(gstin)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_GSTIN', message: 'Invalid GSTIN format (e.g. 22AAAAA0000A1Z5)' },
+        });
+      }
+    }
+
     // Phone must be a real 10-digit number whenever it is saved, not only on submit.
     let phone;
     if (phoneNumber !== undefined && String(phoneNumber).trim() !== '') {
@@ -1578,7 +1593,6 @@ router.put('/kyc', async (req, res, next) => {
       if (!businessType)    missing.push('Business Type');
       if (!businessAddress) missing.push('Business Address');
       if (!phoneNumber)     missing.push('Phone Number');
-      if (!vp.gstVerified)  missing.push('GST Verification');
       if (!docs.some((d) => d.type === 'id_proof'))      missing.push('ID Proof Document');
       if (!docs.some((d) => d.type === 'address_proof')) missing.push('Address Proof Document');
       if (missing.length) {
@@ -1593,7 +1607,12 @@ router.put('/kyc', async (req, res, next) => {
     if (businessName    !== undefined) update['vendorProfile.businessName']    = businessName;
     if (businessType    !== undefined) update['vendorProfile.businessType']    = businessType;
     if (businessAddress !== undefined) update['vendorProfile.businessAddress'] = businessAddress;
-    if (taxId           !== undefined) update['vendorProfile.gstin']           = taxId;
+    if (taxId !== undefined) {
+      const current = (req.user.vendorProfile?.gstin || '').toUpperCase();
+      update['vendorProfile.gstin'] = gstin;
+      // A changed GSTIN has to be checked again.
+      if (gstin !== current) update['vendorProfile.gstVerified'] = false;
+    }
     if (phoneNumber     !== undefined) update['vendorProfile.businessPhone']   = phone || '';
     if (submit) {
       update['vendorProfile.kycStatus']      = 'pending';

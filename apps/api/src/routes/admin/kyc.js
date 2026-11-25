@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const User   = require('../../models/User');
 const AppError = require('../../utils/AppError');
-const { vendorKycGaps } = require('../../utils/vendorKyc');
+const { vendorKycGaps, approvalUpdate } = require('../../utils/vendorKyc');
 const notif  = require('../../utils/notificationHelper');
 const { sendVendorKYCDecisionEmail } = require('../../services/emailService');
 const { writeAuditLog, fromReq } = require('../../middleware/audit');
@@ -133,13 +133,7 @@ router.put('/vendors/:id/approve', async (req, res, next) => {
 
     const updated = await User.findByIdAndUpdate(
       req.params.id,
-      {
-        'vendorProfile.approved': true,
-        'vendorProfile.rejectionReason': '',
-        'vendorProfile.kycStatus': 'approved',
-        'vendorProfile.kycVerifiedAt': new Date(),
-        'vendorProfile.kycVerifiedBy': req.user._id,
-      },
+      approvalUpdate(user.vendorProfile, req.user._id),
       { new: true },
     );
     writeAuditLog({ ...fromReq(req), action: 'KYC_APPROVED', target: updated._id, targetModel: 'User', meta: { vendorEmail: updated.email } });
@@ -216,12 +210,8 @@ router.put('/vendor/:id/approve', async (req, res, next) => {
     if (gaps.length) {
       throw new AppError(`Cannot approve yet — KYC is incomplete. Missing: ${gaps.join(', ')}.`, 400, 'KYC_INCOMPLETE');
     }
-    const user = await User.findByIdAndUpdate(req.params.id, {
-      'vendorProfile.approved': true,
-      'vendorProfile.kycStatus': 'approved',
-      'vendorProfile.kycVerifiedAt': new Date(),
-      'vendorProfile.kycVerifiedBy': req.user._id,
-    }, { new: true });
+    const user = await User.findByIdAndUpdate(req.params.id,
+      approvalUpdate(existing.vendorProfile, req.user._id), { new: true });
     notif.notifyVendorApprovalStatus({ vendorUserId: user._id, vendor: user.vendorProfile, status: 'approved' }).catch(() => {});
     res.json({ ok: true, user });
   } catch (err) { next(err); }

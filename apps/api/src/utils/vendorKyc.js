@@ -3,7 +3,11 @@
 // never be approved — or told they are — before their KYC is complete.
 //
 // GSTIN is optional (sellers under the ₹40 lakh turnover threshold need not
-// register), so GST verification is required only when a GSTIN was given.
+// register). When one is given it must be well-formed; there is no automatic
+// verification provider, so the admin checks it on the GST portal and
+// approving KYC is what marks it verified (see approvalUpdate).
+
+const { isValidGstinFormat } = require('./gstin');
 
 function vendorKycGaps(vp = {}) {
   const docs = vp.kycDocuments || [];
@@ -17,8 +21,20 @@ function vendorKycGaps(vp = {}) {
     ['ID proof document',      docs.some((d) => d.type === 'id_proof')],
     ['address proof document', docs.some((d) => d.type === 'address_proof')],
   ];
-  if (vp.gstin?.trim()) checks.push(['GST verification', vp.gstVerified]);
+  if (vp.gstin?.trim()) checks.push(['a valid GSTIN', isValidGstinFormat(vp.gstin)]);
   return checks.filter(([, ok]) => !ok).map(([label]) => label);
 }
 
-module.exports = { vendorKycGaps };
+/** Fields every approve route sets. The admin has checked the GSTIN, if any. */
+function approvalUpdate(vp = {}, adminId) {
+  return {
+    'vendorProfile.approved': true,
+    'vendorProfile.rejectionReason': '',
+    'vendorProfile.kycStatus': 'approved',
+    'vendorProfile.kycVerifiedAt': new Date(),
+    'vendorProfile.kycVerifiedBy': adminId,
+    ...(vp.gstin?.trim() ? { 'vendorProfile.gstVerified': true } : {}),
+  };
+}
+
+module.exports = { vendorKycGaps, approvalUpdate };

@@ -9,6 +9,7 @@ jest.mock('../../middleware/cache', () => ({
 jest.mock('../../services/emailService', () => ({
   sendEmail: jest.fn(),
   sendVendorKYCDecisionEmail: jest.fn().mockResolvedValue(),
+  sendVendorKYCSubmittedEmail: jest.fn().mockResolvedValue(),
   sendPasswordReset: jest.fn(),
   sendOrderConfirmation: jest.fn(),
 }));
@@ -69,13 +70,59 @@ describe.each(ROUTES)('%s approve', (_name, url) => {
     expect(saved.vendorProfile.kycStatus).toBe('approved');
   });
 
-  test('requires GST verification when a GSTIN was given', async () => {
+  test('approving a vendor with a valid GSTIN marks it verified (admin checked it)', async () => {
     const { cookies } = await makeUser('admin');
     const { user: vendor } = await makeUser('vendor', { ...completeKyc, gstin: '22AAAAA0000A1Z5', gstVerified: false });
 
     const res = await request(app).put(url(vendor._id)).set('Cookie', cookies);
 
+    expect(res.status).toBe(200);
+    const User = require('../../models/User');
+    expect((await User.findById(vendor._id)).vendorProfile.gstVerified).toBe(true);
+  });
+
+  test('refuses a malformed GSTIN', async () => {
+    const { cookies } = await makeUser('admin');
+    const { user: vendor } = await makeUser('vendor', { ...completeKyc, gstin: '27AAACR5055K1Z' });
+
+    const res = await request(app).put(url(vendor._id)).set('Cookie', cookies);
+
     expect(res.status).toBe(400);
-    expect(res.body.error.message).toMatch(/GST verification/);
+    expect(res.body.error.message).toMatch(/valid GSTIN/);
+  });
+});
+
+describe('vendor KYC page: GST is optional and checked by an admin', () => {
+  const kycBase = { businessName: 'Tools Co', businessType: 'individual', businessAddress: '1 Main St', phoneNumber: '9876543210' };
+  const docs = [{ type: 'id_proof', url: 'a' }, { type: 'address_proof', url: 'b' }];
+
+  test('can submit KYC without a GSTIN', async () => {
+    const { user, cookies } = await makeUser('vendor', { onboardingComplete: true, kycDocuments: docs });
+    const res = await request(app).put('/api/vendors/kyc').set('Cookie', cookies).send({ ...kycBase, taxId: '', submit: true });
+    expect(res.status).toBe(200);
+    const User = require('../../models/User');
+    expect((await User.findById(user._id)).vendorProfile.kycStatus).toBe('pending');
+  });
+
+  test('can submit KYC with an unverified but valid GSTIN', async () => {
+    const { cookies } = await makeUser('vendor', { onboardingComplete: true, kycDocuments: docs });
+    const res = await request(app).put('/api/vendors/kyc').set('Cookie', cookies)
+      .send({ ...kycBase, taxId: '27aaacr5055k1z7', submit: true });
+    expect(res.status).toBe(200);
+    expect(res.body.data.gstin).toBe('27AAACR5055K1Z7');
+  });
+
+  test('rejects a malformed GSTIN', async () => {
+    const { cookies } = await makeUser('vendor', { onboardingComplete: true });
+    const res = await request(app).put('/api/vendors/kyc').set('Cookie', cookies).send({ taxId: '27AAACR' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_GSTIN');
+  });
+
+  test('changing the GSTIN clears an earlier verification', async () => {
+    const { user, cookies } = await makeUser('vendor', { onboardingComplete: true, gstin: '22AAAAA0000A1Z5', gstVerified: true });
+    await request(app).put('/api/vendors/kyc').set('Cookie', cookies).send({ taxId: '27AAACR5055K1Z7' });
+    const User = require('../../models/User');
+    expect((await User.findById(user._id)).vendorProfile.gstVerified).toBe(false);
   });
 });

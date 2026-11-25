@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../../../../utils/api';
 import { formatDate } from '../../../../utils/format';
+import { isValidGstinFormat } from '../../../../utils/gstin';
 import toast from 'react-hot-toast';
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -50,10 +51,9 @@ function buildChecklist(item) {
     return [
       { label: 'Business Name',   ok: !!vp.businessName,                  critical: false },
       { label: 'Phone Provided',  ok: !!vp.businessPhone,                 critical: false },
-      { label: 'GST Number',      ok: !!vp.gstin,                         critical: true  },
-      { label: 'PAN Number',      ok: !!vp.panCard,                       critical: false },
-      { label: 'Bank Account',    ok: !!(vp.bankAccount && vp.ifsc),      critical: false },
-      { label: 'KYC Data',        ok: !!(vp.panCard || vp.gstin),         critical: true  },
+      { label: vp.gstin ? 'Valid GSTIN' : 'GSTIN (optional — not registered)', ok: !vp.gstin || isValidGstinFormat(vp.gstin), critical: false },
+      { label: 'PAN Number',      ok: !!vp.panCard,                       critical: true  },
+      { label: 'Bank Account',    ok: !!(vp.bankAccount && vp.ifsc),      critical: true  },
     ];
   }
   const ap = item.affiliateProfile || {};
@@ -158,7 +158,9 @@ function ReviewModal({ item, onClose, onApprove, onReject }) {
   const days       = daysSince(item.createdAt);
   const pri        = priority(days);
   const checklist  = buildChecklist(item);
-  const gstOk      = isVendor ? !!vp.gstin : null;
+  // GSTIN is optional; when given it must be well-formed (the server checks
+  // the rest of KYC and explains anything missing).
+  const gstOk      = isVendor ? (!vp.gstin || isValidGstinFormat(vp.gstin)) : null;
   const canApprove = !isVendor || gstOk;
 
   async function handleApprove() {
@@ -249,20 +251,26 @@ function ReviewModal({ item, onClose, onApprove, onReject }) {
             {/* GST Section — vendors only */}
             {isVendor && (
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-2">GST Verification</p>
-                {gstOk ? (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle size={16} className="text-green-600" />
-                      <span className="text-sm font-semibold text-green-700">GST Number Provided</span>
-                    </div>
-                    <p className="font-mono text-sm text-green-800">{vp.gstin}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-secondary-400 mb-2">GST</p>
+                {!vp.gstin ? (
+                  <div className="bg-secondary-50 border border-secondary-200 rounded-xl p-4 text-sm text-secondary-600">
+                    Not GST-registered (GSTIN is optional below ₹40 lakh turnover).
+                  </div>
+                ) : gstOk ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+                    <p className="font-mono text-sm text-amber-900">{vp.gstin}</p>
+                    <p className="text-xs text-amber-800">
+                      Not checked automatically.{' '}
+                      <a href="https://services.gst.gov.in/services/searchtp" target="_blank" rel="noopener noreferrer"
+                        className="font-semibold underline">Search it on the GST portal ↗</a>{' '}
+                      and confirm it is Active and matches the business name. Approving marks it verified.
+                    </p>
                   </div>
                 ) : (
                   <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-2">
                     <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
                     <p className="text-sm text-red-700">
-                      <strong>GST NOT provided</strong> — Vendor KYC requires a GST number before approval can proceed.
+                      <strong>Invalid GSTIN format</strong> ({vp.gstin}) — ask the vendor to correct it.
                     </p>
                   </div>
                 )}
@@ -342,7 +350,7 @@ function ReviewModal({ item, onClose, onApprove, onReject }) {
                 Reject
               </button>
               <button onClick={handleApprove} disabled={!canApprove || approving}
-                title={!canApprove ? 'GST number required before approval' : undefined}
+                title={!canApprove ? 'GSTIN format is invalid' : undefined}
                 className="flex items-center gap-1.5 px-5 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                 <CheckCircle size={14} />
                 {approving ? 'Approving…' : 'Approve'}
@@ -542,7 +550,7 @@ export default function AdminKYC() {
                 const isVendor = s.type === 'vendor';
                 const vp = s.vendorProfile || {};
                 const kd = s.affiliateProfile?.kycData || {};
-                const gstOk = isVendor ? !!vp.gstin : null;
+                const gstOk = isVendor ? (!vp.gstin || isValidGstinFormat(vp.gstin)) : null;
                 const docs  = docCount(s);
 
                 return (
@@ -600,10 +608,12 @@ export default function AdminKYC() {
                     <td className="px-4 py-3">
                       {!isVendor ? (
                         <span className="text-xs text-secondary-400">N/A</span>
+                      ) : !vp.gstin ? (
+                        <span className="text-xs text-secondary-500">Not registered</span>
                       ) : gstOk ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700"><CheckCircle size={12} /> Yes</span>
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700"><CheckCircle size={12} /> Check on portal</span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-red-600"><XCircle size={12} /> No</span>
+                        <span className="inline-flex items-center gap-1 text-xs text-red-600"><XCircle size={12} /> Invalid</span>
                       )}
                     </td>
                     {/* Actions */}
@@ -616,7 +626,7 @@ export default function AdminKYC() {
                         <button
                           onClick={() => handleApprove(s)}
                           disabled={isVendor && !gstOk}
-                          title={isVendor && !gstOk ? 'GST required' : 'Quick approve'}
+                          title={isVendor && !gstOk ? 'GSTIN format is invalid' : 'Quick approve'}
                           className="p-1.5 text-secondary-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                           <CheckCircle size={14} />
                         </button>
