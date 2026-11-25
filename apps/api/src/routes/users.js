@@ -78,6 +78,10 @@ router.post('/cancel-vendor', async (req, res, next) => {
     }
 
     await Product.deleteMany({ vendorId: req.user._id });
+    // Vendor-only notifications ("Vendor Application Approved", KYC results)
+    // would otherwise stay in the bell of what is now a customer account.
+    const Notification = require('../models/Notification');
+    await Notification.deleteMany({ user: req.user._id, type: { $in: ['vendor_approval', 'kyc'] } });
     const user = await User.findByIdAndUpdate(
       req.user._id,
       {

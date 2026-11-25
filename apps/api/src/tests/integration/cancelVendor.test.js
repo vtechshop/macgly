@@ -51,6 +51,21 @@ describe('POST /api/users/cancel-vendor', () => {
     expect(await Product.countDocuments({ vendorId: user._id })).toBe(0);
   });
 
+  test('vendor approval and KYC notifications are cleared, others kept', async () => {
+    const { user, cookies } = await createUser('vendor', { approved: true, kycStatus: 'not_submitted' });
+    const Notification = require('../../models/Notification');
+    await Notification.create([
+      { user: user._id, type: 'vendor_approval', title: 'Vendor Application Approved', message: 'x' },
+      { user: user._id, type: 'kyc', title: 'KYC update', message: 'x' },
+      { user: user._id, type: 'order', title: 'Order shipped', message: 'x' },
+    ]);
+
+    await cancel(cookies);
+
+    const left = await Notification.find({ user: user._id });
+    expect(left.map((n) => n.type)).toEqual(['order']);
+  });
+
   test('the account keeps working as a customer straight away', async () => {
     const { cookies } = await createUser('vendor', { approved: false });
     await cancel(cookies);
