@@ -122,6 +122,10 @@
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://res.cloudinary.com" />
     <link rel="dns-prefetch" href="//res.cloudinary.com" />
+    <!-- If this HTML is an old copy (e.g. restored by the Back button after a
+         deploy), its /assets/ files no longer exist and the page stays blank.
+         Reload once to fetch the current HTML; the sessionStorage guard stops loops. -->
+    <script>addEventListener('error',function(e){var t=e.target;if(!t||(t.tagName!=='SCRIPT'&&t.tagName!=='LINK'))return;var u=t.src||t.href||'';if(u.indexOf('/assets/')<0)return;try{if(sessionStorage.getItem('stale-reload')===u)return;sessionStorage.setItem('stale-reload',u);}catch(_){return;}location.reload();},true);</script>
     <!-- Wake the Render API after the page has loaded; pages are prerendered, so
          first paint no longer depends on it and it should not compete with CSS/JS. -->
     <script>addEventListener('load',function(){fetch('/api/health',{credentials:'include'}).catch(function(){});});</script>
@@ -135,6 +139,10 @@
         </div>
       </div><!--SSR_BODY_END--></div>
     <style>#initial-loader{transition:opacity 0.2s}@keyframes spin{to{transform:rotate(360deg)}}</style>
+    <!-- main.jsx removes the loader as soon as the app starts. If it is still
+         here after 8s a script failed to load (flaky network, or a deploy swapped
+         files mid-load), so offer a reload instead of spinning forever. -->
+    <script>setTimeout(function(){var l=document.getElementById('initial-loader');if(!l)return;var d=document.createElement('div');d.style.cssText='margin-top:20px;font-family:sans-serif;font-size:14px;color:#4b5563';d.innerHTML='Taking longer than usual.<br><button style="margin-top:10px;padding:8px 18px;border:0;border-radius:8px;background:#ea580c;color:#fff;font-weight:600;cursor:pointer">Reload</button>';d.querySelector('button').onclick=function(){location.reload();};l.firstElementChild.appendChild(d);},8000);</script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

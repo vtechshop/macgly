@@ -14,7 +14,9 @@ let csrfToken = null;
 let refreshPromise = null;
 
 async function fetchCsrfToken() {
-  const { data } = await axios.get(`${BASE}/csrf-token`, { withCredentials: true });
+  // Timeout so a sleeping/unreachable API fails the action instead of hanging
+  // it forever. 60s covers the Render free-tier wake-up.
+  const { data } = await axios.get(`${BASE}/csrf-token`, { withCredentials: true, timeout: 60000 });
   csrfToken = data.csrfToken;
 }
 
