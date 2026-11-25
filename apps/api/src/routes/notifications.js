@@ -4,10 +4,20 @@ const { authenticate } = require('../middleware/auth');
 
 router.use(authenticate);
 
+// Vendor approval / KYC notifications are hidden from customer accounts —
+// e.g. someone approved by mistake who then switched back to a customer.
+// (Admins also get these types for new vendors/KYC, so only customers.)
+const VENDOR_ONLY_TYPES = ['vendor_approval', 'kyc'];
+function visibleFilter(user, extra = {}) {
+  const filter = { user: user._id, ...extra };
+  if (user.role === 'customer') filter.type = { $nin: VENDOR_ONLY_TYPES };
+  return filter;
+}
+
 // GET /notifications/unread-count  — fast badge count
 router.get('/unread-count', async (req, res, next) => {
   try {
-    const count = await Notification.countDocuments({ user: req.user._id, isRead: false });
+    const count = await Notification.countDocuments(visibleFilter(req.user, { isRead: false }));
     res.json({ count });
   } catch (err) { next(err); }
 });
@@ -16,12 +26,12 @@ router.get('/unread-count', async (req, res, next) => {
 router.get('/', async (req, res, next) => {
   try {
     const { page = 1, limit = 20 } = req.query;
-    const filter = { user: req.user._id };
+    const filter = visibleFilter(req.user);
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [notifications, total, unreadCount] = await Promise.all([
       Notification.find(filter).sort({ isRead: 1, createdAt: -1 }).skip(skip).limit(parseInt(limit)),
       Notification.countDocuments(filter),
-      Notification.countDocuments({ user: req.user._id, isRead: false }),
+      Notification.countDocuments(visibleFilter(req.user, { isRead: false })),
     ]);
     res.json({ notifications, total, unreadCount, pages: Math.ceil(total / parseInt(limit)) });
   } catch (err) { next(err); }
