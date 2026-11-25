@@ -350,8 +350,22 @@ export default function DashboardLayout({ requiredRole }) {
                 <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
                   <Clock size={18} className="text-yellow-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-yellow-800">Account pending approval</p>
-                    <p className="text-xs text-yellow-700 mt-0.5">Our team will review your vendor account within 1 business day. You can add products now — they'll go live once approved.</p>
+                    {user.vendorProfile?.kycStatus === 'pending' ? (
+                      <>
+                        <p className="text-sm font-semibold text-yellow-800">KYC submitted — awaiting approval</p>
+                        <p className="text-xs text-yellow-700 mt-0.5">Our team will review your documents within 1 business day. You&apos;ll get full access once approved.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-semibold text-yellow-800">Complete your KYC to get approved</p>
+                        <p className="text-xs text-yellow-700 mt-0.5">
+                          Add your business details, GST (if registered) and ID &amp; address proof.{' '}
+                          {!location.pathname.endsWith('/kyc') && (
+                            <a href="/dashboard/vendor/kyc" className="font-semibold underline">Go to KYC →</a>
+                          )}
+                        </p>
+                      </>
+                    )}
                     <CancelVendorButton className="mt-2 !text-xs" />
                   </div>
                 </div>

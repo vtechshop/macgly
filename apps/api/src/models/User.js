@@ -58,6 +58,7 @@ const userSchema = new mongoose.Schema({
       uploadedAt: { type: Date, default: Date.now },
     }],
     kycRejectionReason: String,
+    kycSubmittedAt:     Date,   // set by PUT /vendors/kyc on submit (was silently dropped before)
     kycVerifiedAt:      Date,
     kycVerifiedBy:      mongoose.Schema.Types.ObjectId,
     // Store branding & settings

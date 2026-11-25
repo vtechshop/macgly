@@ -48,6 +48,10 @@ router.post('/become-vendor', async (req, res, next) => {
   try {
     if (req.user.role === 'vendor') return res.json({ user: req.user.toSafeObject() });
     const { businessName, gstin } = req.body;
+    // Old "Vendor Application Approved"/KYC notifications from an earlier
+    // application must not carry over into this one.
+    await require('../models/Notification')
+      .deleteMany({ user: req.user._id, type: { $in: ['vendor_approval', 'kyc'] } });
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { role: 'vendor', vendorProfile: { businessName: businessName || '', gstin: gstin || '', approved: false } },

@@ -59,6 +59,14 @@ router.get('/:id/public', async (req, res, next) => {
 
 router.use(authenticate);
 
+// Approval/KYC notifications from an earlier vendor application ("Vendor
+// Application Approved") must not carry over when someone applies again.
+async function clearVendorStatusNotifications(userId) {
+  await require('../models/Notification')
+    .deleteMany({ user: userId, type: { $in: ['vendor_approval', 'kyc'] } })
+    .catch(() => {});
+}
+
 // POST /vendors/onboard — accessible to any authenticated user (customer/affiliate → becomes vendor)
 router.post('/onboard', async (req, res, next) => {
   try {
@@ -86,13 +94,16 @@ router.post('/onboard', async (req, res, next) => {
           'vendorProfile.bankName':           bank.bankName?.trim() || '',
           'vendorProfile.accountHolderName':  bank.accountName?.trim() || '',
           'vendorProfile.ifsc':               bank.ifscCode?.trim().toUpperCase() || '',
-          'vendorProfile.kycStatus':          'pending',
+          // KYC is submitted later from the KYC page. Marking it 'pending' here
+          // showed "Application Under Review" and locked the KYC form.
+          'vendorProfile.kycStatus':          'not_submitted',
           'vendorProfile.approved':           false,
           'vendorProfile.onboardingComplete': true,
         },
       },
       { new: true },
     );
+    await clearVendorStatusNotifications(req.user._id);
 
     notif.notifyAdminNewVendor({
       vendor: updated.vendorProfile,
@@ -1463,6 +1474,16 @@ router.get('/kyc', async (req, res, next) => {
       .select('vendorProfile name email');
     if (!user) throw new AppError('Vendor not found', 404);
     const vp = user.vendorProfile || {};
+    // A real KYC submission always includes ID and address proof (PUT /kyc
+    // refuses otherwise). "pending" without them came from /onboard marking
+    // brand-new vendors as under review, which locked their KYC form. Repair it.
+    const kycDocs = vp.kycDocuments || [];
+    const reallySubmitted = kycDocs.some((d) => d.type === 'id_proof') && kycDocs.some((d) => d.type === 'address_proof');
+    if (vp.kycStatus === 'pending' && !reallySubmitted) {
+      vp.kycStatus = 'not_submitted';
+      await require('../models/User').updateOne({ _id: user._id }, { 'vendorProfile.kycStatus': 'not_submitted' });
+      if (!vp.approved) await clearVendorStatusNotifications(user._id);
+    }
     res.json({
       success: true,
       data: {
