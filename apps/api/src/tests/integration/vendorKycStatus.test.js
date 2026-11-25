@@ -73,3 +73,31 @@ test('becoming a vendor via /users/become-vendor clears old approval notices', a
   const left = await Notification().find({ user: user._id });
   expect(left.map((n) => n.type)).toEqual(['order']);
 });
+
+describe('business phone must be 10 digits', () => {
+  test('KYC save rejects a short number', async () => {
+    const { cookies } = await makeUser('vendor', { onboardingComplete: true });
+    const res = await request(app).put('/api/vendors/kyc').set('Cookie', cookies)
+      .send({ businessName: 'dav', businessType: 'individual', businessAddress: 'x', phoneNumber: '23' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_PHONE');
+  });
+
+  test('KYC save accepts +91 / spaced forms and stores the 10 digits', async () => {
+    const { user, cookies } = await makeUser('vendor', { onboardingComplete: true });
+    const res = await request(app).put('/api/vendors/kyc').set('Cookie', cookies)
+      .send({ phoneNumber: '+91 98765 43210' });
+    expect(res.status).toBe(200);
+    expect((await User().findById(user._id)).vendorProfile.businessPhone).toBe('9876543210');
+  });
+
+  test('onboarding profile rejects a short number', async () => {
+    const { cookies } = await makeUser('vendor');
+    const res = await request(app).put('/api/vendors/profile').set('Cookie', cookies).send({
+      businessName: 'dav', businessPhone: '12345', panCard: 'ABCDE1234F',
+      accountHolderName: 'D', bankAccount: '123456789', ifsc: 'SBIN0001234',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_PHONE');
+  });
+});

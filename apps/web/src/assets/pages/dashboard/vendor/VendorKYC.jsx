@@ -230,10 +230,15 @@ export default function VendorKYC() {
   if (isApproved) completedSteps.push(4);
 
   function setField(k) { return (e) => setFormData((p) => ({ ...p, [k]: e.target.value })); }
+  const phoneInvalid = formData.phoneNumber !== '' && !/^\d{10}$/.test(formData.phoneNumber);
 
   async function saveBusinessInfo(andProceed = false) {
     if (!formData.businessName.trim() || !formData.businessType || !formData.businessAddress.trim() || !formData.phoneNumber.trim()) {
       toast.error('Please fill all required fields');
+      return;
+    }
+    if (phoneInvalid) {
+      toast.error('Phone number must be exactly 10 digits');
       return;
     }
     setSaving(true);
@@ -439,9 +444,12 @@ export default function VendorKYC() {
               <label className="block text-sm font-medium text-secondary-700 mb-1.5">Phone Number <span className="text-red-500">*</span></label>
               <div className="relative">
                 <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
-                <input className="input w-full pl-8" type="tel" placeholder="10-digit mobile number"
-                  value={formData.phoneNumber} onChange={setField('phoneNumber')} />
+                <input className={`input w-full pl-8 ${phoneInvalid ? 'border-red-400' : ''}`} type="tel" inputMode="numeric"
+                  placeholder="10-digit mobile number" maxLength={10}
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData((p) => ({ ...p, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))} />
               </div>
+              {phoneInvalid && <p className="text-xs text-red-500 mt-1">Phone number must be exactly 10 digits</p>}
             </div>
           </div>
 

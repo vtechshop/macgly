@@ -20,6 +20,7 @@ const { reserveStock, releaseStock } = require('../services/inventoryService');
 const { sendShippingUpdate, sendVendorKYCSubmittedEmail } = require('../services/emailService');
 const { createShipment } = require('../services/shippingService');
 const whatsapp = require('../services/whatsappService');
+const { normalizeIndianPhone } = require('../utils/phone');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -145,6 +146,8 @@ router.put('/profile', async (req, res, next) => {
     const { businessName, businessPhone, gstin, accountHolderName, bankAccount, ifsc, panCard } = req.body;
     if (!businessName?.trim()) return res.status(400).json({ error: { message: 'Business name is required' } });
     if (!businessPhone?.trim()) return res.status(400).json({ error: { message: 'Business phone is required' } });
+    const phone = normalizeIndianPhone(businessPhone);
+    if (!phone) return res.status(400).json({ error: { code: 'INVALID_PHONE', message: 'Business phone must be 10 digits' } });
     if (!panCard?.trim()) return res.status(400).json({ error: { message: 'PAN card is required' } });
     if (!accountHolderName?.trim()) return res.status(400).json({ error: { message: 'Account holder name is required' } });
     if (!bankAccount?.trim()) return res.status(400).json({ error: { message: 'Bank account number is required' } });
@@ -152,7 +155,7 @@ router.put('/profile', async (req, res, next) => {
 
     const update = {
       'vendorProfile.businessName': businessName.trim(),
-      'vendorProfile.businessPhone': businessPhone.trim(),
+      'vendorProfile.businessPhone': phone,
       'vendorProfile.gstin': gstin?.trim() || '',
       'vendorProfile.accountHolderName': accountHolderName.trim(),
       'vendorProfile.bankAccount': bankAccount.trim(),
@@ -1554,6 +1557,18 @@ router.put('/kyc', async (req, res, next) => {
     } = req.body;
     // gstVerified and gstDetails are server-controlled only — never trust client values
 
+    // Phone must be a real 10-digit number whenever it is saved, not only on submit.
+    let phone;
+    if (phoneNumber !== undefined && String(phoneNumber).trim() !== '') {
+      phone = normalizeIndianPhone(phoneNumber);
+      if (!phone) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_PHONE', message: 'Phone number must be 10 digits' },
+        });
+      }
+    }
+
     if (submit) {
       const user = await require('../models/User').findById(req.user._id).select('vendorProfile');
       const vp = user?.vendorProfile || {};
@@ -1579,7 +1594,7 @@ router.put('/kyc', async (req, res, next) => {
     if (businessType    !== undefined) update['vendorProfile.businessType']    = businessType;
     if (businessAddress !== undefined) update['vendorProfile.businessAddress'] = businessAddress;
     if (taxId           !== undefined) update['vendorProfile.gstin']           = taxId;
-    if (phoneNumber     !== undefined) update['vendorProfile.businessPhone']   = phoneNumber;
+    if (phoneNumber     !== undefined) update['vendorProfile.businessPhone']   = phone || '';
     if (submit) {
       update['vendorProfile.kycStatus']      = 'pending';
       update['vendorProfile.kycSubmittedAt'] = new Date();
