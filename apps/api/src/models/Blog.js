@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { indexNowPlugin } = require('../services/indexNowService');
 
 const blogSchema = new mongoose.Schema({
   title:        { type: String, required: true, trim: true },
@@ -21,5 +22,11 @@ const blogSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 blogSchema.index({ isPublished: 1, publishedAt: -1 });
+
+blogSchema.plugin(indexNowPlugin, {
+  pathFor: (d) => d.slug && `/blog/${d.slug}`,
+  isPublic: (d) => d.status === 'published' || d.isPublished === true,
+  visibility: ['status', 'isPublished', 'slug'],
+});
 
 module.exports = mongoose.model('Blog', blogSchema);

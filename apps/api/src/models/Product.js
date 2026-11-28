@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { indexNowPlugin } = require('../services/indexNowService');
 const { Schema } = mongoose;
 const ObjectId = Schema.Types.ObjectId;
 
@@ -139,5 +140,11 @@ productSchema.index({ vendorId: 1, stock: 1, trackInventory: 1 });
 
 // Full-text
 productSchema.index({ title: 'text', description: 'text', brand: 'text', tags: 'text' });
+
+productSchema.plugin(indexNowPlugin, {
+  pathFor: (d) => d.slug && `/product/${d.slug}`,
+  isPublic: (d) => d.published === true,
+  visibility: ['published', 'slug'],
+});
 
 module.exports = mongoose.model('Product', productSchema);

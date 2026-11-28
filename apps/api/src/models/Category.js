@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { indexNowPlugin } = require('../services/indexNowService');
 const { Schema } = mongoose;
 
 const categorySchema = new Schema({
@@ -36,5 +37,11 @@ categorySchema.index({ parentId: 1 });
 categorySchema.index({ isActive: 1 });
 categorySchema.index({ createdBy: 1 });
 categorySchema.index({ sortOrder: -1, name: 1 });
+
+categorySchema.plugin(indexNowPlugin, {
+  pathFor: (d) => d.slug && `/category/${d.slug}`,
+  isPublic: (d) => d.isActive !== false,
+  visibility: ['isActive', 'slug'],
+});
 
 module.exports = mongoose.model('Category', categorySchema);
